@@ -59,7 +59,7 @@ Frontend → `invoke("search", { query, sourceFilter, limit })`
 Backend → `ipc.rs::search()` → fan-out to plugins → rank → return `SearchResponse`
 
 ## Aesthetic
-Liquid Glass: neutral white-on-glass, one subtle accent — phosphor amber (#e8a430),
-used only for state that needs attention. Near-black base (#06060a).
-Fonts: Syne (display), JetBrains Mono (search/code), DM Sans (body).
+Pure Liquid Glass, fully monochrome: white/grey on glass, no hues anywhere
+(--accent-rgb is neutral). Near-black base (#06060a).
+Fonts: system SF Pro (-apple-system), Inter as web fallback, JetBrains Mono for code.
 All design tokens in `src/styles/globals.css`.

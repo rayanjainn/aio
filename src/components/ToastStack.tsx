@@ -41,12 +41,12 @@ export function ToastStack({
               borderRadius: 7,
               background:
                 t.kind === "error"
-                  ? "rgba(248, 113, 113, 0.12)"
-                  : "rgba(74, 222, 128, 0.10)",
+                  ? "rgba(255,255,255, 0.12)"
+                  : "rgba(255,255,255, 0.10)",
               border: `1px solid ${
                 t.kind === "error"
-                  ? "rgba(248, 113, 113, 0.28)"
-                  : "rgba(74, 222, 128, 0.22)"
+                  ? "rgba(255,255,255, 0.28)"
+                  : "rgba(255,255,255, 0.22)"
               }`,
               boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
               backdropFilter: "blur(8px)",
