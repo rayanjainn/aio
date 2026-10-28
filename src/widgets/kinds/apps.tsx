@@ -10,6 +10,7 @@ import { invoke } from "../../lib/tauri";
 import { bytes, relative } from "../format";
 import { Sparkline, WEmpty, WTitle } from "../ui";
 import { AppIcon } from "../../components/icons";
+import { useAppBrand, useCardBrand } from "../brand";
 
 /* ── Any app ────────────────────────────────────────────── */
 
@@ -18,6 +19,7 @@ type AppStatus = { running: boolean; cpu: number; memBytes: number; processes: n
 export function AppWidget({ size, config }: WidgetProps) {
   const app: { name: string; path: string } | undefined = config.app;
   const { data: st } = usePoll<AppStatus>("app_status", { path: app?.path ?? "" }, 2500, [app?.path]);
+  useCardBrand(useAppBrand(app));
   const hist = useRef<number[]>([]);
   const [, bump] = useState(0);
   useEffect(() => {
@@ -58,7 +60,7 @@ export function AppWidget({ size, config }: WidgetProps) {
       {size === "l" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
           <div className="w-faint" style={{ fontSize: 10.5, marginBottom: 4 }}>CPU · last 100s</div>
-          <Sparkline data={hist.current} width={318} height={70} />
+          <Sparkline data={hist.current} width={318} height={70} color="var(--w-accent, rgba(255,255,255,0.85))" />
         </div>
       )}
       <div style={{ marginTop: "auto" }}>{buttons}</div>

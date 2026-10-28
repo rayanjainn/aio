@@ -15,6 +15,7 @@ import { AppIcon } from "../components/icons";
 import { Ring, WeatherIcon, PlayIcon, PauseIcon, MusicIcon, loadColor } from "../widgets/ui";
 import type { SysStats } from "../widgets/kinds/system";
 import type { DockConfig, DockItem } from "./types";
+import { knownBrand } from "../widgets/brand";
 import "../widgets/widgets.css";
 import "./dock.css";
 
@@ -69,8 +70,10 @@ function MiniMusic({ size }: { size: number }) {
   const { data } = usePoll<{ app: string; state: string; title: string; artist: string; artwork: string | null }>("now_playing", undefined, 2500);
   const playing = data?.state === "playing";
   const active = !!data?.app && data.state !== "stopped";
+  const brand = active ? knownBrand(data!.app === "Music" ? "apple music" : data!.app) : null;
   return (
-    <div className="dk-mini dk-music" style={{ height: size, width: active ? size * 3.6 : size }}>
+    <div className={`dk-mini dk-music${brand ? " branded" : ""}`}
+      style={{ height: size, width: active ? size * 3.6 : size, ...(brand ? { ["--brand-rgb" as string]: brand.rgb } : {}) }}>
       <div className="dk-art" style={{ width: size * 0.78, height: size * 0.78, borderRadius: size * 0.2 }}>
         {data?.artwork ? <img src={data.artwork} alt="" /> : <MusicIcon s={size * 0.34} />}
       </div>

@@ -3,6 +3,7 @@ import type { WidgetProps } from "../types";
 import { useNow, usePoll } from "../../hooks/usePoll";
 import { invoke } from "../../lib/tauri";
 import { duration, temp } from "../format";
+import { knownBrand, useCardBrand } from "../brand";
 import { IconButton, MusicIcon, NextIcon, PauseIcon, PlayIcon, PrevIcon, WEmpty, WeatherIcon, weatherLabel } from "../ui";
 
 /* ── Weather ────────────────────────────────────────────── */
@@ -91,6 +92,8 @@ export function MusicWidget({ size }: WidgetProps) {
   const playing = np?.state === "playing";
   // Interpolate the playhead between 2s polls so the bar glides.
   const pos = np ? Math.min(np.duration, np.position + (playing ? (now.getTime() - sampledAt) / 1000 : 0)) : 0;
+  // Spotify green-on-black, Apple Music red — follows whichever app is playing.
+  useCardBrand(np && np.app && np.state !== "stopped" ? knownBrand(np.app === "Music" ? "apple music" : np.app) : null);
   const ctl = (action: string) => np?.app && invoke("media_control", { action, app: np.app }).catch(() => {});
 
   if (!np || !np.app || np.state === "stopped") return (
@@ -120,7 +123,7 @@ export function MusicWidget({ size }: WidgetProps) {
   const progress = (
     <div>
       <div style={{ height: 4, borderRadius: 4, background: "rgba(255,255,255,0.14)", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${np.duration ? (pos / np.duration) * 100 : 0}%`, background: "rgba(255,255,255,0.85)", borderRadius: 4, transition: "width 500ms linear" }} />
+        <div style={{ height: "100%", width: `${np.duration ? (pos / np.duration) * 100 : 0}%`, background: "var(--w-accent, rgba(255,255,255,0.85))", borderRadius: 4, transition: "width 500ms linear" }} />
       </div>
       <div className="w-faint tnum" style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 3 }}>
         <span>{duration(pos)}</span><span>-{duration(np.duration - pos)}</span>

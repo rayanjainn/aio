@@ -174,6 +174,22 @@ export function SourceTile({ pluginId, size = 30 }: { pluginId: SourceId; size?:
 /* ── Real macOS app icon (cached) ─────────────────────────── */
 
 const iconCache = new Map<string, string | null>();
+const iconInflight = new Map<string, Promise<string | null>>();
+
+/** App icon as a data URL (shared cache with <AppIcon>). */
+export function loadAppIcon(path: string): Promise<string | null> {
+  const cached = iconCache.get(path);
+  if (cached !== undefined) return Promise.resolve(cached);
+  let p = iconInflight.get(path);
+  if (!p) {
+    p = invoke<string | null>("get_app_icon", { path })
+      .then(d => { iconCache.set(path, d ?? null); return d ?? null; })
+      .catch(() => { iconCache.set(path, null); return null; })
+      .finally(() => iconInflight.delete(path));
+    iconInflight.set(path, p);
+  }
+  return p;
+}
 
 /**
  * Renders an application's real macOS icon (fetched once via `get_app_icon`,
@@ -191,9 +207,7 @@ export function AppIcon({ path, size = 30 }: { path?: string; size?: number }) {
     const cached = iconCache.get(path);
     if (cached !== undefined) { setSrc(cached); return; } // undefined = not fetched yet
     setSrc(null); // reset while fetching the new path
-    invoke<string | null>("get_app_icon", { path })
-      .then((data) => { iconCache.set(path, data ?? null); if (alive) setSrc(data ?? null); })
-      .catch(() => { iconCache.set(path, null); if (alive) setSrc(null); });
+    loadAppIcon(path).then(data => { if (alive) setSrc(data); });
     return () => { alive = false; };
   }, [path]);
 
@@ -203,31 +217,17 @@ export function AppIcon({ path, size = 30 }: { path?: string; size?: number }) {
   return <SourceTile pluginId="apps" size={size} />;
 }
 
-/* ── Cortex logo mark — animated neuron node ──────────────── */
+/* ── Cortex logo mark — the "C" ring + recall node (matches the app icon) ── */
 
 export function CortexMark({ s = 22, active = true }: { s?: number; active?: boolean }) {
   return (
     <svg width={s} height={s} viewBox="0 0 32 32" fill="none" aria-label="Cortex">
-      {/* outer hex */}
-      <path
-        d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13z"
-        stroke="rgba(255,255,255,0.22)" strokeWidth="1.4"
-      />
-      {/* node links */}
-      <g stroke="rgba(255,255,255,0.30)" strokeWidth="1.1">
-        <path d="M16 16 10 10M16 16 22 10M16 16 10 22M16 16 22 22" />
-      </g>
-      {/* satellite nodes */}
-      <g fill="rgba(255,255,255,0.40)">
-        <circle cx="10" cy="10" r="1.5" /><circle cx="22" cy="10" r="1.5" />
-        <circle cx="10" cy="22" r="1.5" /><circle cx="22" cy="22" r="1.5" />
-      </g>
-      {/* core */}
-      <circle cx="16" cy="16" r="2.6" fill="rgba(255,255,255,0.92)" />
+      <path d="M22.4 9.6 A9 9 0 1 0 22.4 22.4" stroke="rgba(255,255,255,0.9)" strokeWidth="3.4" strokeLinecap="round" />
+      <circle cx="25.6" cy="16" r="2.3" fill="#fff" />
       {active && (
-        <circle cx="16" cy="16" r="2.6" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1">
-          <animate attributeName="r" values="2.6;7;2.6" dur="2.4s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.6;0;0.6" dur="2.4s" repeatCount="indefinite" />
+        <circle cx="25.6" cy="16" r="2.3" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1">
+          <animate attributeName="r" values="2.3;6;2.3" dur="2.4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.7;0;0.7" dur="2.4s" repeatCount="indefinite" />
         </circle>
       )}
     </svg>
