@@ -1,4 +1,4 @@
-# Cortex / AIO — CLAUDE.md
+# Cortex / AIO — Agent Notes
 
 ## Project
 AllInOne (AIO) — codename Cortex. Cross-platform ⌘K launcher + episodic memory engine.
@@ -47,11 +47,19 @@ Temporal queries work: "last Tuesday", "before the incident".
 - ⌘⇧P pause hotkey must always work
 - ~/.cortex encrypted at rest
 
+## Desktop layer (`src-tauri/src/desktop/`)
+- `glass.rs` — native Liquid Glass (NSGlassEffectView, macOS 26+), vibrancy fallback
+- `widgets.rs` — one window per widget, `~/.cortex/widgets.json`; frontend `src/widgets/`
+- `dock.rs` — Cortex Dock (`~/.cortex/dock.json`, frontend `src/dock/`) + macOS Dock editor
+- `providers.rs` — widget data (sysinfo, pmset, Open-Meteo, git2, Docker, …)
+- Windows are routed by hash: `#/widget/<id>`, `#/dock`, otherwise the palette.
+
 ## IPC pattern
 Frontend → `invoke("search", { query, sourceFilter, limit })`
 Backend → `ipc.rs::search()` → fan-out to plugins → rank → return `SearchResponse`
 
 ## Aesthetic
-Phosphor amber (#e8a430) on near-black (#06060a).
+Liquid Glass: neutral white-on-glass, one subtle accent — phosphor amber (#e8a430),
+used only for state that needs attention. Near-black base (#06060a).
 Fonts: Syne (display), JetBrains Mono (search/code), DM Sans (body).
 All design tokens in `src/styles/globals.css`.
