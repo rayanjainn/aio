@@ -12,7 +12,7 @@ on:
       version:
         description: "Release tag to create, e.g. v0.1.0"
         required: true
-        default: v0.1.0
+        default: v0.1.1
 
 permissions:
   contents: write
@@ -63,7 +63,7 @@ jobs:
         with:
           tagName: ${{ inputs.version || github.ref_name }}
           releaseName: Cortex ${{ inputs.version || github.ref_name }}
-          releaseBody: Download the .dmg for your Mac (Apple Silicon = aarch64, Intel = x64). Builds are not notarized — right-click → Open on first launch.
+          releaseBody: "Download the .dmg for your Mac (Apple Silicon = aarch64, Intel = x64). Not notarized yet — after the first launch attempt, open System Settings → Privacy & Security → Open Anyway. If macOS says the app is damaged, run: xattr -cr /Applications/Cortex.app"
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
