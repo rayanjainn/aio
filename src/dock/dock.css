@@ -1,0 +1,27 @@
+html.dock-window, html.dock-window body, html.dock-window #root { border-radius: 0; background: transparent; overflow: visible; }
+.dk-root { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: flex-start; }
+.dk-bar {
+  position: relative; display: inline-flex; align-items: center;
+  /* Native NSGlassEffectView provides the real glass; this is only the
+     sheen + rim on top of it (and a fallback tint off-macOS). */
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)), rgba(var(--tint-rgb), calc(var(--tint-alpha) * 0.4));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(255,255,255,0.06);
+  color: #fff;
+}
+.rim-light { isolation: isolate; }
+.dk-tile { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1; }
+.dk-tile img, .dk-tile svg { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.28)); }
+.dk-sep { background: rgba(255,255,255,0.22); border-radius: 1px; margin: 0 4px; flex-shrink: 0; }
+.dk-dot { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.85); }
+.dk-dot-bottom { bottom: -7px; left: 50%; transform: translateX(-50%); }
+.dk-dot-top { top: -7px; left: 50%; transform: translateX(-50%); }
+.dk-dot-left { left: -7px; top: 50%; transform: translateY(-50%); }
+.dk-dot-right { right: -7px; top: 50%; transform: translateY(-50%); }
+.dk-widget { display: flex; z-index: 1; }
+.dk-mini {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+  border-radius: 14px; padding: 0 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+}
+.dk-folder { display: flex; align-items: center; justify-content: center; font-size: 30px; }

@@ -10,6 +10,7 @@ import { KINDS, KIND_MAP, type Field, type WidgetKind } from "../widgets/registr
 import { SIZES, sizeClass, type SizeClass, type Widget, type WidgetConfig } from "../widgets/types";
 import { WidgetCard } from "../widgets/WidgetCard";
 import { CloseIcon } from "./icons";
+import { CortexDockTab, MacDockTab } from "./DockStudio";
 
 export interface StudioTab { id: string; label: string; render: () => ReactNode }
 
@@ -269,7 +270,12 @@ export default function Studio({ tab, onClose, extraTabs = [] }: { tab: string; 
   useEffect(() => { setActive(tab.startsWith("widget:") ? "widgets" : tab); }, [tab]);
   const ref = useRef<HTMLDivElement>(null);
   useGlassPointer(ref);
-  const tabs: StudioTab[] = [{ id: "widgets", label: "Widgets", render: () => <WidgetsTab focusId={focusId} /> }, ...extraTabs];
+  const tabs: StudioTab[] = [
+    { id: "widgets", label: "Widgets", render: () => <WidgetsTab focusId={focusId} /> },
+    { id: "dock", label: "Cortex Dock", render: () => <CortexDockTab /> },
+    { id: "macdock", label: "macOS Dock", render: () => <MacDockTab /> },
+    ...extraTabs,
+  ];
   const cur = tabs.find(t => t.id === active) ?? tabs[0];
 
   useEffect(() => {

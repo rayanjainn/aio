@@ -1,6 +1,7 @@
 //! Desktop layer: widget windows, the Cortex dock, macOS Dock preferences,
 //! and the live data providers behind them.
 
+pub mod dock;
 pub mod glass;
 pub mod providers;
 pub mod widgets;
@@ -16,6 +17,7 @@ pub fn init(app: &AppHandle, data_dir: &std::path::Path) {
     if visible {
         widgets::show_all(app);
     }
+    dock::init(app, data_dir);
 }
 
 /// Window events for desktop-layer windows. Returns true when handled.
