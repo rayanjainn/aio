@@ -12,6 +12,7 @@ import {
 import { invoke, hideWindow, openExternal } from "../lib/tauri";
 import { tryConvert } from "../lib/convert";
 import { searchEmoji } from "../lib/emoji";
+import { useGlassPointer } from "../hooks/useGlassPointer";
 
 /* ── Utilities ──────────────────────────────────────────── */
 function relativeTime(iso: string): string {
@@ -150,7 +151,8 @@ function ResultRow({ item, selected, onHover, onClick, onActions }: { item: Item
   const sub = item.subtitle || item.url || item.path;
   const right = item._kind === "cmd" ? "Command" : item._kind === "dir" ? (item.title === ".." ? "Up" : "Folder") : item._local && item.subtitle === "Running" ? "Running" : meta.label;
   return (
-    <div onMouseEnter={onHover} onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 0 10px", height: 38, cursor: "pointer", margin: "0 8px", borderRadius: 8, background: selected ? "rgba(255,255,255,0.09)" : "transparent", transition: "background 90ms ease" }}>
+    <div onMouseEnter={onHover} onClick={onClick} style={{ position: "relative", isolation: "isolate", display: "flex", alignItems: "center", gap: 10, padding: "0 8px 0 10px", height: 40, cursor: "pointer", margin: "0 8px", borderRadius: "var(--radius-row)" }}>
+      {selected && <motion.div layoutId="palette-selection" className="liquid-pill" transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.7 }} />}
       {item._kind === "emoji"
         ? <div style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{item._emoji}</div>
         : item._kind === "dir"
@@ -179,8 +181,8 @@ function OllamaBanner({ available, missingModels, onDismiss }: { available: bool
   const msg = !available ? "Ollama not installed — AI search disabled." : `Missing model${missingModels.length > 1 ? "s" : ""}: ${missingModels.join(", ")}`;
   const hint = !available ? "Install Ollama to enable semantic search." : `ollama pull ${missingModels[0]}`;
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 16px", gap: 12, background: "rgba(255,170,40,0.06)", borderBottom: "1px solid rgba(255,170,40,0.10)" }}>
-      <span style={{ fontSize: 11.5, color: "rgba(255,190,90,0.72)" }}>{msg} <span style={{ opacity: 0.55, fontFamily: available ? "var(--font-mono)" : "inherit" }}>{hint}</span></span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 16px", gap: 12, background: "rgba(var(--accent-rgb),0.06)", borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+      <span style={{ fontSize: 11.5, color: "rgba(var(--accent-rgb),0.72)" }}>{msg} <span style={{ opacity: 0.55, fontFamily: available ? "var(--font-mono)" : "inherit" }}>{hint}</span></span>
       <button onClick={onDismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.25)", display: "flex", padding: 0 }}><CloseIcon s={13} /></button>
     </div>
   );
@@ -206,7 +208,7 @@ function Markdown({ text }: { text: string }) {
         const m = ln.match(/^\s*[-*•]\s+(.*)/);
         if (m) return (
           <div key={i} style={{ display: "flex", gap: 7, paddingLeft: 4 }}>
-            <span style={{ color: "rgba(255,205,110,0.7)" }}>•</span>
+            <span style={{ color: "rgba(var(--accent-rgb),0.7)" }}>•</span>
             <span style={{ flex: 1 }}>{renderInline(m[1], `b${i}`)}</span>
           </div>
         );
@@ -242,8 +244,8 @@ function ChatView({ msgs, loading, input, onInput, onSend, onClose, onOpenSource
           <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", gap: 8, width: "100%" }}>
             <div style={{
               maxWidth: "84%", padding: "9px 13px", borderRadius: 12, fontSize: 13.5, lineHeight: 1.6,
-              background: m.role === "user" ? "rgba(255,255,255,0.10)" : "rgba(255,200,90,0.08)",
-              border: `1px solid ${m.role === "user" ? "rgba(255,255,255,0.10)" : "rgba(255,200,90,0.14)"}`,
+              background: m.role === "user" ? "rgba(255,255,255,0.10)" : "rgba(var(--accent-rgb),0.08)",
+              border: `1px solid ${m.role === "user" ? "rgba(255,255,255,0.10)" : "rgba(var(--accent-rgb),0.14)"}`,
               color: m.role === "user" ? "rgba(255,255,255,0.92)" : "rgba(255,235,200,0.94)",
               borderBottomRightRadius: m.role === "user" ? 3 : 12, borderBottomLeftRadius: m.role === "user" ? 12 : 3,
               whiteSpace: m.role === "user" ? "pre-wrap" : "normal",
@@ -274,8 +276,8 @@ function ChatView({ msgs, loading, input, onInput, onSend, onClose, onOpenSource
           </div>
         ))}
         {loading && (
-          <div style={{ display: "flex", gap: 4, alignItems: "center", color: "rgba(255,205,110,0.7)" }}>
-            {[0, 1, 2].map(i => <span key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,205,110,0.7)", animation: `dot-bounce 1s ease-in-out ${i * 0.18}s infinite` }} />)}
+          <div style={{ display: "flex", gap: 4, alignItems: "center", color: "rgba(var(--accent-rgb),0.7)" }}>
+            {[0, 1, 2].map(i => <span key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(var(--accent-rgb),0.7)", animation: `dot-bounce 1s ease-in-out ${i * 0.18}s infinite` }} />)}
           </div>
         )}
       </div>
@@ -285,7 +287,7 @@ function ChatView({ msgs, loading, input, onInput, onSend, onClose, onOpenSource
           onKeyDown={e => { if (e.key === "Enter" && !loading) { e.preventDefault(); onSend(); } }}
           placeholder="Reply to Cortex…" spellCheck={false}
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontFamily: "var(--font-sans)", fontSize: 14.5, color: "rgba(255,255,255,0.92)", caretColor: "rgba(255,255,255,0.7)" }} />
-        <button onClick={onSend} disabled={loading || !input.trim()} style={{ background: input.trim() && !loading ? "rgba(255,200,90,0.16)" : "rgba(255,255,255,0.05)", border: "1px solid rgba(255,200,90,0.2)", borderRadius: 7, color: "rgba(255,205,110,0.9)", cursor: input.trim() && !loading ? "pointer" : "default", padding: "5px 10px", display: "flex", alignItems: "center", gap: 5, fontSize: 12 }}>
+        <button onClick={onSend} disabled={loading || !input.trim()} style={{ background: input.trim() && !loading ? "rgba(var(--accent-rgb),0.16)" : "rgba(255,255,255,0.05)", border: "1px solid rgba(var(--accent-rgb),0.2)", borderRadius: 7, color: "rgba(var(--accent-rgb),0.9)", cursor: input.trim() && !loading ? "pointer" : "default", padding: "5px 10px", display: "flex", alignItems: "center", gap: 5, fontSize: 12 }}>
           Send <ReturnIcon s={12} />
         </button>
       </div>
@@ -389,6 +391,8 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
   const [dirEntries, setDirEntries] = useState<Item[]>([]);
   const [flash, setFlash] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useGlassPointer(rootRef);
   const inputRef = useRef<HTMLInputElement>(null);
   const spotRef = useRef<ReturnType<typeof setTimeout>>();
   const srcRef = useRef<ReturnType<typeof setTimeout>>();
@@ -727,14 +731,14 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
     : "Search apps, files, commands…   (> run · ? ask · : emoji)";
 
   return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: "linear-gradient(180deg, rgba(26,26,34,0.72), rgba(16,16,22,0.74))", backdropFilter: "blur(60px) saturate(200%)", WebkitBackdropFilter: "blur(60px) saturate(200%)", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 60px rgba(255,255,255,0.02)" }}>
+    <div ref={rootRef} className="glass-window">
       <AnimatePresence>
         {showOllama && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}><OllamaBanner available={ollamaHealth!.available} missingModels={ollamaHealth!.missingModels} onDismiss={() => setOllamaDismissed(true)} /></motion.div>}
       </AnimatePresence>
 
       {/* Search bar */}
       <div data-tauri-drag-region style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px", height: 50, flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ width: 16, display: "flex", justifyContent: "center", flexShrink: 0, color: (isExec || isAsk || isEmoji) ? "rgba(255,205,110,0.7)" : "rgba(255,255,255,0.30)" }}>
+        <div style={{ width: 16, display: "flex", justifyContent: "center", flexShrink: 0, color: (isExec || isAsk || isEmoji) ? "rgba(var(--accent-rgb),0.7)" : "rgba(255,255,255,0.30)" }}>
           {loading ? <div style={{ display: "flex", gap: 2 }}>{[0, 1, 2].map(i => <span key={i} style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.45)", animation: `dot-bounce 1s ease-in-out ${i * 0.18}s infinite` }} />)}</div>
             : (isExec || isAsk || isEmoji) ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 15 }}>{isExec ? ">" : isAsk ? "?" : ":"}</span> : <SearchIcon s={16} />}
         </div>

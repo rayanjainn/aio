@@ -224,6 +224,7 @@ pub fn run() {
             exec_ipc::clear_chats,
             config_ipc::get_config,
             config_ipc::set_config,
+            config_ipc::set_ui_value,
             config_ipc::clear_captures,
             config_ipc::open_data_folder,
             config_ipc::read_file_preview,

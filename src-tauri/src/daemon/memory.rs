@@ -120,6 +120,11 @@ impl MemoryDaemon {
         self.privacy.resume();
     }
 
+    /// Replace the user blocklist (Settings) — applies to the next capture tick.
+    pub fn set_blocked_apps(&self, apps: Vec<String>) {
+        self.privacy.set_extra_blocked(apps);
+    }
+
     pub fn is_paused(&self) -> bool {
         self.paused.load(Ordering::SeqCst)
     }

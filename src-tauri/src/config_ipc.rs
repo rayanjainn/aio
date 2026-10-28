@@ -10,7 +10,9 @@ use tauri::State;
 /* ─── Config types ──────────────────────────────────────── */
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+// `default` per-field: a config written by an older build (missing newer
+// keys) must still load — previously one missing key reset EVERY setting.
+#[serde(rename_all = "camelCase", default)]
 pub struct AppConfig {
     pub retention_days:   u32,
     pub blocked_apps:     Vec<String>,
@@ -23,6 +25,8 @@ pub struct AppConfig {
     /// Preferred terminal app for running shell commands (e.g. "Terminal",
     /// "iTerm", "kitty", "Alacritty", "WezTerm", "Ghostty").
     pub terminal:         String,
+    /// Free-form UI state shared by all windows (appearance, …).
+    pub ui:               serde_json::Map<String, JsonValue>,
 }
 
 impl Default for AppConfig {
@@ -37,6 +41,7 @@ impl Default for AppConfig {
             file_roots:      vec![],
             quota_bytes:     5 * 1024 * 1024 * 1024,
             terminal:        default_terminal(),
+            ui:              serde_json::Map::new(),
         }
     }
 }
@@ -102,10 +107,14 @@ pub fn load_config() -> AppConfig {
     serde_json::from_str(&raw).unwrap_or_default()
 }
 
-fn save_config(cfg: &AppConfig) -> Result<()> {
+pub fn save_config(cfg: &AppConfig) -> Result<()> {
     let path = config_path();
     std::fs::create_dir_all(path.parent().unwrap_or(&path))?;
-    std::fs::write(path, serde_json::to_string_pretty(cfg)?)?;
+    // Write-then-rename so a crash mid-write can't leave a truncated config
+    // (which would silently reset every setting on next launch).
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, serde_json::to_string_pretty(cfg)?)?;
+    std::fs::rename(tmp, path)?;
     Ok(())
 }
 
@@ -122,8 +131,10 @@ pub async fn get_config(_state: State<'_, AppState>) -> Result<AppConfig, String
 pub async fn set_config(
     key:   String,
     value: JsonValue,
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
 ) -> Result<(), String> {
+    let blocked: Option<Vec<String>> = (key == "blockedApps")
+        .then(|| serde_json::from_value(value.clone()).unwrap_or_default());
     tokio::task::spawn_blocking(move || {
         let mut cfg = load_config();
         // Patch the field identified by `key`
@@ -139,6 +150,23 @@ pub async fn set_config(
             "terminal"       => { cfg.terminal        = value.as_str().unwrap_or("Terminal").to_string(); }
             _                => {}
         }
+        save_config(&cfg).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    // Blocklist edits take effect immediately — not just after a restart.
+    if let Some(apps) = blocked {
+        state.memory_daemon.set_blocked_apps(apps);
+    }
+    Ok(())
+}
+
+/// Set one key under `ui` (e.g. "appearance") without touching the rest.
+#[tauri::command]
+pub async fn set_ui_value(key: String, value: JsonValue) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let mut cfg = load_config();
+        cfg.ui.insert(key, value);
         save_config(&cfg).map_err(|e| e.to_string())
     })
     .await
@@ -922,4 +950,19 @@ pub async fn get_app_icon(path: String) -> Option<String> {
 pub async fn set_autohide(enabled: bool, state: State<'_, AppState>) -> Result<(), String> {
     state.inner().autohide.store(enabled, std::sync::atomic::Ordering::Relaxed);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_config_keeps_known_fields() {
+        // An older config without `ui`/`terminal` must not reset retentionDays.
+        let cfg: AppConfig = serde_json::from_str(r#"{"retentionDays": 7, "blockedApps": ["Zoom"]}"#).unwrap();
+        assert_eq!(cfg.retention_days, 7);
+        assert_eq!(cfg.blocked_apps, vec!["Zoom"]);
+        assert_eq!(cfg.quota_bytes, AppConfig::default().quota_bytes);
+        assert!(cfg.ui.is_empty());
+    }
 }

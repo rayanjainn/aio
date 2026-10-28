@@ -39,12 +39,17 @@ pub const BLOCKED_APP_NAMES: &[&str] = &[
     "System Settings",
 ];
 
+fn normalize(apps: Vec<String>) -> Vec<String> {
+    apps.into_iter().map(|s| s.trim().to_lowercase()).filter(|s| !s.is_empty()).collect()
+}
+
 pub struct PrivacyGuard {
     paused:         Arc<AtomicBool>,
     data_dir:       PathBuf,
     retention_days: u32,
     /// User-configured blocked app names (from Settings), lowercased.
-    extra_blocked:  Vec<String>,
+    /// Behind a lock so Settings edits apply without a restart.
+    extra_blocked:  std::sync::RwLock<Vec<String>>,
 }
 
 impl PrivacyGuard {
@@ -53,8 +58,12 @@ impl PrivacyGuard {
             paused: Arc::new(AtomicBool::new(false)),
             data_dir,
             retention_days,
-            extra_blocked: extra_blocked.into_iter().map(|s| s.to_lowercase()).filter(|s| !s.is_empty()).collect(),
+            extra_blocked: std::sync::RwLock::new(normalize(extra_blocked)),
         }
+    }
+
+    pub fn set_extra_blocked(&self, apps: Vec<String>) {
+        if let Ok(mut g) = self.extra_blocked.write() { *g = normalize(apps); }
     }
 
     /// Returns true when this app/bundle is allowed to be captured.
@@ -69,7 +78,10 @@ impl PrivacyGuard {
         if BLOCKED_APP_NAMES.iter().any(|b| al.contains(&b.to_lowercase())) {
             return false;
         }
-        if self.extra_blocked.iter().any(|b| al.contains(b)) {
+        let bl = bundle_id.to_lowercase();
+        // Fail closed: a poisoned lock blocks capture rather than allowing it.
+        let Ok(extra) = self.extra_blocked.read() else { return false };
+        if extra.iter().any(|b| al.contains(b) || (!bl.is_empty() && bl == *b)) {
             return false;
         }
         true
@@ -216,6 +228,10 @@ mod tests {
         let g = guard(&["Banking App", ""]);
         assert!(!g.is_allowed("My Banking App", ""));
         assert!(g.is_allowed("Notes", ""));
+        g.set_extra_blocked(vec!["notes".into(), "com.example.secret".into()]);
+        assert!(!g.is_allowed("Notes", ""));
+        assert!(!g.is_allowed("Other", "com.example.secret"));
+        assert!(g.is_allowed("My Banking App", ""));
     }
 
     #[test]

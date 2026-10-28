@@ -5,6 +5,8 @@ import {
   SettingsIcon, type SourceMeta, SOURCE_META,
 } from "./icons";
 import type { SourceId } from "../types";
+import { motion } from "framer-motion";
+import { ACCENTS, DEFAULT_APPEARANCE, loadAppearance, saveAppearance, type Appearance, type Tint } from "../lib/appearance";
 
 /* ── Types ── */
 
@@ -34,7 +36,7 @@ const DEFAULT_CONFIG: Config = {
   fileRoots: [], quotaBytes: 5 * 1024 * 1024 * 1024, terminal: "Terminal",
 };
 
-type Section = "general" | "connections" | "sources" | "storage" | "about";
+type Section = "general" | "appearance" | "connections" | "sources" | "storage" | "about";
 interface SettingsProps { onClose: () => void; }
 
 /* ── Glass tokens ── */
@@ -94,7 +96,7 @@ function ConnectionCard({ pluginId, name, description, connected, subtitle, erro
         </div>
       ) : (
         <button onClick={onConnect} disabled={loading} style={{ ...btn, opacity: loading ? 0.6 : 1,
-          border: "1px solid rgba(255,200,90,0.30)", color: "rgba(255,205,110,0.85)", background: "rgba(255,200,90,0.07)" }}>
+          border: "1px solid rgba(var(--accent-rgb),0.30)", color: "rgba(var(--accent-rgb),0.85)", background: "rgba(var(--accent-rgb),0.07)" }}>
           {loading ? "Connecting…" : (cta ?? "Connect")}
         </button>
       )}
@@ -107,7 +109,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   return (
     <button onClick={() => onChange(!checked)} style={{
       width: 38, height: 21, borderRadius: 11, flexShrink: 0,
-      background: checked ? "rgba(110,225,150,0.75)" : "rgba(255,255,255,0.13)",
+      background: checked ? "rgba(var(--accent-rgb),0.9)" : "rgba(255,255,255,0.13)",
       border: "none", cursor: "pointer", position: "relative", transition: "background 180ms",
     }}>
       <span style={{ position: "absolute", top: 2.5, left: checked ? 19.5 : 2.5,
@@ -209,6 +211,7 @@ export default function Settings({ onClose }: SettingsProps) {
 
   const SECTIONS: { id: Section; label: string }[] = [
     { id: "general",     label: "General" },
+    { id: "appearance",  label: "Appearance" },
     { id: "connections", label: "Connections" },
     { id: "sources",     label: "Sources" },
     { id: "storage",     label: "Storage" },
@@ -220,10 +223,10 @@ export default function Settings({ onClose }: SettingsProps) {
     <div data-cortex-overlay style={{
       position: "fixed", inset: 0, zIndex: 1000,
       display: "flex", flexDirection: "column",
-      background: "rgba(20,20,26,0.85)",
-      backdropFilter: "blur(48px) saturate(190%)", WebkitBackdropFilter: "blur(48px) saturate(190%)",
-      borderRadius: 12, overflow: "hidden",
-      border: "1px solid rgba(255,255,255,0.10)",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.05), transparent 30%), rgba(var(--tint-rgb), calc(var(--tint-alpha) + 0.38))",
+      borderRadius: "var(--radius-win)", overflow: "hidden",
+      border: "1px solid rgba(255,255,255,0.12)",
+      animation: "glass-materialize 320ms var(--ease-out) both",
       fontFamily: "var(--font-sans)",
     }} onKeyDown={e => e.key === "Escape" && onClose()}>
 
@@ -248,10 +251,11 @@ export default function Settings({ onClose }: SettingsProps) {
             <button key={s.id} onClick={() => setSection(s.id)} style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%",
               padding: "8px 12px", marginBottom: 2, border: "none", borderRadius: 7, cursor: "pointer",
-              background: section === s.id ? "rgba(255,255,255,0.08)" : "transparent",
+              position: "relative", isolation: "isolate", background: "transparent",
               color: section === s.id ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.45)",
               fontSize: 13, textAlign: "left", transition: "background 120ms",
             }}>
+              {section === s.id && <motion.span layoutId="settings-nav" className="liquid-pill" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
               <NavDot active={section === s.id} /> {s.label}
             </button>
           ))}
@@ -333,8 +337,8 @@ export default function Settings({ onClose }: SettingsProps) {
               <div style={card}>
                 <label style={label}>GitHub token</label>
                 <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.32)", marginBottom: 10, lineHeight: 1.6 }}>
-                  Read from <code style={{ fontFamily: "var(--font-mono)", color: "rgba(255,205,110,0.7)" }}>~/.cortex/config.toml</code> under{" "}
-                  <code style={{ fontFamily: "var(--font-mono)", color: "rgba(255,205,110,0.7)" }}>[github] token</code>.
+                  Read from <code style={{ fontFamily: "var(--font-mono)", color: "rgba(var(--accent-rgb),0.7)" }}>~/.cortex/config.toml</code> under{" "}
+                  <code style={{ fontFamily: "var(--font-mono)", color: "rgba(var(--accent-rgb),0.7)" }}>[github] token</code>.
                 </p>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <div style={{ flex: 1, padding: "8px 12px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.10)",
@@ -407,6 +411,8 @@ export default function Settings({ onClose }: SettingsProps) {
             </div>
           )}
 
+          {section === "appearance" && <AppearanceSection onSaved={() => showToast("Saved")} />}
+
           {section === "about" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <h2 style={h2}>About Cortex</h2>
@@ -434,6 +440,60 @@ export default function Settings({ onClose }: SettingsProps) {
           backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8,
           padding: "9px 16px", color: "rgba(255,255,255,0.85)", fontSize: 13, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>{toast}</div>
       )}
+    </div>
+  );
+}
+
+/* ── Appearance ── */
+const TINTS: { id: Tint; label: string }[] = [
+  { id: "clear", label: "Clear" }, { id: "regular", label: "Regular" }, { id: "frosted", label: "Frosted" },
+];
+
+function AppearanceSection({ onSaved }: { onSaved: () => void }) {
+  const [a, setA] = useState<Appearance>(DEFAULT_APPEARANCE);
+  useEffect(() => { loadAppearance().then(setA); }, []);
+  const set = (patch: Partial<Appearance>) => {
+    const next = { ...a, ...patch };
+    setA(next);
+    saveAppearance(next).then(onSaved).catch(() => {});
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <h2 style={h2}>Appearance</h2>
+      <div style={card}>
+        <label style={label}>Accent</label>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {Object.entries(ACCENTS).map(([id, c]) => (
+            <button key={id} onClick={() => set({ accent: id })} title={c.label}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer" }}>
+              <span style={{ width: 28, height: 28, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), rgb(${c.rgb}) 55%)`,
+                boxShadow: a.accent === id ? `0 0 0 2px rgba(10,10,14,0.9), 0 0 0 4px rgb(${c.rgb})` : "inset 0 1px 0 rgba(255,255,255,0.3)",
+                transition: "box-shadow 160ms" }} />
+              <span style={{ fontSize: 11, color: a.accent === id ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.4)" }}>{c.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={card}>
+        <Row label="Glass density">
+          <div className="segmented glass-well">
+            {TINTS.map(t => (
+              <button key={t.id} data-active={a.tint === t.id} onClick={() => set({ tint: t.id })}>
+                {a.tint === t.id && <motion.span layoutId="tint-seg" className="liquid-pill" transition={{ type: "spring", stiffness: 500, damping: 36 }} />}
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </Row>
+        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.32)", marginTop: 10 }}>
+          Clear lets more of your desktop show through; Frosted is easier to read over busy wallpapers.
+        </div>
+      </div>
+      <div style={card}>
+        <Row label="Reduce motion">
+          <Toggle checked={a.motion === "reduced"} onChange={v => set({ motion: v ? "reduced" : "full" })} />
+        </Row>
+      </div>
     </div>
   );
 }
