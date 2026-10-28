@@ -584,7 +584,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let quit_i    = MenuItem::with_id(app, "quit",     "Quit Cortex",        true, Some("Cmd+Q"))?;
     let menu      = Menu::with_items(app, &[&open_i, &pause_i, &PredefinedMenuItem::separator(app)?, &studio_i, &widgets_i, &PredefinedMenuItem::separator(app)?, &reindex_i, &reset_i, &sep1, &quit_i])?;
 
-    let tray_rgba = image::load_from_memory(include_bytes!("../icons/tray.png"))
+    let tray_rgba = image::load_from_memory(include_bytes!("../icons/tray@2x.png"))
         .expect("decode tray icon")
         .to_rgba8();
     let (tw, th) = tray_rgba.dimensions();

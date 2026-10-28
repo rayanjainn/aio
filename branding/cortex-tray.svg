@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 1024 1024">
+  <!-- Menu-bar template glyph: same ring + node, solid black (macOS tints it). -->
+  <g transform="rotate(45 512 512)">
+    <path d="M 512 222 A 290 290 0 1 0 802 512" fill="none" stroke="#000" stroke-width="118" stroke-linecap="round"/>
+  </g>
+  <circle cx="826" cy="512" r="82" fill="#000"/>
+</svg>

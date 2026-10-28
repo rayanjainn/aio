@@ -1,6 +1,6 @@
 [package]
 name = "aio-cortex"
-version = "0.1.2"
+version = "0.1.3"
 description = "Cortex — Neural Command Palette with Episodic Memory"
 authors = ["AIO Team"]
 edition = "2021"

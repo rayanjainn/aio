@@ -61,3 +61,7 @@ html.dock-window, html.dock-window body, html.dock-window #root { border-radius:
 .dk-eq.on i:nth-child(3) { animation-delay: -600ms; }
 @keyframes dk-eq { 0%,100% { height: 30%; } 50% { height: 100%; } }
 .dk-folder { display: flex; align-items: center; justify-content: center; }
+.dk-music.branded {
+  background: radial-gradient(120% 140% at 0% 50%, rgba(var(--brand-rgb),0.42), transparent 70%), linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03));
+}
+.dk-music.branded .dk-eq i { background: rgb(var(--brand-rgb)); }
