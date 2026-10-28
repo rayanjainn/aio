@@ -2,7 +2,6 @@
  * Shared widget primitives: progress rings, sparklines, weather glyphs and a
  * handful of control icons. All SVG, all `currentColor`-aware.
  */
-import { motion } from "framer-motion";
 import type { ReactNode, SVGProps } from "react";
 
 /* ── Ring gauge ─────────────────────────────────────────── */
@@ -17,13 +16,11 @@ export function Ring({ value, size = 64, stroke = 7, color = "rgba(255,255,255,0
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)", overflow: "visible" }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
-        <motion.circle
+        {/* CSS transition, not a JS spring: keeps animating in throttled windows. */}
+        <circle
           cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c * (1 - v) }}
-          transition={{ type: "spring", stiffness: 60, damping: 16 }}
-          style={{ filter: "drop-shadow(0 0 5px rgba(255,255,255,0.18))" }}
+          strokeDasharray={c} strokeDashoffset={c * (1 - v)}
+          style={{ transition: "stroke-dashoffset 900ms cubic-bezier(.16,1,.3,1), stroke 300ms", filter: "drop-shadow(0 0 5px rgba(255,255,255,0.18))" }}
         />
       </svg>
       {children && (

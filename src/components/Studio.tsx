@@ -3,14 +3,14 @@
  * and per-widget settings. Extra tabs (dock editors) register via `extraTabs`.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { invoke } from "../lib/tauri";
 import { useGlassPointer } from "../hooks/useGlassPointer";
 import { KINDS, KIND_MAP, type Field, type WidgetKind } from "../widgets/registry";
 import { SIZES, sizeClass, type SizeClass, type Widget, type WidgetConfig } from "../widgets/types";
 import { WidgetCard } from "../widgets/WidgetCard";
-import { CloseIcon } from "./icons";
-import { CortexDockTab, MacDockTab } from "./DockStudio";
+import { AppIcon, CloseIcon } from "./icons";
+import { CortexDockTab, MacDockTab, SystemDockSwitch } from "./DockStudio";
 
 export interface StudioTab { id: string; label: string; render: () => ReactNode }
 
@@ -21,7 +21,8 @@ function fakeWidget(k: WidgetKind, size: SizeClass): Widget {
     config: { ...(k.defaults ?? {}), ...(k.kind === "weather" ? { city: "Cupertino" } : {}),
       ...(k.kind === "countdown" ? { title: "New Year", date: `${new Date().getFullYear() + 1}-01-01` } : {}),
       ...(k.kind === "todos" ? { items: [{ id: "1", text: "Ship the dock", done: false }, { id: "2", text: "Water plants", done: true }] } : {}),
-      ...(k.kind === "notes" ? { text: "Liquid glass everywhere ✨" } : {}) } };
+      ...(k.kind === "notes" ? { text: "Liquid glass everywhere ✨" } : {}),
+      ...(k.kind === "app" ? { app: { name: "Safari", path: "/Applications/Safari.app" } } : {}) } };
 }
 
 function Preview({ k, size }: { k: WidgetKind; size: SizeClass }) {
@@ -42,15 +43,9 @@ function GalleryCard({ k, onAdd }: { k: WidgetKind; onAdd: (size: SizeClass) => 
   const [size, setSize] = useState<SizeClass>(k.sizes[0]);
   const [added, setAdded] = useState(false);
   return (
-    <motion.div layout className="glass" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12, borderRadius: 18 }}
-      whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 400, damping: 28 }}>
+    <div className="glass gallery-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12, borderRadius: 22 }}>
       <div style={{ height: 190, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <AnimatePresence mode="wait">
-          <motion.div key={size} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }}
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}>
-            <Preview k={k} size={size} />
-          </motion.div>
-        </AnimatePresence>
+        <div key={size} className="anim-pop"><Preview k={k} size={size} /></div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ minWidth: 0 }}>
@@ -74,14 +69,14 @@ function GalleryCard({ k, onAdd }: { k: WidgetKind; onAdd: (size: SizeClass) => 
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function FieldEditor({ f, value, onChange }: { f: Field; value: unknown; onChange: (v: unknown) => void }) {
   const [apps, setApps] = useState<{ name: string; path: string }[]>([]);
   const [q, setQ] = useState("");
-  useEffect(() => { if (f.type === "apps") invoke<{ name: string; path: string }[]>("list_installed_apps").then(setApps).catch(() => {}); }, [f.type]);
+  useEffect(() => { if (f.type === "apps" || f.type === "app") invoke<{ name: string; path: string }[]>("list_installed_apps").then(setApps).catch(() => {}); }, [f.type]);
   const [draft, setDraft] = useState<string>(() =>
     f.type === "zones" || f.type === "repos" ? ((value as string[] | undefined) ?? []).join(f.type === "zones" ? ", " : "\n") : String(value ?? ""));
   const commitText = () => onChange(f.type === "number" ? (draft === "" ? null : Number(draft)) : draft);
@@ -105,6 +100,24 @@ function FieldEditor({ f, value, onChange }: { f: Field; value: unknown; onChang
     case "repos":
       return <textarea className="input-glass" rows={3} value={draft} placeholder={"Auto-detect, or one path per line\n~/code/aio"} onChange={e => setDraft(e.target.value)}
         onBlur={() => onChange(draft.split("\n").map(s => s.trim()).filter(Boolean))} style={{ resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 12 }} />;
+    case "app": {
+      const cur = value as { name: string; path: string } | undefined;
+      const list = apps.filter(a => !q || a.name.toLowerCase().includes(q.toLowerCase())).slice(0, 80);
+      return (
+        <div style={{ width: "100%" }}>
+          <input className="input-glass" placeholder={cur ? `Selected: ${cur.name} — search to change` : "Search apps…"} value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 6 }} />
+          <div className="glass-well" style={{ maxHeight: 200, overflowY: "auto", padding: 4, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4 }}>
+            {list.map(a => (
+              <button key={a.path} className="w-listbtn" title={a.name} onClick={() => onChange({ name: a.name, path: a.path })}
+                style={{ flexDirection: "column", margin: 0, width: "100%", padding: 6, background: cur?.path === a.path ? "rgba(255,255,255,0.14)" : undefined }}>
+                <AppIcon path={a.path} size={30} />
+                <span style={{ fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{a.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
     case "apps": {
       const sel = (value as { name: string; path: string }[] | undefined) ?? [];
       const has = (p: string) => sel.some(a => a.path === p);
@@ -141,9 +154,7 @@ function WidgetEditor({ w, onClose }: { w: Widget; onClose: () => void }) {
   };
   const size = sizeClass(cur.w, cur.h);
   return (
-    <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }}
-      transition={{ type: "spring", stiffness: 380, damping: 34 }}
-      className="glass" style={{ width: 320, flexShrink: 0, padding: 16, display: "flex", flexDirection: "column", gap: 14, borderRadius: 18, overflowY: "auto" }}>
+    <div className="glass anim-slide" style={{ width: 320, flexShrink: 0, padding: 16, display: "flex", flexDirection: "column", gap: 14, borderRadius: 18, overflowY: "auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div className="display" style={{ fontSize: 15, fontWeight: 600 }}>{k?.name ?? w.kind}</div>
         <button className="btn-glass btn-icon" onClick={onClose}><CloseIcon s={12} /></button>
@@ -179,7 +190,7 @@ function WidgetEditor({ w, onClose }: { w: Widget; onClose: () => void }) {
       ))}
       <button className="btn-glass btn-danger" style={{ marginTop: "auto" }}
         onClick={() => { invoke("widget_remove", { id: w.id }).catch(() => {}); onClose(); }}>Remove Widget</button>
-    </motion.div>
+    </div>
   );
 }
 
@@ -214,7 +225,7 @@ function WidgetsTab({ focusId }: { focusId: string | null }) {
     const w = await invoke<Widget>("widget_add", { kind: k.kind, w: SIZES[size].w, h: SIZES[size].h, config: k.defaults ?? {} });
     if (w) { setPlaced(p => [...p, w]); if (k.fields?.length) setSelected(w.id); }
   };
-  const cats = ["All", "Essentials", "Productivity", "System", "Developer"];
+  const cats = ["All", "Essentials", "Apps", "Productivity", "System", "Developer"];
   const sel = placed.find(p => p.id === selected) ?? null;
 
   return (
@@ -242,24 +253,24 @@ function WidgetsTab({ focusId }: { focusId: string | null }) {
             <div className="eyebrow" style={{ margin: "4px 2px 8px" }}>On your desktop · {placed.length}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {placed.map(p => (
-                <motion.button layout key={p.id} className="btn-glass" data-active={p.id === selected} onClick={() => setSelected(p.id)}
+                <button key={p.id} className="btn-glass" data-active={p.id === selected} onClick={() => setSelected(p.id)}
                   style={{ borderColor: p.id === selected ? "rgba(255,255,255,0.4)" : undefined }}>
                   {KIND_MAP[p.kind]?.name ?? p.kind}
                   <span style={{ opacity: 0.45, fontSize: 10.5 }}>{sizeClass(p.w, p.h).toUpperCase()}{p.layer === "floating" ? " · float" : ""}</span>
-                </motion.button>
+                </button>
               ))}
             </div>
           </>
         )}
 
         <div className="eyebrow" style={{ margin: "4px 2px 8px" }}>Gallery</div>
-        <motion.div layout style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 14 }}>
           {KINDS.filter(k => cat === "All" || k.category === cat).map(k => (
             <GalleryCard key={k.kind} k={k} onAdd={s => add(k, s)} />
           ))}
-        </motion.div>
+        </div>
       </div>
-      <AnimatePresence>{sel && <WidgetEditor key={sel.id} w={sel} onClose={() => setSelected(null)} />}</AnimatePresence>
+      {sel && <WidgetEditor key={sel.id} w={sel} onClose={() => setSelected(null)} />}
     </div>
   );
 }
@@ -273,7 +284,12 @@ export default function Studio({ tab, onClose, extraTabs = [] }: { tab: string; 
   const tabs: StudioTab[] = [
     { id: "widgets", label: "Widgets", render: () => <WidgetsTab focusId={focusId} /> },
     { id: "dock", label: "Cortex Dock", render: () => <CortexDockTab /> },
-    { id: "macdock", label: "macOS Dock", render: () => <MacDockTab /> },
+    { id: "macdock", label: "macOS Dock", render: () => (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+        <SystemDockSwitch />
+        <div style={{ flex: 1, minHeight: 0 }}><MacDockTab /></div>
+      </div>
+    ) },
     ...extraTabs,
   ];
   const cur = tabs.find(t => t.id === active) ?? tabs[0];
@@ -285,7 +301,7 @@ export default function Studio({ tab, onClose, extraTabs = [] }: { tab: string; 
   }, [onClose]);
 
   return (
-    <div ref={ref} className="glass-window" data-cortex-overlay style={{ position: "fixed", inset: 0, zIndex: 900 }}>
+    <div ref={ref} className="glass-window strong" data-cortex-overlay style={{ position: "fixed", inset: 0, zIndex: 900 }}>
       <div data-tauri-drag-region style={{ display: "flex", alignItems: "center", gap: 14, height: 52, padding: "0 14px 0 18px", flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <span className="display" style={{ fontSize: 15, fontWeight: 600, pointerEvents: "none" }}>Studio</span>
         <div className="segmented glass-well">
@@ -299,12 +315,11 @@ export default function Studio({ tab, onClose, extraTabs = [] }: { tab: string; 
         <div style={{ flex: 1 }} data-tauri-drag-region />
         <button className="btn-glass btn-icon" onClick={onClose} title="Close (Esc)"><CloseIcon s={13} /></button>
       </div>
-      <AnimatePresence mode="wait">
-        <motion.div key={cur.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} style={{ flex: 1, minHeight: 0, padding: 16 }}>
-          {cur.render()}
-        </motion.div>
-      </AnimatePresence>
+      {/* Plain keyed div + CSS fade: an exit-then-enter JS transition could
+          stall in a throttled window and leave the tab blank. */}
+      <div key={cur.id} className="anim-in" style={{ flex: 1, minHeight: 0, padding: 16 }}>
+        {cur.render()}
+      </div>
     </div>
   );
 }

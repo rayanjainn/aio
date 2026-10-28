@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import type { WidgetProps } from "../types";
 import { usePoll } from "../../hooks/usePoll";
 import { invoke } from "../../lib/tauri";
@@ -47,10 +46,8 @@ export function TodosWidget({ size, config, setConfig, preview }: WidgetProps) {
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <WTitle right={<span className="w-faint tnum" style={{ fontSize: 11 }}>{open} left</span>}>{config.title || "To-dos"}</WTitle>
       <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 2 }}>
-        <AnimatePresence initial={false}>
-          {visible.map(t => (
-            <motion.div key={t.id} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 20 }}
-              transition={{ type: "spring", stiffness: 420, damping: 32 }} className="w-todo">
+        {visible.map(t => (
+            <div key={t.id} className="w-todo anim-in">
               <button data-nodrag className="w-check" data-done={t.done} disabled={preview}
                 onClick={() => save(items.map(i => i.id === t.id ? { ...i, done: !i.done } : i))}>
                 {t.done && <CheckIcon s={11} strokeWidth={3} />}
@@ -60,9 +57,8 @@ export function TodosWidget({ size, config, setConfig, preview }: WidgetProps) {
               {t.done && !preview && (
                 <button data-nodrag className="w-x" onClick={() => save(items.filter(i => i.id !== t.id))} title="Remove">×</button>
               )}
-            </motion.div>
+            </div>
           ))}
-        </AnimatePresence>
         {items.length === 0 && <div className="w-faint" style={{ fontSize: 12 }}>Nothing to do 🎉</div>}
       </div>
       {!preview && (
@@ -97,12 +93,11 @@ export function LauncherWidget({ size, config }: WidgetProps) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: size === "s" ? 10 : 12, height: "100%", alignContent: "center" }}>
       {apps.slice(0, n).map(a => (
-        <motion.button key={a.path} data-nodrag title={a.name} whileHover={{ scale: 1.1, y: -2 }} whileTap={{ scale: 0.9 }}
-          transition={{ type: "spring", stiffness: 500, damping: 22 }}
+        <button key={a.path} data-nodrag title={a.name}
           onClick={() => invoke("launch_path", { path: a.path }).catch(() => {})} className="w-app">
           <AppIcon path={a.path} size={size === "s" ? 46 : 44} />
           {size !== "s" && <span style={{ fontSize: 10.5, opacity: 0.75, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 70 }}>{a.name}</span>}
-        </motion.button>
+        </button>
       ))}
     </div>
   );

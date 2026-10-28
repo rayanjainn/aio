@@ -200,6 +200,13 @@ export default function Settings({ onClose }: SettingsProps) {
 
   const disconnectGoogle = () => { setGoogle({ connected: false, email: null, expired: false }); showToast("Disconnected"); };
 
+  const [ghDraft, setGhDraft] = useState("");
+  const saveGithubToken = async () => {
+    await save("githubToken", ghDraft.trim());
+    setGhDraft("");
+    await recheckGithub();
+  };
+
   const recheckGithub = async () => {
     setGithubChecking(true);
     try { setGithub(await invoke<GithubStatus>("check_github_token")); }
@@ -223,7 +230,7 @@ export default function Settings({ onClose }: SettingsProps) {
     <div data-cortex-overlay style={{
       position: "fixed", inset: 0, zIndex: 1000,
       display: "flex", flexDirection: "column",
-      background: "linear-gradient(180deg, rgba(255,255,255,0.05), transparent 30%), rgba(var(--tint-rgb), calc(var(--tint-alpha) + 0.38))",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.05), transparent 30%), var(--glass-tint-strong)",
       borderRadius: "var(--radius-win)", overflow: "hidden",
       border: "1px solid rgba(255,255,255,0.12)",
       animation: "glass-materialize 320ms var(--ease-out) both",
@@ -336,15 +343,18 @@ export default function Settings({ onClose }: SettingsProps) {
                 onConnect={recheckGithub} loading={githubChecking} cta="Re-check" />
               <div style={card}>
                 <label style={label}>GitHub token</label>
-                <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.32)", marginBottom: 10, lineHeight: 1.6 }}>
-                  Read from <code style={{ fontFamily: "var(--font-mono)", color: "rgba(var(--accent-rgb),0.7)" }}>~/.cortex/config.toml</code> under{" "}
-                  <code style={{ fontFamily: "var(--font-mono)", color: "rgba(var(--accent-rgb),0.7)" }}>[github] token</code>.
+                <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.4)", marginBottom: 10, lineHeight: 1.6 }}>
+                  Paste a <a href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=Cortex" target="_blank" rel="noreferrer" style={{ color: "rgba(255,255,255,0.8)" }}>personal access token</a> (repo, read:user).
+                  If you use the GitHub CLI, Cortex also picks up <code style={{ fontFamily: "var(--font-mono)" }}>gh auth login</code> automatically.
                 </p>
+                <div style={{ fontSize: 12, marginBottom: 10, color: github?.connected ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.45)" }}>
+                  {github?.connected ? `✓ Connected as @${github.username}` : (github?.error ?? "Not configured")}
+                </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <div style={{ flex: 1, padding: "8px 12px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.32)", fontSize: 12, fontFamily: "var(--font-mono)" }}>
-                    {github?.connected ? `Token valid · @${github.username}` : (github?.error ?? "Not configured")}
-                  </div>
+                  <input type="password" className="input-glass" placeholder="ghp_… or github_pat_…" value={ghDraft}
+                    onChange={e => setGhDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && ghDraft.trim()) saveGithubToken(); }} />
+                  {ghDraft.trim() && <button onClick={saveGithubToken} style={btn}>Save</button>}
                   <button onClick={recheckGithub} disabled={githubChecking} style={btn}>{githubChecking ? "Checking…" : "Re-check"}</button>
                 </div>
               </div>

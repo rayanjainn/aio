@@ -118,7 +118,9 @@ export default function App() {
 
       {screen === "onboarding" && <Onboarding onComplete={() => setScreen("main")} />}
 
-      {screen === "main" && !studioTab && (
+      {/* One surface at a time: overlays used to sit on top of a live palette
+          and, being translucent, showed it through. */}
+      {screen === "main" && !studioTab && !showSettings && (
         <CommandPalette
           onOpenSettings={() => setShowSettings(true)}
           onExecPlan={(plan: ExecutorPlan) => setExecPlan(plan)}

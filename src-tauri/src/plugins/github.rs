@@ -57,8 +57,7 @@ impl GithubPlugin {
         let db_path = data_dir.join("items.db");
         Self::init_db(&db_path)?;
         load_cortex_env();
-        let token = std::env::var("GITHUB_TOKEN").ok().filter(|t| !t.is_empty())
-            .or_else(read_gh_token_config);
+        let token = crate::auth::github_token();
         if token.is_some() { tracing::info!(target: "aio_cortex_lib", "github: token loaded"); }
         Ok(Self {
             db_path,
@@ -602,16 +601,6 @@ fn item_to_result(item: &GithubItem, score: f32) -> SearchResult {
         r.metadata.insert("number".into(), n.into());
     }
     r
-}
-
-/// Read `[github] token = "..."` from ~/.cortex/config.toml.
-fn read_gh_token_config() -> Option<String> {
-    let path = dirs::home_dir()?.join(".cortex/config.toml");
-    let raw  = std::fs::read_to_string(path).ok()?;
-    let sec  = raw.split("[github]").nth(1)?;
-    let sec  = sec.split("\n[").next().unwrap_or(sec);
-    regex::Regex::new(r#"token\s*=\s*"([^"]+)""#).ok()?
-        .captures(sec).map(|c| c[1].to_string())
 }
 
 fn load_cortex_env() {

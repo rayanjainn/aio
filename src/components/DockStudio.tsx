@@ -56,7 +56,7 @@ function AppPicker({ onPick, onClose }: { onPick: (a: App) => void; onClose: () 
   useEffect(() => { invoke<App[]>("list_installed_apps").then(setApps).catch(() => {}); }, []);
   const list = apps.filter(a => !q || a.name.toLowerCase().includes(q.toLowerCase())).slice(0, 60);
   return (
-    <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="glass" style={{ padding: 10, borderRadius: 14, marginTop: 8 }}>
+    <div className="glass anim-in" style={{ padding: 10, borderRadius: 14, marginTop: 8 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <input autoFocus className="input-glass" placeholder="Search applications…" value={q} onChange={e => setQ(e.target.value)} />
         <button className="btn-glass" onClick={onClose}>Done</button>
@@ -70,7 +70,29 @@ function AppPicker({ onPick, onClose }: { onPick: (a: App) => void; onClose: () 
         ))}
         {list.length === 0 && <div style={{ fontSize: 12, opacity: 0.4, padding: 8 }}>No applications found</div>}
       </div>
-    </motion.div>
+    </div>
+  );
+}
+
+/** Standalone switch: hide the macOS Dock completely (or bring it back). */
+export function SystemDockSwitch() {
+  const [hidden, setHidden] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { invoke<{ hidden?: boolean; supported?: boolean }>("macos_dock_get").then(d => setHidden(d.supported ? !!d.hidden : null)).catch(() => setHidden(null)); }, []);
+  if (hidden === null) return null;
+  const set = async (v: boolean) => {
+    setBusy(true); setErr(null); setHidden(v);
+    try { await invoke("system_dock_set_hidden", { hidden: v }); }
+    catch (e) { setHidden(!v); setErr(typeof e === "string" ? e : "Couldn't change the Dock"); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="glass" style={{ padding: "4px 18px", borderRadius: 18, marginBottom: 14, opacity: busy ? 0.7 : 1, transition: "opacity 200ms" }}>
+      <Row label="Hide the macOS Dock" hint={err ?? (hidden ? "Hidden — it won't slide in, even at the screen edge" : "Hide Apple's Dock completely and use the Cortex Dock instead")}>
+        <Toggle on={hidden} set={set} />
+      </Row>
+    </div>
   );
 }
 
@@ -99,7 +121,9 @@ export function CortexDockTab() {
   if (!cfg) return <div className="skeleton" style={{ height: 200 }} />;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 14, height: "100%", minHeight: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <SystemDockSwitch />
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 14, flex: 1, minHeight: 0 }}>
       <div className="glass" style={{ padding: "6px 18px", borderRadius: 18, overflowY: "auto" }}>
         <Row label="Cortex Dock" hint="A Liquid Glass dock with apps and live widgets"><Toggle on={cfg.enabled} set={v => save({ enabled: v })} /></Row>
         <Row label="Position">
@@ -109,7 +133,7 @@ export function CortexDockTab() {
         <Row label="Magnification" hint="Icons swell toward the pointer"><Toggle on={cfg.magnify} set={v => save({ magnify: v })} /></Row>
         <Row label="Automatically hide" hint="Reveal by touching the screen edge"><Toggle on={cfg.autohide} set={v => save({ autohide: v })} /></Row>
         <Row label="Running indicators"><Toggle on={cfg.showRunning} set={v => save({ showRunning: v })} /></Row>
-        <Row label="Hide the macOS Dock" hint="Auto-hides the system Dock while this one is on"><Toggle on={cfg.hideSystemDock} set={v => save({ hideSystemDock: v })} /></Row>
+        <Row label="Hide the macOS Dock while this is on" hint="Brings Apple's Dock back when you turn the Cortex Dock off"><Toggle on={cfg.hideSystemDock} set={v => save({ hideSystemDock: v })} /></Row>
       </div>
 
       <div className="glass" style={{ padding: 16, borderRadius: 18, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -146,6 +170,7 @@ export function CortexDockTab() {
           ))}
         </Reorder.Group>
       </div>
+    </div>
     </div>
   );
 }

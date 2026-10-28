@@ -31,7 +31,7 @@ dependencies = [
 
 [[package]]
 name = "aio-cortex"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "arboard",
@@ -55,6 +55,7 @@ dependencies = [
  "oauth2",
  "objc2",
  "objc2-app-kit",
+ "objc2-foundation",
  "opener",
  "plist",
  "rayon",

@@ -49,6 +49,8 @@ pub struct MacDock {
     pub scroll_to_open:           bool,
     pub apps:                     Vec<DockTile>,
     pub has_backup:               bool,
+    /// Auto-hide with a huge reveal delay — effectively gone.
+    pub hidden:                   bool,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -68,6 +70,7 @@ pub struct MacDockPatch {
     pub minimize_to_application: Option<bool>,
     pub show_process_indicators: Option<bool>,
     pub scroll_to_open:          Option<bool>,
+    pub hidden:                  Option<bool>,
 }
 
 fn b(d: &Dictionary, k: &str, def: bool) -> bool {
@@ -139,6 +142,7 @@ pub fn parse_dock(d: &Dictionary) -> MacDock {
         scroll_to_open: b(d, "scroll-to-open", false),
         apps,
         has_backup: false,
+        hidden: is_hidden(d),
     }
 }
 
@@ -161,6 +165,7 @@ pub fn apply_patch(d: &mut Dictionary, p: &MacDockPatch) -> Result<(), String> {
         if !["bottom", "left", "right"].contains(&o.as_str()) { return Err(format!("invalid orientation {o}")); }
         d.insert("orientation".into(), Value::String(o.clone()));
     }
+    if let Some(h) = p.hidden { hide_in(d, h); }
     if let Some(m) = &p.mineffect {
         if !["genie", "scale", "suck"].contains(&m.as_str()) { return Err(format!("invalid minimize effect {m}")); }
         d.insert("mineffect".into(), Value::String(m.clone()));
@@ -367,6 +372,8 @@ pub struct DockState {
     pub cfg:  Mutex<DockConfig>,
     /// Logical size the frontend asked for (content-sized bar).
     size:     Mutex<(f64, f64)>,
+    /// Glass margins (top, right, bottom, left) — headroom for magnification.
+    inset:    Mutex<(f64, f64, f64, f64)>,
     revealed: AtomicBool,
 }
 
@@ -374,7 +381,7 @@ impl DockState {
     pub fn load(path: PathBuf) -> Self {
         let cfg = std::fs::read_to_string(&path).ok()
             .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-        Self { path, cfg: Mutex::new(cfg), size: Mutex::new((600.0, 76.0)), revealed: AtomicBool::new(true) }
+        Self { path, cfg: Mutex::new(cfg), size: Mutex::new((600.0, 76.0)), inset: Mutex::new((0.0, 0.0, 0.0, 0.0)), revealed: AtomicBool::new(true) }
     }
     pub fn config(&self) -> DockConfig { self.cfg.lock().map(|c| c.clone()).unwrap_or_default() }
 }
@@ -405,13 +412,20 @@ fn place(app: &AppHandle) {
     let (Some(st), Some(win)) = (app.try_state::<Arc<DockState>>(), app.get_webview_window(LABEL)) else { return };
     let cfg = st.config();
     let (w, h) = st.size.lock().map(|s| *s).unwrap_or((600.0, 76.0));
-    let (x, y) = dock_frame(primary_area(app), &cfg.edge, w, h, 8.0);
-    let _ = win.set_size(tauri::LogicalSize::new(w, h));
-    let _ = win.set_position(tauri::LogicalPosition::new(x, y));
+    let (x, y) = dock_frame(primary_area(app), &cfg.edge, w, h, 4.0);
+    // Only touch the native window when something actually changed — every
+    // resize makes WebKit re-composite, which read as a blank "buffering" flash.
+    let scale = win.scale_factor().unwrap_or(1.0);
+    let same_size = win.inner_size().map(|s| ((s.width as f64 / scale) - w).abs() < 1.0 && ((s.height as f64 / scale) - h).abs() < 1.0).unwrap_or(false);
+    let same_pos = win.outer_position().map(|p| ((p.x as f64 / scale) - x).abs() < 1.0 && ((p.y as f64 / scale) - y).abs() < 1.0).unwrap_or(false);
+    if !same_size { let _ = win.set_size(tauri::LogicalSize::new(w, h)); }
+    if !same_pos { let _ = win.set_position(tauri::LogicalPosition::new(x, y)); }
+    let (t, r, b, l) = st.inset.lock().map(|i| *i).unwrap_or_default();
+    super::glass::set_inset(&win, t, r, b, l);
 }
 
 fn open(app: &AppHandle) -> tauri::Result<()> {
-    if let Some(w) = app.get_webview_window(LABEL) { let _ = w.show(); place(app); return Ok(()); }
+    if app.get_webview_window(LABEL).is_some() { place(app); return Ok(()); }
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html#/dock".into()))
         .title("Cortex Dock")
         .decorations(false).transparent(true).shadow(false).resizable(false)
@@ -419,7 +433,9 @@ fn open(app: &AppHandle) -> tauri::Result<()> {
         .visible_on_all_workspaces(true).accept_first_mouse(true)
         .inner_size(600.0, 76.0)
         .build()?;
-    super::glass::apply(&win, 26.0);
+    super::glass::apply(&win, 28.0);
+    #[cfg(target_os = "macos")]
+    super::widgets::mac::float_everywhere(&win);
     place(app);
     Ok(())
 }
@@ -427,21 +443,56 @@ fn open(app: &AppHandle) -> tauri::Result<()> {
 fn apply(app: &AppHandle, prev: Option<&DockConfig>) {
     let Some(st) = app.try_state::<Arc<DockState>>() else { return };
     let cfg = st.config();
-    if cfg.enabled {
-        if let Err(e) = open(app) { tracing::warn!(target: "aio_cortex_lib", "dock: {e}"); }
-    } else if let Some(w) = app.get_webview_window(LABEL) {
-        let _ = w.destroy();
+    // Create / destroy the window only when the dock is switched on or off;
+    // every other change is pushed live to the open window via `dock-config`.
+    if prev.map(|p| p.enabled) != Some(cfg.enabled) {
+        if cfg.enabled {
+            if let Err(e) = open(app) { tracing::warn!(target: "aio_cortex_lib", "dock: {e}"); }
+        } else if let Some(w) = app.get_webview_window(LABEL) {
+            let _ = w.destroy();
+        }
     }
     // Keep the system Dock out of the way only while ours is showing.
     let want_hidden = cfg.enabled && cfg.hide_system_dock;
     let was_hidden = prev.map(|p| p.enabled && p.hide_system_dock);
-    #[cfg(target_os = "macos")]
     if was_hidden != Some(want_hidden) && (want_hidden || was_hidden == Some(true)) {
-        let script = format!("tell application \"System Events\" to tell dock preferences to set autohide to {want_hidden}");
-        let _ = std::process::Command::new("osascript").args(["-e", &script]).spawn();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Err(e) = set_system_dock_hidden(want_hidden) {
+                tracing::warn!(target: "aio_cortex_lib", "system dock: {e}");
+            }
+        });
     }
-    #[cfg(not(target_os = "macos"))]
-    let _ = (want_hidden, was_hidden);
+}
+
+/// Fully hide (or restore) the macOS Dock: auto-hide with a 1000 s reveal
+/// delay, so it never slides in. Plain auto-hide still pops up at the edge.
+pub fn set_system_dock_hidden(hidden: bool) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let mut d = export_domain()?;
+        if hidden == is_hidden(&d) { return Ok(()); }
+        hide_in(&mut d, hidden);
+        return import_domain(&d);
+    }
+    #[allow(unreachable_code)]
+    { let _ = hidden; Err("macOS only".into()) }
+}
+
+/// Hide / restore the macOS Dock on its own (Studio switch).
+#[tauri::command]
+pub async fn system_dock_set_hidden(hidden: bool) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || set_system_dock_hidden(hidden)).await.map_err(|e| e.to_string())?
+}
+
+fn is_hidden(d: &Dictionary) -> bool { b(d, "autohide", false) && f(d, "autohide-delay", 0.0) >= 100.0 }
+
+fn hide_in(d: &mut Dictionary, hidden: bool) {
+    d.insert("autohide".into(), Value::Boolean(hidden));
+    if hidden {
+        d.insert("autohide-delay".into(), Value::Real(1000.0));
+    } else {
+        d.remove("autohide-delay");
+    }
 }
 
 pub fn init(app: &AppHandle, data_dir: &std::path::Path) {
@@ -529,11 +580,13 @@ pub fn dock_set_config(cfg: DockConfig, app: AppHandle) -> Result<DockConfig, St
     Ok(cfg)
 }
 
-/// The bar measured its content — size the window to fit and re-centre it.
+/// The bar measured its content — size the window to fit, re-centre it, and
+/// keep the glass on the bar itself (`inset` = headroom around it).
 #[tauri::command]
-pub fn dock_resize(w: f64, h: f64, app: AppHandle) {
+pub fn dock_resize(w: f64, h: f64, inset: Option<[f64; 4]>, app: AppHandle) {
     if let Some(st) = app.try_state::<Arc<DockState>>() {
-        if let Ok(mut s) = st.size.lock() { *s = (w.clamp(60.0, 3000.0).ceil(), h.clamp(40.0, 3000.0).ceil()); }
+        if let Ok(mut s) = st.size.lock() { *s = (w.clamp(60.0, 4000.0).ceil(), h.clamp(40.0, 4000.0).ceil()); }
+        if let (Some([t, r, b, l]), Ok(mut i)) = (inset, st.inset.lock()) { *i = (t, r, b, l); }
         place(&app);
     }
 }
@@ -585,6 +638,10 @@ mod tests {
         assert_eq!(d.get("magnification"), Some(&Value::Boolean(true)));
         assert!(apply_patch(&mut d, &MacDockPatch { orientation: Some("top".into()), ..Default::default() }).is_err());
         assert!(apply_patch(&mut d, &MacDockPatch { mineffect: Some("explode".into()), ..Default::default() }).is_err());
+        apply_patch(&mut d, &MacDockPatch { hidden: Some(true), ..Default::default() }).unwrap();
+        assert!(parse_dock(&d).hidden);
+        apply_patch(&mut d, &MacDockPatch { hidden: Some(false), ..Default::default() }).unwrap();
+        assert!(!parse_dock(&d).hidden && !parse_dock(&d).autohide);
         assert_eq!(d.get("mod-count"), Some(&Value::Integer(12.into())), "unrelated keys untouched");
     }
 

@@ -309,6 +309,24 @@ pub mod mac {
             ns.setCollectionBehavior(behavior);
         });
     }
+
+    /// Dock-style window: on every Space, over full-screen apps, never in the
+    /// ⌘` window cycle or Mission Control.
+    pub fn float_everywhere(win: &tauri::WebviewWindow) {
+        let w = win.clone();
+        let _ = win.run_on_main_thread(move || {
+            let Ok(ptr) = w.ns_window() else { return };
+            if ptr.is_null() { return; }
+            // SAFETY: live NSWindow* on the main thread (see `pin`).
+            let ns: &NSWindow = unsafe { &*(ptr as *const NSWindow) };
+            ns.setCollectionBehavior(
+                NSWindowCollectionBehavior::CanJoinAllSpaces
+                    | NSWindowCollectionBehavior::Stationary
+                    | NSWindowCollectionBehavior::IgnoresCycle
+                    | NSWindowCollectionBehavior::FullScreenAuxiliary,
+            );
+        });
+    }
 }
 
 /// Usable area of the monitor the cursor is on (logical units).

@@ -257,6 +257,28 @@ pub async fn connect_google_oauth() -> Result<GoogleAuthStatus> {
 
 /* ─── check_github_token ─────────────────────────────────── */
 
+/// The GitHub token, from the first source that has one:
+/// `GITHUB_TOKEN` env → token pasted in Settings → `~/.cortex/config.toml`
+/// `[github] token` → the GitHub CLI's login (`gh auth token`).
+pub fn github_token() -> Option<String> {
+    std::env::var("GITHUB_TOKEN").ok().filter(|t| !t.trim().is_empty())
+        .or_else(|| Some(crate::config_ipc::load_config().github_token).filter(|t| !t.trim().is_empty()))
+        .or_else(read_github_token)
+        .or_else(gh_cli_token)
+        .map(|t| t.trim().to_string())
+}
+
+/// GUI apps get a minimal PATH, so look for `gh` where Homebrew puts it too.
+fn gh_cli_token() -> Option<String> {
+    for gh in ["gh", "/opt/homebrew/bin/gh", "/usr/local/bin/gh"] {
+        if let Ok(o) = std::process::Command::new(gh).args(["auth", "token"]).output() {
+            let t = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            if o.status.success() && !t.is_empty() { return Some(t); }
+        }
+    }
+    None
+}
+
 fn read_github_token() -> Option<String> {
     let path    = dirs::home_dir()?.join(".cortex/config.toml");
     let raw     = std::fs::read_to_string(path).ok()?;
@@ -268,11 +290,11 @@ fn read_github_token() -> Option<String> {
 }
 
 pub async fn check_github_token() -> GithubAuthStatus {
-    let Some(token) = read_github_token() else {
+    let Some(token) = tokio::task::spawn_blocking(github_token).await.ok().flatten() else {
         return GithubAuthStatus {
             connected: false,
             username:  None,
-            error:     Some("No token in ~/.cortex/config.toml [github]".into()),
+            error:     Some("No token — paste one below or run `gh auth login`".into()),
         };
     };
 
@@ -291,6 +313,10 @@ pub async fn check_github_token() -> GithubAuthStatus {
     {
         Err(e) => GithubAuthStatus {
             connected: false, username: None, error: Some(e.to_string()),
+        },
+        Ok(r) if r.status() == reqwest::StatusCode::UNAUTHORIZED => GithubAuthStatus {
+            connected: false, username: None,
+            error: Some("Token expired or revoked — paste a new one".into()),
         },
         Ok(r) if !r.status().is_success() => GithubAuthStatus {
             connected: false, username: None,

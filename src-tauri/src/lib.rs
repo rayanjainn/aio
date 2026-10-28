@@ -285,6 +285,11 @@ pub fn run() {
             desktop::providers::photo_pick,
             desktop::providers::list_installed_apps,
             desktop::providers::launch_path,
+            desktop::providers::app_status,
+            desktop::providers::app_action,
+            desktop::providers::recent_files,
+            desktop::providers::editor_recent,
+            desktop::providers::open_in,
             desktop::dock::macos_dock_get,
             desktop::dock::macos_dock_set,
             desktop::dock::macos_dock_set_apps,
@@ -292,6 +297,8 @@ pub fn run() {
             desktop::dock::dock_get_config,
             desktop::dock::dock_set_config,
             desktop::dock::dock_resize,
+            desktop::dock::system_dock_set_hidden,
+            desktop::glass::glass_info,
             open_studio,
         ])
         .run(tauri::generate_context!())
@@ -301,6 +308,11 @@ pub fn run() {
 /* ─── Setup ─────────────────────────────────────────────── */
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    // Menu-bar utility: no Dock icon and no ⌘-Tab entry (widget windows were
+    // making Cortex show up there as a regular app).
+    #[cfg(target_os = "macos")]
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
     let home     = home_dir().unwrap_or_default();
     let data_dir = home.join(".cortex");
     std::fs::create_dir_all(&data_dir)?;

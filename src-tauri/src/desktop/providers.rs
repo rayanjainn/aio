@@ -504,6 +504,54 @@ pub struct GithubActivity {
 #[tauri::command]
 pub async fn github_activity(days: Option<usize>) -> GithubActivity {
     let n = days.unwrap_or(119).clamp(7, 371);
+    // Real contribution calendar when a token works; local index otherwise.
+    if let Some(a) = github_activity_api(n).await { return a; }
+    github_activity_index(n).await
+}
+
+fn gh_cache() -> &'static Mutex<Option<(Instant, usize, GithubActivity)>> {
+    static C: OnceLock<Mutex<Option<(Instant, usize, GithubActivity)>>> = OnceLock::new();
+    C.get_or_init(Default::default)
+}
+
+async fn github_activity_api(n: usize) -> Option<GithubActivity> {
+    if let Some((at, cn, a)) = gh_cache().lock().ok()?.clone() {
+        if cn == n && at.elapsed() < Duration::from_secs(900) { return Some(a); }
+    }
+    let token = tokio::task::spawn_blocking(crate::auth::github_token).await.ok()??;
+    let today = chrono::Utc::now().date_naive();
+    let from = today - chrono::Duration::days(n as i64 - 1);
+    let q = serde_json::json!({
+        "query": "query($from: DateTime!, $to: DateTime!) { viewer { repositories(ownerAffiliations: OWNER) { totalCount } contributionsCollection(from: $from, to: $to) { contributionCalendar { weeks { contributionDays { date contributionCount } } } } } }",
+        "variables": { "from": format!("{from}T00:00:00Z"), "to": format!("{today}T23:59:59Z") }
+    });
+    let v: serde_json::Value = http().post("https://api.github.com/graphql")
+        .bearer_auth(token).header("User-Agent", "Cortex").json(&q)
+        .send().await.ok()?.error_for_status().ok()?.json().await.ok()?;
+    let a = parse_contributions(&v, from, n)?;
+    if let Ok(mut c) = gh_cache().lock() { *c = Some((Instant::now(), n, a.clone())); }
+    Some(a)
+}
+
+/// Flatten the GraphQL contribution calendar into `n` daily counts from `from`.
+pub fn parse_contributions(v: &serde_json::Value, from: chrono::NaiveDate, n: usize) -> Option<GithubActivity> {
+    let viewer = v.get("data")?.get("viewer")?;
+    let mut days = vec![0i64; n];
+    for w in viewer["contributionsCollection"]["contributionCalendar"]["weeks"].as_array()? {
+        for d in w["contributionDays"].as_array().into_iter().flatten() {
+            let Some(date) = d["date"].as_str().and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()) else { continue };
+            let idx = (date - from).num_days();
+            if (0..n as i64).contains(&idx) { days[idx as usize] = d["contributionCount"].as_i64().unwrap_or(0); }
+        }
+    }
+    Some(GithubActivity {
+        repos: viewer["repositories"]["totalCount"].as_i64().unwrap_or(0),
+        commits_7d: days.iter().rev().take(7).sum(),
+        days,
+    })
+}
+
+async fn github_activity_index(n: usize) -> GithubActivity {
     tokio::task::spawn_blocking(move || {
         let Some(db) = dirs::home_dir().map(|h| h.join(".cortex/github/items.db")) else { return GithubActivity::default() };
         let Ok(conn) = rusqlite::Connection::open_with_flags(&db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY) else {
@@ -622,6 +670,163 @@ pub async fn launch_path(path: String) -> Result<(), String> {
     }).await.map_err(|e| e.to_string())?
 }
 
+
+/* ─── Any-app widget: status + control ──────────────────── */
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AppStatus {
+    pub running:   bool,
+    /// Summed over the app's processes (helpers included).
+    pub cpu:       f32,
+    pub mem_bytes: u64,
+    pub processes: usize,
+}
+
+/// Live status for the `.app` at `path` — processes whose executable lives
+/// inside the bundle (renderer/helper processes included).
+#[tauri::command]
+pub async fn app_status(path: String) -> AppStatus {
+    tokio::task::spawn_blocking(move || {
+        let Ok(mut s) = sampler().lock() else { return AppStatus::default() };
+        s.sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+        let root = path.trim_end_matches('/');
+        let mut st = AppStatus::default();
+        for p in s.sys.processes().values() {
+            let Some(exe) = p.exe() else { continue };
+            if exe.to_string_lossy().starts_with(&format!("{root}/")) {
+                st.running = true;
+                st.cpu += p.cpu_usage();
+                st.mem_bytes += p.memory();
+                st.processes += 1;
+            }
+        }
+        st
+    }).await.unwrap_or_default()
+}
+
+fn app_name(path: &str) -> String {
+    std::path::Path::new(path.trim_end_matches('/')).file_stem()
+        .map(|s| s.to_string_lossy().replace('"', "")).unwrap_or_default()
+}
+
+/// `open` | `hide` | `quit` for the app at `path`.
+#[tauri::command]
+pub async fn app_action(path: String, action: String) -> Result<(), String> {
+    let name = app_name(&path);
+    tokio::task::spawn_blocking(move || {
+        #[cfg(target_os = "macos")]
+        {
+            let script = match action.as_str() {
+                "open" => return opener::open(&path).map_err(|e| e.to_string()),
+                "hide" => format!("tell application \"System Events\" to set visible of process \"{name}\" to false"),
+                "quit" => format!("tell application \"{name}\" to quit"),
+                _ => return Err(format!("unknown action {action}")),
+            };
+            return std::process::Command::new("osascript").args(["-e", &script]).status()
+                .map(|_| ()).map_err(|e| e.to_string());
+        }
+        #[allow(unreachable_code)]
+        match action.as_str() {
+            "open" => opener::open(&path).map_err(|e| e.to_string()),
+            _ => { let _ = name; Err("only open is supported on this OS".into()) }
+        }
+    }).await.map_err(|e| e.to_string())?
+}
+
+/* ─── Recent files / Downloads ──────────────────────────── */
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentFile { pub name: String, pub path: String, pub modified: i64, pub size: u64, pub is_dir: bool }
+
+/// Newest files in `folder` (one level), or — without a folder — across
+/// Desktop, Documents and Downloads (two levels deep). Hidden files skipped.
+#[tauri::command]
+pub async fn recent_files(folder: Option<String>, limit: Option<usize>) -> Vec<RecentFile> {
+    let limit = limit.unwrap_or(8).min(50);
+    tokio::task::spawn_blocking(move || {
+        let home = dirs::home_dir().unwrap_or_default();
+        let (roots, depth): (Vec<std::path::PathBuf>, usize) = match folder.filter(|f| !f.trim().is_empty()) {
+            Some(f) => (vec![expand_home(&f)], 1),
+            None => (["Desktop", "Documents", "Downloads"].iter().map(|d| home.join(d)).collect(), 2),
+        };
+        let mut out: Vec<RecentFile> = roots.iter().flat_map(|r| {
+            walkdir::WalkDir::new(r).min_depth(1).max_depth(depth).into_iter()
+                .filter_entry(|e| !e.file_name().to_string_lossy().starts_with('.'))
+                .flatten().take(3_000)
+                .filter_map(|e| {
+                    let md = e.metadata().ok()?;
+                    let is_dir = md.is_dir();
+                    // Bundles (.app, .pages…) count as files; plain folders only at the top level.
+                    if is_dir && e.depth() > 1 { return None; }
+                    let modified = md.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64;
+                    Some(RecentFile {
+                        name: e.file_name().to_string_lossy().into(),
+                        path: e.path().to_string_lossy().into(),
+                        modified, size: md.len(), is_dir,
+                    })
+                })
+                .collect::<Vec<_>>()
+        }).collect();
+        out.sort_by(|a, b| b.modified.cmp(&a.modified));
+        out.truncate(limit);
+        out
+    }).await.unwrap_or_default()
+}
+
+/* ─── VS Code / Cursor recent projects ──────────────────── */
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Project { pub name: String, pub path: String, pub editor: String }
+
+#[tauri::command]
+pub async fn editor_recent(limit: Option<usize>) -> Vec<Project> {
+    let limit = limit.unwrap_or(8).min(30);
+    tokio::task::spawn_blocking(move || {
+        let Some(base) = dirs::config_dir() else { return vec![] };
+        let mut out = vec![];
+        for (dir, editor) in [("Code", "Visual Studio Code"), ("Cursor", "Cursor"), ("Code - Insiders", "Visual Studio Code - Insiders"), ("Windsurf", "Windsurf")] {
+            let db = base.join(dir).join("User/globalStorage/state.vscdb");
+            let Ok(conn) = rusqlite::Connection::open_with_flags(&db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY) else { continue };
+            let Ok(raw) = conn.query_row(
+                "SELECT value FROM ItemTable WHERE key = 'history.recentlyOpenedPathsList'", [], |r| r.get::<_, String>(0)) else { continue };
+            out.extend(parse_recent_paths(&raw, editor));
+        }
+        let mut seen = std::collections::HashSet::new();
+        out.retain(|p| seen.insert(p.path.clone()));
+        out.truncate(limit);
+        out
+    }).await.unwrap_or_default()
+}
+
+/// `{"entries":[{"folderUri":"file:///…"},{"fileUri":"…"},…]}` → local projects.
+pub fn parse_recent_paths(raw: &str, editor: &str) -> Vec<Project> {
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(raw) else { return vec![] };
+    v["entries"].as_array().into_iter().flatten().filter_map(|e| {
+        let uri = e["folderUri"].as_str().or_else(|| e["fileUri"].as_str())?;
+        let path = url::Url::parse(uri).ok().filter(|u| u.scheme() == "file")?.to_file_path().ok()?;
+        Some(Project {
+            name: path.file_name()?.to_string_lossy().into(),
+            path: path.to_string_lossy().into(),
+            editor: editor.to_string(),
+        })
+    }).collect()
+}
+
+/// Open `path` in a specific editor app (falls back to the default handler).
+#[tauri::command]
+pub async fn open_in(app: String, path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        #[cfg(target_os = "macos")]
+        if std::process::Command::new("open").args(["-a", &app, &path]).status().map(|s| s.success()).unwrap_or(false) {
+            return Ok(());
+        }
+        let _ = &app;
+        opener::open(&path).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -657,6 +862,51 @@ mod tests {
         assert_eq!(n.duration, 244.0);
         assert_eq!(n.artwork.as_deref(), Some("https://i.scdn.co/x"));
         assert_eq!(parse_now_playing("").state, "stopped");
+    }
+
+    #[test]
+    fn recent_paths_parse() {
+        let raw = r#"{"entries":[{"folderUri":"file:///Users/me/code/aio"},{"fileUri":"file:///Users/me/notes%20today.md"},{"folderUri":"vscode-remote://ssh/x"}]}"#;
+        let p = parse_recent_paths(raw, "Cursor");
+        assert_eq!(p.len(), 2, "remote URIs skipped");
+        assert_eq!(p[0].name, "aio");
+        assert_eq!(p[1].path, "/Users/me/notes today.md");
+        assert_eq!(p[1].editor, "Cursor");
+    }
+
+    #[tokio::test]
+    async fn recent_files_sorted_newest_first() {
+        let dir = std::env::temp_dir().join(format!("cortex-recent-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for (i, n) in ["a.txt", "b.txt", ".hidden"].iter().enumerate() {
+            let p = dir.join(n);
+            std::fs::write(&p, "x").unwrap();
+            let t = std::time::SystemTime::now() - std::time::Duration::from_secs(100 - i as u64 * 10);
+            std::fs::File::options().write(true).open(&p).unwrap().set_modified(t).unwrap();
+        }
+        let r = recent_files(Some(dir.to_string_lossy().into()), Some(5)).await;
+        assert_eq!(r.iter().map(|f| f.name.as_str()).collect::<Vec<_>>(), ["b.txt", "a.txt"]);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[tokio::test]
+    async fn app_status_for_missing_app() {
+        let s = app_status("/Applications/Definitely Not Installed.app".into()).await;
+        assert!(!s.running);
+    }
+
+    #[test]
+    fn contributions_parse() {
+        let from = chrono::NaiveDate::from_ymd_opt(2026, 10, 20).unwrap();
+        let v = serde_json::json!({ "data": { "viewer": { "repositories": { "totalCount": 24 },
+            "contributionsCollection": { "contributionCalendar": { "weeks": [
+                { "contributionDays": [ { "date": "2026-10-19", "contributionCount": 9 }, { "date": "2026-10-20", "contributionCount": 3 } ] },
+                { "contributionDays": [ { "date": "2026-10-26", "contributionCount": 5 } ] } ] } } } } });
+        let a = parse_contributions(&v, from, 7).unwrap();
+        assert_eq!(a.repos, 24);
+        assert_eq!(a.days, vec![3, 0, 0, 0, 0, 0, 5], "out-of-range day dropped");
+        assert_eq!(a.commits_7d, 8);
+        assert!(parse_contributions(&serde_json::json!({ "errors": [] }), from, 7).is_none());
     }
 
     #[test]

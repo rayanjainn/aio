@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import type { WidgetProps } from "../types";
 import { useNow, usePoll } from "../../hooks/usePoll";
 import { invoke } from "../../lib/tauri";
@@ -101,12 +100,9 @@ export function MusicWidget({ size }: WidgetProps) {
     </div>
   );
   const art = (sz: number) => (
-    <AnimatePresence mode="wait">
-      <motion.div key={np.title} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: playing ? 1 : 0.94 }} exit={{ opacity: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 24 }} className="w-art" style={{ width: sz, height: sz }}>
-        {np.artwork ? <img src={np.artwork} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <MusicIcon s={sz / 3} />}
-      </motion.div>
-    </AnimatePresence>
+    <div key={np.title} className="w-art anim-pop" style={{ width: sz, height: sz, transform: playing ? "none" : "scale(0.94)", transition: "transform 450ms var(--ease-spring)" }}>
+      {np.artwork ? <img src={np.artwork} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <MusicIcon s={sz / 3} />}
+    </div>
   );
   const meta = (
     <div style={{ minWidth: 0 }}>
@@ -155,14 +151,10 @@ export function PhotoWidget({ config }: WidgetProps) {
   if (error && !data) return <WEmpty>{error}</WEmpty>;
   return (
     <div style={{ position: "absolute", inset: 0 }}>
-      <AnimatePresence>
-        {data && (
-          <motion.img key={data.length + data.slice(-24)} src={data} alt=""
-            initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-        )}
-      </AnimatePresence>
+      {data && (
+        <img key={data.length + data.slice(-24)} src={data} alt="" className="anim-photo"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      )}
     </div>
   );
 }
