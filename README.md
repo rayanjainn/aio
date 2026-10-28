@@ -71,9 +71,36 @@ npm run tauri build
 # Binary at src-tauri/target/release/aio-cortex
 ```
 
+## Widgets & Dock
+
+Open **Widgets & Dock** from the palette (or the menu-bar icon) to get the Studio.
+
+- **Desktop widgets** — 17 kinds in Small / Medium / Large: clock & world clocks,
+  calendar, weather, now playing, photo frame, search, sticky note, to-dos, focus
+  timer, countdown, app shelf, clipboard, system, battery, git repos, Docker,
+  GitHub. Drag to move; right-click for size, layer (desktop / floating), lock,
+  remove. "Arrange" wiggles them iOS-style.
+- **Cortex Dock** — a Liquid Glass dock on any edge with apps, dividers and live
+  mini widgets (clock, now playing, CPU, battery, weather), magnification and
+  auto-hide. Can auto-hide the macOS Dock while it's on.
+- **macOS Dock** — size, magnification, position, minimize effect, auto-hide
+  timing, recents, pinned-app order, spaces. The original Dock is backed up on the
+  first change and can be restored in one click.
+
+On macOS 26+ every Cortex surface uses the native Liquid Glass material
+(`NSGlassEffectView`); earlier versions fall back to system vibrancy.
+
+| Shortcut | Action |
+|----------|--------|
+| ⌘K | Toggle the palette |
+| ⌘, | Settings |
+| ⌘⇧P | Pause / resume screen capture |
+
 ## Privacy
 
-- **100% local** — zero outbound connections (verify with `lsof -i` or Little Snitch)
+- **Local by default** — no outbound connections unless you opt in: the weather
+  widget calls Open-Meteo for the city you enter, and GitHub / Google sync only
+  run after you connect them
 - **App blocklist** — 1Password, Signal, banking apps never captured
 - **Password fields** — OS accessibility API skips secure inputs
 - **Pause hotkey** — `⌘⇧P` halts all capture instantly

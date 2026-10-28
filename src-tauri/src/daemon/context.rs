@@ -211,12 +211,12 @@ mod tests {
         let ctx = AppContext {
             app_name: "Safari".to_string(),
             bundle_id: "com.apple.Safari".to_string(),
-            window_title: "Anthropic – Claude".to_string(),
-            url: Some("https://claude.ai".to_string()),
+            window_title: "Example – Docs".to_string(),
+            url: Some("https://example.com".to_string()),
         };
         let json = serde_json::to_string(&ctx).unwrap();
         let back: AppContext = serde_json::from_str(&json).unwrap();
         assert_eq!(back.app_name, "Safari");
-        assert_eq!(back.url.as_deref(), Some("https://claude.ai"));
+        assert_eq!(back.url.as_deref(), Some("https://example.com"));
     }
 }
