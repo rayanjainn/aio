@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import type { WidgetProps } from "../types";
 import { useNow, usePoll } from "../../hooks/usePoll";
 import { cityOf, offsetLabel, partsIn, relative, timeIn } from "../format";
@@ -277,12 +276,9 @@ export function SearchWidget({ size }: WidgetProps) {
       <button data-nodrag onClick={open} className="w-search">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
         <span style={{ flex: 1, textAlign: "left", position: "relative", height: 18, overflow: "hidden" }}>
-          <AnimatePresence mode="popLayout">
-            <motion.span key={i} initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -14, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 26 }} style={{ position: "absolute", whiteSpace: "nowrap" }}>
-              {size === "s" ? "Search" : hints[i]}
-            </motion.span>
-          </AnimatePresence>
+          <span key={i} className="anim-roll" style={{ position: "absolute", whiteSpace: "nowrap" }}>
+            {size === "s" ? "Search" : hints[i]}
+          </span>
         </span>
         {size !== "s" && <kbd className="mono" style={{ fontSize: 10.5, opacity: 0.6 }}>⌘K</kbd>}
       </button>

@@ -71,7 +71,8 @@
   --accent-line:  rgba(var(--accent-rgb),0.32);
   --tint-rgb:     14,14,20;
   --tint-alpha:   0.42;                    /* glass density */
-  --glass-tint:   rgba(var(--tint-rgb),var(--tint-alpha));
+  --glass-tint:        rgba(14,14,20,0.30);  /* set at runtime from appearance */
+  --glass-tint-strong: rgba(14,14,20,0.62);
   --radius-win:   14px;
   --radius-card:  12px;
   --radius-row:   9px;
@@ -195,10 +196,11 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   background:
     linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 38%),
     var(--glass-tint);
-  border: 1px solid rgba(255,255,255,0.10);
+  /* No CSS border: the system glass/vibrancy view already draws the window
+     edge, and a second 1px line read as a double outline. */
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.24),
-    inset 0 -1px 0 rgba(255,255,255,0.05);
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 0 -1px 0 rgba(255,255,255,0.04);
   animation: glass-materialize 420ms var(--ease-out) both;
   isolation: isolate;
 }
@@ -220,6 +222,35 @@ html.web body { background: radial-gradient(1200px 700px at 20% 10%, #2c2c32, #0
   transition: background 60ms linear;
 }
 .glass-window > * { position: relative; z-index: 1; }
+.glass-window.strong { background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 30%), var(--glass-tint-strong); }
+
+/* Native Liquid Glass behind the webview: it already draws the lensing rim and
+   edge, so a CSS border on top showed as a second outline. Keep only a faint
+   top highlight. */
+html.native-glass .glass-window {
+  border: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+}
+html.native-glass .glass-window::before { opacity: 0.6; }
+html.native-glass.widget-window .w-card {
+  background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 45%), var(--glass-tint);
+  box-shadow: none;
+}
+html.native-glass.widget-window .w-card::after { opacity: 0.35; }
+
+/* ── Entrance animations (CSS, compositor-driven) ── */
+.anim-in    { animation: a-in 380ms var(--ease-out) both; }
+.anim-pop   { animation: a-pop 460ms var(--ease-spring) both; }
+.anim-slide { animation: a-slide 420ms var(--ease-out) both; }
+.anim-photo { animation: a-photo 1.2s var(--ease-out) both; }
+.anim-roll  { animation: a-roll 520ms var(--ease-spring) both; }
+@keyframes a-in    { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes a-pop   { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes a-slide { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+@keyframes a-photo { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: none; } }
+@keyframes a-roll  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.gallery-card { transition: transform 420ms var(--ease-spring), box-shadow 300ms; }
+.gallery-card:hover { transform: translateY(-3px); }
 
 /* Card / widget surface */
 .glass {

@@ -18,7 +18,7 @@
 }
 .w-card.bleed { padding: 0; }
 .w-card[data-edit="true"] { animation: w-wiggle 0.36s ease-in-out infinite alternate; }
-@keyframes w-in { from { opacity: 0; transform: scale(0.9); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes w-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
 @keyframes w-wiggle { from { transform: rotate(-0.7deg); } to { transform: rotate(0.7deg); } }
 
 .w-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; }
@@ -81,7 +81,10 @@
 .w-check[data-done="true"] { background: rgba(255,255,255,0.92); border-color: transparent; }
 .w-check:active { transform: scale(0.8); }
 .w-x { border: none; background: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 15px; line-height: 1; }
-.w-app { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: inherit; cursor: pointer; padding: 0; }
+.w-app { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: inherit; cursor: pointer; padding: 0;
+  transition: transform 320ms var(--ease-spring); }
+.w-app:hover { transform: translateY(-2px) scale(1.08); }
+.w-app:active { transform: scale(0.9); transition-duration: 120ms; }
 .w-search {
   display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 14px; border-radius: 999px;
   border: none; cursor: text; color: rgba(255,255,255,0.65); font: 13px var(--font-sans);
@@ -97,3 +100,26 @@
   background: rgba(235,235,240,0.95); color: #222; font-size: 15px; font-weight: 700; line-height: 1;
   box-shadow: 0 2px 8px rgba(0,0,0,0.35);
 }
+
+/* Any-app widget + list badges */
+.w-chip {
+  border: none; cursor: pointer; padding: 5px 12px; border-radius: 999px; font: 600 11.5px var(--font-sans); color: #fff;
+  background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.08));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+  transition: transform 220ms var(--ease-spring), background 150ms;
+}
+.w-chip:hover { background: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.12)); }
+.w-chip:active { transform: scale(0.92); }
+.w-appicon { background: none; border: none; padding: 0; cursor: pointer; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.35)); transition: transform 320ms var(--ease-spring); }
+.w-appicon:hover { transform: scale(1.06) translateY(-1px); }
+.w-appicon:active { transform: scale(0.92); }
+.w-live { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.22); flex-shrink: 0; }
+.w-live.on { background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,0.12), 0 0 10px rgba(255,255,255,0.6); animation: w-live 2.4s ease-out infinite; }
+@keyframes w-live { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.45), 0 0 10px rgba(255,255,255,0.6); } 70%,100% { box-shadow: 0 0 0 7px rgba(255,255,255,0), 0 0 10px rgba(255,255,255,0.6); } }
+.w-mono-badge, .w-file-badge {
+  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font: 700 11px var(--font-sans); color: rgba(255,255,255,0.88);
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.w-file-badge { font-size: 8.5px; letter-spacing: 0.02em; }

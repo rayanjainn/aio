@@ -11,13 +11,24 @@ export interface Appearance {
   motion: "full" | "reduced";
 }
 
-const TINT_ALPHA: Record<Tint, number> = { clear: 0.22, regular: 0.42, frosted: 0.66 };
+// Over Apple's native Liquid Glass the material already does the work, so the
+// CSS tint is a whisper; over plain vibrancy it carries more of the look.
+const TINT_ALPHA: Record<"native" | "vibrancy", Record<Tint, number>> = {
+  native:   { clear: 0.0,  regular: 0.08, frosted: 0.26 },
+  vibrancy: { clear: 0.14, regular: 0.30, frosted: 0.52 },
+};
+let nativeGlass = false;
 
 export const DEFAULT_APPEARANCE: Appearance = { tint: "regular", motion: "full" };
 
 export function applyAppearance(a: Appearance): void {
   const root = document.documentElement;
-  root.style.setProperty("--tint-alpha", String(TINT_ALPHA[a.tint] ?? TINT_ALPHA.regular));
+  const alpha = TINT_ALPHA[nativeGlass ? "native" : "vibrancy"][a.tint] ?? 0.2;
+  // Precomputed colours: Safari/WKWebView rejects calc() inside rgba(), which
+  // made overlays (Settings) fully transparent.
+  root.style.setProperty("--tint-alpha", String(alpha));
+  root.style.setProperty("--glass-tint", `rgba(var(--tint-rgb),${alpha})`);
+  root.style.setProperty("--glass-tint-strong", `rgba(var(--tint-rgb),${Math.min(0.9, alpha + (nativeGlass ? 0.2 : 0.32))})`);
   const reduced = a.motion === "reduced" ||
     (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
   root.dataset.motion = reduced ? "reduced" : "full";
@@ -49,6 +60,10 @@ function readLocal(): Appearance {
 /** Load + apply once, then follow changes made in any window. */
 export async function initAppearance(): Promise<void> {
   document.documentElement.classList.toggle("web", !IN_TAURI);
+  if (IN_TAURI) {
+    try { nativeGlass = !!(await invoke<{ native: boolean }>("glass_info")).native; } catch { /* older backend */ }
+  }
+  document.documentElement.classList.toggle("native-glass", nativeGlass);
   applyAppearance(await loadAppearance());
   if (!IN_TAURI) return;
   const { listen } = await import("@tauri-apps/api/event");

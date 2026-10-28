@@ -5,15 +5,16 @@ import { BatteryWidget, SystemWidget } from "./kinds/system";
 import { MusicWidget, PhotoWidget, WeatherWidget } from "./kinds/media";
 import { ClipboardWidget, LauncherWidget, NotesWidget, TodosWidget } from "./kinds/productivity";
 import { DockerWidget, GitWidget, GithubWidget } from "./kinds/dev";
+import { AppWidget, FilesWidget, ProjectsWidget, RunningWidget, ShellWidget, TabsWidget } from "./kinds/apps";
 
-export type FieldType = "text" | "select" | "toggle" | "number" | "date" | "zones" | "apps" | "repos";
+export type FieldType = "text" | "select" | "toggle" | "number" | "date" | "zones" | "apps" | "app" | "repos";
 export interface Field { key: string; label: string; type: FieldType; options?: { value: string; label: string }[]; placeholder?: string }
 
 export interface WidgetKind {
   kind: string;
   name: string;
   description: string;
-  category: "Essentials" | "Productivity" | "System" | "Developer";
+  category: "Essentials" | "Apps" | "Productivity" | "System" | "Developer";
   sizes: SizeClass[];
   defaults?: WidgetConfig;
   fields?: Field[];
@@ -47,6 +48,16 @@ export const KINDS: WidgetKind[] = [
       { key: "interval", label: "Change every (min)", type: "number" },
     ] },
   { kind: "search", name: "Cortex Search", description: "A search bar on your desktop", category: "Essentials", sizes: ["s", "m"], Component: SearchWidget },
+
+  { kind: "app", name: "Any App", description: "A widget for any app — status, CPU, open / hide / quit", category: "Apps", sizes: ["s", "m", "l"], Component: AppWidget,
+    fields: [{ key: "app", label: "App", type: "app" }] },
+  { kind: "tabs", name: "Browser Tabs", description: "Open tabs from Safari, Chrome, Brave, Arc", category: "Apps", sizes: ["s", "m", "l"], Component: TabsWidget },
+  { kind: "running", name: "Running Apps", description: "Switch or quit what's open", category: "Apps", sizes: ["s", "m", "l"], Component: RunningWidget },
+  { kind: "projects", name: "Code Projects", description: "Recent VS Code / Cursor folders", category: "Apps", sizes: ["s", "m", "l"], Component: ProjectsWidget },
+  { kind: "recent", name: "Recent Files", description: "What you touched last, or any folder", category: "Apps", sizes: ["s", "m", "l"], Component: FilesWidget,
+    fields: [{ key: "folder", label: "Folder", type: "text", placeholder: "Desktop · Documents · Downloads" }, { key: "title", label: "Title", type: "text", placeholder: "Recent Files" }] },
+  { kind: "downloads", name: "Downloads", description: "Newest downloads, one click to open", category: "Apps", sizes: ["s", "m", "l"], Component: FilesWidget },
+  { kind: "shell", name: "Terminal History", description: "Recent commands, click to copy", category: "Apps", sizes: ["s", "m", "l"], Component: ShellWidget },
 
   { kind: "notes", name: "Sticky Note", description: "Quick notes that stay put", category: "Productivity", sizes: ["s", "m", "l"], Component: NotesWidget,
     fields: [{ key: "title", label: "Title", type: "text", placeholder: "Notes" }] },
