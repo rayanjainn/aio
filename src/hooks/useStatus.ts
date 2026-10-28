@@ -43,6 +43,16 @@ export function useStatus(intervalMs = 5_000) {
     }
   }
 
+  // ⌘⇧P / tray toggles flip the REC indicator instantly instead of on next poll.
+  useEffect(() => {
+    if (!IN_TAURI) return;
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) =>
+      listen<boolean>("recording-changed", e => setStatus(s => ({ ...s, recording: e.payload })))
+        .then(u => { unlisten = u; }));
+    return () => unlisten?.();
+  }, []);
+
   useEffect(() => {
     poll();
     timerRef.current = setInterval(poll, intervalMs);

@@ -102,8 +102,12 @@ bollard     = "0.17"
 # Embeddings + vector search (Nomic via Ollama, Qdrant via REST)
 # No extra dep — uses reqwest above
 
+# Optional Tesseract OCR on Linux (needs libtesseract + libleptonica).
+leptess     = { version = "0.14", optional = true }
+
 [features]
 custom-protocol = ["tauri/custom-protocol"]
+ocr = ["dep:leptess"]
 
 [profile.release]
 panic   = "abort"

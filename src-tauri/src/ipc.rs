@@ -294,8 +294,7 @@ fn execute_by_type(result: &SearchResult) -> anyhow::Result<()> {
                 .get("repo_path")
                 .and_then(|v| v.as_str())
                 .unwrap_or(".");
-            // Pipe through `less` so output is scrollable
-            let cmd = format!("git -C {repo_path} show {sha}");
+            let cmd = format!("git -C {} show {}", shell_quote(repo_path), shell_quote(sha));
             spawn_in_terminal(&cmd)?;
         }
 
@@ -326,7 +325,16 @@ fn execute_by_type(result: &SearchResult) -> anyhow::Result<()> {
    Windows → cmd.exe /c start cmd /k
 ────────────────────────────────────────────────────────── */
 
+/// POSIX single-quote a string for safe interpolation into `sh -c` lines.
+pub fn shell_quote(s: &str) -> String {
+    if !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || "-_./:@%+=,".contains(c)) {
+        return s.to_string();
+    }
+    format!("'{}'", s.replace('\'', r"'\''"))
+}
+
 fn spawn_in_terminal(cmd: &str) -> anyhow::Result<()> {
+    #[cfg(target_os = "macos")]
     let term = crate::config_ipc::configured_terminal();
 
     #[cfg(target_os = "macos")]
@@ -491,17 +499,8 @@ pub async fn memory_timeline(
 /* ─── toggle_recording ────────────────────────────────── */
 
 #[tauri::command]
-pub async fn toggle_recording(
-    state: State<'_, AppState>,
-) -> Result<bool, String> {
-    let daemon = &state.inner().memory_daemon;
-    if daemon.is_paused() {
-        daemon.resume();
-        Ok(true)
-    } else {
-        daemon.pause();
-        Ok(false)
-    }
+pub async fn toggle_recording(app: tauri::AppHandle) -> Result<bool, String> {
+    Ok(crate::toggle_recording(&app))
 }
 
 /* ─── sync_plugins ────────────────────────────────────── */
@@ -552,5 +551,30 @@ fn detect_intent(q: &str) -> QueryIntent {
         QueryIntent::Execution
     } else {
         QueryIntent::Retrieval
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shell_quote_escapes() {
+        assert_eq!(shell_quote("abc123"), "abc123");
+        assert_eq!(shell_quote("/Users/me/My Repo"), "'/Users/me/My Repo'");
+        assert_eq!(shell_quote("a'b; rm -rf ~"), r"'a'\''b; rm -rf ~'");
+        assert_eq!(shell_quote(""), "''");
+    }
+
+    #[test]
+    fn intent_detection() {
+        assert!(matches!(detect_intent("run redis"), QueryIntent::Execution));
+        assert!(matches!(detect_intent("  Restart api"), QueryIntent::Execution));
+        assert!(matches!(detect_intent("runbook"), QueryIntent::Retrieval));
+    }
+
+    #[test]
+    fn tokenize_drops_single_chars() {
+        assert_eq!(tokenize("a Big  Query x"), vec!["big", "query"]);
     }
 }

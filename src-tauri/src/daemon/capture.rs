@@ -330,13 +330,24 @@ print(collected.joined(separator: "\n"))
 #[cfg(target_os = "macos")]
 fn ocr_impl(jpeg_bytes: &[u8]) -> String {
     use std::process::Command;
-    let tmp_path = std::env::temp_dir().join("cortex_ocr.jpg");
-    if std::fs::write(&tmp_path, jpeg_bytes).is_err() { return String::new(); }
+    use std::os::unix::fs::OpenOptionsExt;
     let Some(helper) = ocr_helper() else { return String::new() };
-    match Command::new(&helper).arg(&tmp_path).output() {
+    // Screen pixels are sensitive: stage them in the private data dir (0600),
+    // never the world-readable system temp dir, and delete straight after OCR.
+    let dir = dirs::home_dir().unwrap_or_default().join(".cortex/tmp");
+    if std::fs::create_dir_all(&dir).is_err() { return String::new(); }
+    let tmp_path = dir.join(format!("ocr-{}.jpg", uuid::Uuid::new_v4()));
+    let written = std::fs::OpenOptions::new()
+        .write(true).create_new(true).mode(0o600)
+        .open(&tmp_path)
+        .and_then(|mut f| std::io::Write::write_all(&mut f, jpeg_bytes));
+    if written.is_err() { let _ = std::fs::remove_file(&tmp_path); return String::new(); }
+    let text = match Command::new(&helper).arg(&tmp_path).output() {
         Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).trim().to_string(),
         _ => String::new(),
-    }
+    };
+    let _ = std::fs::remove_file(&tmp_path);
+    text
 }
 
 #[cfg(target_os = "linux")]
