@@ -62,13 +62,13 @@ impl PrivacyGuard {
         if self.is_paused() {
             return false;
         }
-        if BLOCKED_BUNDLE_IDS.iter().any(|b| *b == bundle_id) {
-            return false;
-        }
-        if BLOCKED_APP_NAMES.iter().any(|b| app_name.contains(b)) {
+        if BLOCKED_BUNDLE_IDS.iter().any(|b| b.eq_ignore_ascii_case(bundle_id)) {
             return false;
         }
         let al = app_name.to_lowercase();
+        if BLOCKED_APP_NAMES.iter().any(|b| al.contains(&b.to_lowercase())) {
+            return false;
+        }
         if self.extra_blocked.iter().any(|b| al.contains(b)) {
             return false;
         }
@@ -140,24 +140,35 @@ impl PrivacyGuard {
         Ok(deleted)
     }
 
-    /// Returns true if the currently focused UI element is a password/secure
-    /// text field — meaning we must skip capture.
+    /// Returns true if a password/secure text field is focused — meaning we
+    /// must skip capture.
+    ///
+    /// Two signals, either one blocks capture:
+    ///   1. `IsSecureEventInputEnabled()` — the system-wide flag macOS raises
+    ///      whenever any secure text field (or terminal "Secure Keyboard Entry")
+    ///      has focus. Needs no Accessibility permission and is authoritative.
+    ///   2. Accessibility: focused element's subrole is `AXSecureTextField`.
+    ///      (The old check read a non-existent `AXSecureTextEntry` attribute off
+    ///      the window instead of the app, so it never fired.)
     #[cfg(target_os = "macos")]
     pub fn is_secure_field_active() -> bool {
         use std::process::Command;
 
+        #[link(name = "Carbon", kind = "framework")]
+        extern "C" {
+            fn IsSecureEventInputEnabled() -> u8;
+        }
+        // SAFETY: argument-less Carbon query, thread-safe, no pointers involved.
+        if unsafe { IsSecureEventInputEnabled() } != 0 {
+            return true;
+        }
+
         let script = r#"
 tell application "System Events"
     try
-        set frontApp to name of first process whose frontmost is true
-        tell process frontApp
-            set focEl to value of attribute "AXFocusedUIElement" of (first window)
-            set elRole to value of attribute "AXRole" of focEl
-            if elRole is "AXTextField" then
-                set isSecure to value of attribute "AXSecureTextEntry" of focEl
-                return isSecure as string
-            end if
-        end tell
+        set frontApp to first application process whose frontmost is true
+        set focEl to value of attribute "AXFocusedUIElement" of frontApp
+        if (value of attribute "AXSubrole" of focEl) is "AXSecureTextField" then return "true"
     end try
     return "false"
 end tell"#;
@@ -173,5 +184,46 @@ end tell"#;
     #[cfg(not(target_os = "macos"))]
     pub fn is_secure_field_active() -> bool {
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn guard(extra: &[&str]) -> PrivacyGuard {
+        PrivacyGuard::new(std::env::temp_dir(), 30, extra.iter().map(|s| s.to_string()).collect())
+    }
+
+    #[test]
+    fn builtin_names_blocked_case_insensitively() {
+        let g = guard(&[]);
+        assert!(!g.is_allowed("1Password 7", ""));
+        assert!(!g.is_allowed("signal", ""));
+        assert!(!g.is_allowed("SYSTEM SETTINGS", ""));
+        assert!(g.is_allowed("Safari", "com.apple.Safari"));
+    }
+
+    #[test]
+    fn builtin_bundle_ids_blocked() {
+        let g = guard(&[]);
+        assert!(!g.is_allowed("Whatever", "com.agilebits.onepassword"));
+        assert!(!g.is_allowed("Whatever", "COM.BITWARDEN.DESKTOP"));
+    }
+
+    #[test]
+    fn user_blocklist_applies() {
+        let g = guard(&["Banking App", ""]);
+        assert!(!g.is_allowed("My Banking App", ""));
+        assert!(g.is_allowed("Notes", ""));
+    }
+
+    #[test]
+    fn pause_blocks_everything() {
+        let g = guard(&[]);
+        g.pause();
+        assert!(!g.is_allowed("Safari", ""));
+        g.resume();
+        assert!(g.is_allowed("Safari", ""));
     }
 }

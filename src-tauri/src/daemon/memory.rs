@@ -202,6 +202,12 @@ impl MemoryDaemon {
                 }
             };
 
+            // The user may have hit the pause hotkey (or switched to a blocked
+            // app) while the capture was in flight — drop the frame if so.
+            if self.paused.load(Ordering::SeqCst) {
+                continue;
+            }
+
             // ---- Session tracking ----
             let (session_id, _is_new) = self
                 .session_graph

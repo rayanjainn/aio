@@ -184,10 +184,18 @@ pub async fn read_file_preview(
     path:      String,
     max_lines: Option<usize>,
 ) -> Result<String, String> {
-    let limit = max_lines.unwrap_or(100);
+    let limit = max_lines.unwrap_or(100).min(2_000);
     tokio::task::spawn_blocking(move || {
-        let content = std::fs::read_to_string(&path)
+        use std::io::Read;
+        // Read at most 256 KB — previewing a multi-GB log must not load it all.
+        let mut buf = Vec::with_capacity(64 * 1024);
+        std::fs::File::open(&path)
+            .and_then(|f| f.take(256 * 1024).read_to_end(&mut buf))
             .map_err(|e| e.to_string())?;
+        if buf.iter().take(8_192).any(|&b| b == 0) {
+            return Err("Binary file — no text preview".to_string());
+        }
+        let content = String::from_utf8_lossy(&buf);
         let lines: Vec<&str> = content.lines().take(limit).collect();
         Ok::<String, String>(lines.join("\n"))
     })

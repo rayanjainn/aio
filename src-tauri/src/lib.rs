@@ -108,6 +108,26 @@ fn show_main(app: &tauri::AppHandle) {
     }
 }
 
+/// Toggle screen-memory capture (⌘⇧P / tray). Privacy-critical: must work
+/// from anywhere, even when the palette is hidden.
+pub fn toggle_recording(app: &tauri::AppHandle) -> bool {
+    use tauri::Emitter;
+    let Some(state) = app.try_state::<AppState>() else { return false };
+    let d = &state.memory_daemon;
+    let recording = if d.is_paused() { d.resume(); true } else { d.pause(); false };
+    tracing::info!(target: "aio_cortex_lib", "capture {}", if recording { "resumed" } else { "PAUSED" });
+    if let Some(items) = app.try_state::<TrayItems>() {
+        let _ = items.pause.set_text(if recording { "Pause Capture" } else { "Resume Capture" });
+    }
+    let _ = app.emit("recording-changed", recording);
+    recording
+}
+
+/// Tray menu items whose labels change at runtime.
+pub struct TrayItems {
+    pub pause: MenuItem<tauri::Wry>,
+}
+
 /* ─── Library entry point ───────────────────────────────── */
 
 pub fn run() {
@@ -124,7 +144,7 @@ pub fn run() {
         .compact()
         .init();
 
-    use tauri_plugin_global_shortcut::ShortcutState;
+    use tauri_plugin_global_shortcut::{Code, Modifiers, ShortcutState};
     tauri::Builder::default()
         // Single instance MUST be the first plugin — a second launch focuses the
         // existing window instead of spawning a duplicate (and duplicate tray).
@@ -133,8 +153,15 @@ pub fn run() {
         }))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, _shortcut, event| {
-                    if event.state() == ShortcutState::Pressed {
+                .with_handler(|app, shortcut, event| {
+                    if event.state() != ShortcutState::Pressed { return; }
+                    if shortcut.matches(Modifiers::SUPER | Modifiers::SHIFT, Code::KeyP)
+                        || shortcut.matches(Modifiers::CONTROL | Modifiers::SHIFT, Code::KeyP)
+                    {
+                        toggle_recording(app);
+                        return;
+                    }
+                    {
                         if let Some(w) = app.get_webview_window("main") {
                             // Toggle only when visible AND focused; otherwise bring
                             // forward. `is_visible` alone is unreliable post blur-hide.
@@ -486,15 +513,21 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // Plugin already initialized with handler in run(); just register the key.
     use tauri_plugin_global_shortcut::GlobalShortcutExt;
     app.global_shortcut().register("CommandOrControl+K")?;
+    // Privacy pause — failure to register is logged loudly but must not abort
+    // startup (another app may own the combo; the tray item still works).
+    if let Err(e) = app.global_shortcut().register("CommandOrControl+Shift+P") {
+        tracing::error!(target: "aio_cortex_lib", "could not register ⌘⇧P pause hotkey: {e}");
+    }
 
     // ── System tray ───────────────────────────────────────
     use tauri::menu::PredefinedMenuItem;
     let open_i    = MenuItem::with_id(app, "open",     "Open Cortex",        true, Some("Cmd+K"))?;
+    let pause_i   = MenuItem::with_id(app, "pause",    "Pause Capture",      true, Some("CmdOrCtrl+Shift+P"))?;
     let reindex_i = MenuItem::with_id(app, "reindex",  "Re-index Now",       true, None::<&str>)?;
     let reset_i   = MenuItem::with_id(app, "reset",    "Re-run Onboarding",  true, None::<&str>)?;
     let sep1      = PredefinedMenuItem::separator(app)?;
     let quit_i    = MenuItem::with_id(app, "quit",     "Quit Cortex",        true, Some("Cmd+Q"))?;
-    let menu      = Menu::with_items(app, &[&open_i, &reindex_i, &reset_i, &sep1, &quit_i])?;
+    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &reindex_i, &reset_i, &sep1, &quit_i])?;
 
     let tray_rgba = image::load_from_memory(include_bytes!("../icons/tray.png"))
         .expect("decode tray icon")
@@ -510,6 +543,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(move |app, event| match event.id.as_ref() {
             "quit"    => app.exit(0),
             "open"    => show_main(app),
+            "pause"   => { toggle_recording(app); }
             "reindex" => {
                 if let Some(state) = app.try_state::<AppState>() {
                     let reg = state.registry.clone();
@@ -529,6 +563,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         })
         .build(app)?;
+    app.manage(TrayItems { pause: pause_i });
 
     Ok(())
 }

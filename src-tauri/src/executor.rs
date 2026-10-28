@@ -16,6 +16,10 @@ use tokio::time::timeout;
 // Fallback model name when no `chat_model` is configured (local-only setups).
 const PHI3_MODEL: &str = "phi3:mini";
 const PLAN_TIMEOUT: Duration = Duration::from_secs(45);
+/// Hard cap on how long a confirmed command may run.
+const RUN_TIMEOUT: Duration = Duration::from_secs(120);
+/// Per-stream output cap — keeps a runaway `yes` from eating memory.
+const MAX_LINES: usize = 5_000;
 
 const EXEC_SYSTEM_PROMPT: &str = r#"You are a shell command generator for macOS/Linux.
 Given a user's intent and recent session context, output ONLY valid JSON:
@@ -118,7 +122,10 @@ impl Executor {
                 tracing::warn!(target: "aio_cortex_lib", "exec plan: {e}");
                 ExecutorPlan { command: String::new(), explanation: format!("AI error: {e}"), is_destructive: false }
             }
-            Ok(Ok(plan)) => plan,
+            Ok(Ok(mut plan)) => {
+                plan.is_destructive |= looks_destructive(&plan.command);
+                plan
+            }
         }
     }
 
@@ -152,10 +159,14 @@ impl Executor {
         parse_plan(text)
     }
 
-    /// Spawn a shell command, collect all stdout/stderr lines, return them.
-    /// stdout lines arrive first, then stderr; final entry carries the exit code.
-    /// For real-time streaming, wire this into Tauri window.emit("exec-output", …)
-    /// inside the loop rather than collecting into a Vec.
+    /// Spawn a shell command, collect stdout/stderr lines, return them.
+    ///
+    /// Both pipes are drained concurrently — reading stdout to EOF before
+    /// touching stderr deadlocks as soon as the child fills the stderr pipe
+    /// buffer (~64 KB). The command is killed after `RUN_TIMEOUT` so an
+    /// interactive program (`top`, `vim`, a server) can never hang the UI, and
+    /// output is capped at `MAX_LINES` per stream. The final entry carries the
+    /// exit code (-1 when killed by timeout or signal).
     pub async fn run_command(&self, command: &str) -> Result<Vec<ExecOutput>> {
         use tokio::io::{AsyncBufReadExt, BufReader};
         use tokio::process::Command;
@@ -163,46 +174,72 @@ impl Executor {
         let mut child = Command::new("sh")
             .arg("-c")
             .arg(command)
+            .current_dir(dirs::home_dir().unwrap_or_else(|| ".".into()))
+            .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
+            .kill_on_drop(true)
             .spawn()?;
 
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("no stdout handle"))?;
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("no stderr handle"))?;
+        let stdout = child.stdout.take().ok_or_else(|| anyhow::anyhow!("no stdout handle"))?;
+        let stderr = child.stderr.take().ok_or_else(|| anyhow::anyhow!("no stderr handle"))?;
 
-        let mut out_reader = BufReader::new(stdout).lines();
-        let mut err_reader = BufReader::new(stderr).lines();
-        let mut outputs: Vec<ExecOutput> = Vec::new();
-
-        while let Ok(Some(line)) = out_reader.next_line().await {
-            outputs.push(ExecOutput { line, is_stderr: false, exit_code: None });
-        }
-        while let Ok(Some(line)) = err_reader.next_line().await {
-            outputs.push(ExecOutput { line, is_stderr: true, exit_code: None });
+        async fn drain<R: tokio::io::AsyncRead + Unpin>(r: R, is_stderr: bool) -> Vec<ExecOutput> {
+            let mut lines = BufReader::new(r).lines();
+            let mut out = Vec::new();
+            while let Ok(Some(line)) = lines.next_line().await {
+                if out.len() < MAX_LINES {
+                    out.push(ExecOutput { line, is_stderr, exit_code: None });
+                }
+            }
+            out
         }
 
-        let status = child.wait().await?;
-        let code = status.code().unwrap_or(-1);
+        let run = async {
+            let (out, err) = tokio::join!(drain(stdout, false), drain(stderr, true));
+            (out, err, child.wait().await)
+        };
 
-        if let Some(last) = outputs.last_mut() {
-            last.exit_code = Some(code);
-        } else {
-            // Command produced no output — still report exit code
-            outputs.push(ExecOutput {
-                line: String::new(),
-                is_stderr: false,
-                exit_code: Some(code),
-            });
+        let (mut outputs, code) = match timeout(RUN_TIMEOUT, run).await {
+            Ok((mut out, err, status)) => {
+                out.extend(err);
+                (out, status?.code().unwrap_or(-1))
+            }
+            Err(_) => {
+                let _ = child.start_kill();
+                let msg = format!("Timed out after {}s — process killed", RUN_TIMEOUT.as_secs());
+                (vec![ExecOutput { line: msg, is_stderr: true, exit_code: None }], -1)
+            }
+        };
+
+        match outputs.last_mut() {
+            Some(last) => last.exit_code = Some(code),
+            None => outputs.push(ExecOutput { line: String::new(), is_stderr: false, exit_code: Some(code) }),
         }
-
         Ok(outputs)
     }
+}
+
+/// Local safety net for the model's `is_destructive` flag. A small model can
+/// (and does) label `rm -rf ~/x` as harmless — any command matching one of
+/// these patterns is always shown with the destructive warning.
+pub fn looks_destructive(command: &str) -> bool {
+    use std::sync::OnceLock;
+    static RE: OnceLock<regex::Regex> = OnceLock::new();
+    let re = RE.get_or_init(|| {
+        regex::Regex::new(concat!(
+            r"(?i)(^|[\s;&|(`])(",
+            r"rm|rmdir|shred|unlink|mkfs(\.\w+)?|dd|fdisk|diskutil\s+(erase\w*|partition\w*|unmount\w*)|",
+            r"kill|killall|pkill|shutdown|reboot|halt|launchctl\s+(unload|remove|bootout)|",
+            r"sudo|doas|chmod|chown|chflags|truncate|mv|",
+            r"git\s+(reset\s+--hard|clean\s+-\w*f|push\s+.*(--force|-f\b)|branch\s+-D|checkout\s+--\s|restore)|",
+            r"docker\s+(rm|rmi|system\s+prune|volume\s+rm|kill|stop)|",
+            r"brew\s+(uninstall|remove)|npm\s+uninstall|pip\s+uninstall|defaults\s+delete|",
+            r"crontab\s+-r|tmutil\s+delete",
+            r")(\s|$)|(^|[^>&0-9])>\s*[^&\s]|:\s*>\s*\S"
+        )).expect("destructive regex")
+    });
+    re.is_match(command)
 }
 
 impl Default for Executor {
@@ -224,6 +261,30 @@ mod tests {
         // last entry carries exit code
         let last = out.last().unwrap();
         assert_eq!(last.exit_code, Some(0));
+    }
+
+    #[tokio::test]
+    async fn large_stderr_does_not_deadlock() {
+        // 200 KB on stderr overflows the pipe buffer; sequential draining hung here.
+        let ex = Executor::new();
+        let fut = ex.run_command("head -c 200000 /dev/zero | tr '\\0' 'x' | fold -w 100 >&2; echo done");
+        let out = tokio::time::timeout(Duration::from_secs(10), fut).await.expect("deadlocked").unwrap();
+        assert!(out.iter().any(|o| o.line == "done" && !o.is_stderr));
+        assert!(out.iter().filter(|o| o.is_stderr).count() >= 2000);
+        assert_eq!(out.last().unwrap().exit_code, Some(0));
+    }
+
+    #[test]
+    fn destructive_heuristic() {
+        for c in ["rm -rf ~/tmp", "sudo shutdown -h now", "git push origin main --force",
+                  "echo hi > notes.txt", "docker system prune -a", "cd x && rm a",
+                  "killall Dock", "git reset --hard HEAD~1", "mv a b"] {
+            assert!(looks_destructive(c), "should flag: {c}");
+        }
+        for c in ["ls -la", "git status", "echo hi 2>&1", "cat a | grep b", "docker ps",
+                  "brew list", "find . -name '*.rs'", "du -sh ~/Downloads", "echo storm"] {
+            assert!(!looks_destructive(c), "should not flag: {c}");
+        }
     }
 
     #[tokio::test]
