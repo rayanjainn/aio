@@ -102,9 +102,9 @@ function StepDot({ active, done }: { active: boolean; done: boolean }) {
         borderRadius: "50%",
         background: done ? "var(--green)" : active ? "var(--amber)" : "var(--surface-3)",
         border: done
-          ? "1px solid rgba(74,222,128,0.4)"
+          ? "1px solid rgba(255,255,255,0.4)"
           : active
-          ? "1px solid rgba(232,164,48,0.6)"
+          ? "1px solid rgba(var(--accent-rgb),0.6)"
           : "1px solid var(--border-hi)",
         boxShadow: active ? "0 0 8px var(--amber-pulse)" : "none",
         transition: "all 200ms",
@@ -244,8 +244,8 @@ function StepOllama({ onNext }: { onNext: () => void }) {
             status.checking
               ? "var(--border)"
               : status.available
-              ? "rgba(74,222,128,0.25)"
-              : "rgba(248,113,113,0.25)"
+              ? "rgba(255,255,255,0.25)"
+              : "rgba(255,255,255,0.25)"
           }`,
           borderRadius: 8,
           padding: "16px 20px",
@@ -353,8 +353,8 @@ function StepOllama({ onNext }: { onNext: () => void }) {
       {status.available && status.models.length === 0 && (
         <div
           style={{
-            background: "rgba(232,164,48,0.08)",
-            border: "1px solid rgba(232,164,48,0.2)",
+            background: "rgba(var(--accent-rgb),0.08)",
+            border: "1px solid rgba(var(--accent-rgb),0.2)",
             borderRadius: 8,
             padding: "12px 16px",
           }}
@@ -386,7 +386,7 @@ function StepOllama({ onNext }: { onNext: () => void }) {
         <div
           style={{
             background: "var(--red-dim)",
-            border: "1px solid rgba(248,113,113,0.2)",
+            border: "1px solid rgba(255,255,255,0.2)",
             borderRadius: 8,
             padding: "12px 16px",
             display: "flex",
@@ -469,7 +469,7 @@ function StepPermissions({ onNext, onBack }: { onNext: () => void; onBack: () =>
             key={perm.id}
             style={{
               background: "var(--surface-2)",
-              border: `1px solid ${perm.granted ? "rgba(74,222,128,0.25)" : "var(--border)"}`,
+              border: `1px solid ${perm.granted ? "rgba(255,255,255,0.25)" : "var(--border)"}`,
               borderRadius: 8,
               padding: "14px 16px",
               display: "flex",
@@ -486,7 +486,7 @@ function StepPermissions({ onNext, onBack }: { onNext: () => void; onBack: () =>
                 height: 18,
                 borderRadius: 4,
                 border: `1.5px solid ${perm.granted ? "var(--green)" : "var(--border-hi)"}`,
-                background: perm.granted ? "rgba(74,222,128,0.15)" : "transparent",
+                background: perm.granted ? "rgba(255,255,255,0.15)" : "transparent",
                 cursor: "pointer",
                 flexShrink: 0,
                 display: "flex",
@@ -594,21 +594,21 @@ function StepSources({ onNext, onBack }: { onNext: () => void; onBack: () => voi
       id: "gmail",
       label: "Gmail",
       description: "Index emails, threads, and attachments",
-      color: "#fb923c",
+      color: "rgba(255,255,255,0.85)",
       icon: "✉",
     },
     {
       id: "github",
       label: "GitHub",
       description: "PRs, issues, commits across your repos",
-      color: "#e879f9",
+      color: "rgba(255,255,255,0.85)",
       icon: "⚙",
     },
     {
       id: "slack",
       label: "Slack",
       description: "Messages, threads, and shared files",
-      color: "#818cf8",
+      color: "rgba(255,255,255,0.85)",
       icon: "💬",
     },
   ];
@@ -638,7 +638,7 @@ function StepSources({ onNext, onBack }: { onNext: () => void; onBack: () => voi
             key={src.id}
             style={{
               background: "var(--surface-2)",
-              border: `1px solid ${connected[src.id] ? "rgba(74,222,128,0.25)" : "var(--border)"}`,
+              border: `1px solid ${connected[src.id] ? "rgba(255,255,255,0.25)" : "var(--border)"}`,
               borderRadius: 8,
               padding: "14px 16px",
               display: "flex",
@@ -682,8 +682,8 @@ function StepSources({ onNext, onBack }: { onNext: () => void; onBack: () => voi
                 onClick={() => connect(src.id)}
                 disabled={!!connecting[src.id]}
                 style={{
-                  background: `${src.color}18`,
-                  border: `1px solid ${src.color}40`,
+                  background: "rgba(255,255,255,0.09)",
+                  border: "1px solid rgba(255,255,255,0.25)",
                   borderRadius: 5,
                   padding: "6px 14px",
                   fontSize: 12,
@@ -822,7 +822,7 @@ function StepIndexing({
       <div
         style={{
           background: "var(--amber-dim)",
-          border: "1px solid rgba(232,164,48,0.2)",
+          border: "1px solid rgba(var(--accent-rgb),0.2)",
           borderRadius: 8,
           padding: "12px 16px",
           display: "flex",
@@ -905,7 +905,7 @@ function StepIndexing({
                     width: `${pct}%`,
                     background:
                       pct > 0
-                        ? "linear-gradient(90deg, var(--amber), rgba(232,164,48,0.5))"
+                        ? "linear-gradient(90deg, var(--amber), rgba(var(--accent-rgb),0.5))"
                         : "transparent",
                     borderRadius: 2,
                     transition: "width 600ms var(--ease-out)",

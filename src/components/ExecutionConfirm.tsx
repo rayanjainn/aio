@@ -102,7 +102,7 @@ export default function ExecutionConfirm({ plan, onClose, onConfirm }: Execution
         <div style={{ padding: "16px 20px" }}>
           <div style={{
             background: "var(--surface-0)", borderRadius: 8,
-            border: `1px solid ${plan.is_destructive ? "rgba(248,113,113,0.3)" : "var(--border)"}`,
+            border: `1px solid ${plan.is_destructive ? "rgba(255,255,255,0.35)" : "var(--border)"}`,
             padding: "12px 16px",
             fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--amber)",
             wordBreak: "break-all",
@@ -124,7 +124,7 @@ export default function ExecutionConfirm({ plan, onClose, onConfirm }: Execution
           <div style={{
             margin: "0 20px 12px",
             padding: "8px 14px", borderRadius: 8,
-            background: "var(--red-dim)", border: "1px solid rgba(248,113,113,0.3)",
+            background: "var(--red-dim)", border: "1px solid rgba(255,255,255,0.35)",
             color: "var(--red)", fontSize: 12, display: "flex", alignItems: "center", gap: 8,
           }}>
             ⚠ Destructive operation — cannot be undone
@@ -147,7 +147,7 @@ export default function ExecutionConfirm({ plan, onClose, onConfirm }: Execution
             )}
             {output.map((o, i) => (
               <div key={i} style={{
-                color: o.is_stderr ? "var(--red)" : "#4ade80",
+                color: o.is_stderr ? "var(--red)" : "rgba(255,255,255,0.9)",
                 wordBreak: "break-all",
               }}>
                 {o.line}

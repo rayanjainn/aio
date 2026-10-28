@@ -60,8 +60,8 @@ const btn: React.CSSProperties = {
   cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6,
 };
 const btnDanger: React.CSSProperties = {
-  ...btn, border: "1px solid rgba(255,100,100,0.32)",
-  background: "rgba(255,100,100,0.10)", color: "rgba(255,125,125,0.85)",
+  ...btn, border: "1px solid rgba(255,255,255,0.32)",
+  background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.85)",
 };
 const label: React.CSSProperties = {
   display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.30)",
@@ -79,17 +79,17 @@ function ConnectionCard({ pluginId, name, description, connected, subtitle, erro
 }) {
   return (
     <div style={{ ...card, display: "flex", alignItems: "center", gap: 14,
-      border: `1px solid ${connected ? "rgba(110,225,150,0.20)" : "rgba(255,255,255,0.08)"}` }}>
+      border: `1px solid ${connected ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.08)"}` }}>
       <SourceTile pluginId={pluginId} size={34} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, color: "rgba(255,255,255,0.85)", fontWeight: 500, marginBottom: 2 }}>{name}</div>
-        <div style={{ fontSize: 11.5, color: connected ? "rgba(110,225,150,0.70)" : "rgba(255,255,255,0.35)" }}>
+        <div style={{ fontSize: 11.5, color: connected ? "rgba(255,255,255,0.70)" : "rgba(255,255,255,0.35)" }}>
           {connected && subtitle ? subtitle : connected ? description : error || description}
         </div>
       </div>
       {connected ? (
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(110,225,150,0.80)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.80)" }}>
             <CheckIcon s={14} /><span style={{ fontSize: 11.5, fontFamily: "var(--font-mono)" }}>Connected</span>
           </span>
           {onDisconnect && <button onClick={onDisconnect} style={btnDanger}>Disconnect</button>}
@@ -269,9 +269,9 @@ export default function Settings({ onClose }: SettingsProps) {
               <h2 style={h2}>General</h2>
               <div style={card}><Row label="Screen recording">
                 <button onClick={toggleRecording} style={{ ...btn,
-                  border: `1px solid ${recording ? "rgba(110,225,150,0.30)" : "rgba(255,100,100,0.30)"}`,
-                  background: recording ? "rgba(110,225,150,0.08)" : "rgba(255,100,100,0.08)",
-                  color: recording ? "rgba(110,225,150,0.85)" : "rgba(255,110,110,0.85)" }}>
+                  border: `1px solid ${recording ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.14)"}`,
+                  background: recording ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
+                  color: recording ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)" }}>
                   {recording ? "Recording" : "Paused"}
                 </button>
               </Row></div>
@@ -397,7 +397,7 @@ export default function Settings({ onClose }: SettingsProps) {
                   </div>
                   <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 3, width: `${Math.min(100, (daemon.storageBytes / config.quotaBytes) * 100)}%`,
-                      background: daemon.storageBytes / config.quotaBytes > 0.85 ? "rgba(255,100,100,0.7)" : "rgba(110,225,150,0.7)", transition: "width 300ms" }} />
+                      background: daemon.storageBytes / config.quotaBytes > 0.85 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.7)", transition: "width 300ms" }} />
                   </div>
                 </div>
               )}

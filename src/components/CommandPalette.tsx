@@ -247,7 +247,7 @@ function ChatView({ msgs, loading, input, onInput, onSend, onClose, onOpenSource
               maxWidth: "84%", padding: "9px 13px", borderRadius: 12, fontSize: 13.5, lineHeight: 1.6,
               background: m.role === "user" ? "rgba(255,255,255,0.10)" : "rgba(var(--accent-rgb),0.08)",
               border: `1px solid ${m.role === "user" ? "rgba(255,255,255,0.10)" : "rgba(var(--accent-rgb),0.14)"}`,
-              color: m.role === "user" ? "rgba(255,255,255,0.92)" : "rgba(255,235,200,0.94)",
+              color: m.role === "user" ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.94)",
               borderBottomRightRadius: m.role === "user" ? 3 : 12, borderBottomLeftRadius: m.role === "user" ? 12 : 3,
               whiteSpace: m.role === "user" ? "pre-wrap" : "normal",
             }}>

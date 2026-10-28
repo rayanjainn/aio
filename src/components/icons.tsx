@@ -151,7 +151,7 @@ export const SOURCE_META: Record<SourceId, SourceMeta> = {
   apps:        { label: "Application",Icon: AppsIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
   commands:    { label: "Command",    Icon: CommandIcon,   tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
   calc:        { label: "Calculator", Icon: CalcIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
-  ai:          { label: "Cortex AI",  Icon: SparkleIcon,   tint: "rgba(232,164,48,0.16)",  fg: "rgba(var(--accent-rgb),0.95)" },
+  ai:          { label: "Cortex AI",  Icon: SparkleIcon,   tint: "rgba(255,255,255,0.16)",  fg: "rgba(var(--accent-rgb),0.95)" },
 };
 
 /** Tinted rounded tile holding a source icon. */

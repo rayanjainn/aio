@@ -8,13 +8,13 @@
 <meta name="theme-color" content="#06060a" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#06060a; --t1:rgba(255,255,255,.96); --t2:rgba(255,255,255,.64); --t3:rgba(255,255,255,.40);
-  --accent:232,164,48;
-  --sans:'DM Sans',-apple-system,'SF Pro Text',system-ui,sans-serif;
-  --display:'Syne',-apple-system,sans-serif;
+  /* Apple's system typeface on Apple devices (SF Pro), Inter everywhere else. */
+  --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,'SF Mono',monospace;
   --spring:cubic-bezier(.34,1.56,.64,1); --out:cubic-bezier(.16,1,.3,1);
 }
@@ -22,18 +22,17 @@
 html{scroll-behavior:smooth;background:var(--ink)}
 body{font-family:var(--sans);color:var(--t1);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;letter-spacing:-.01em}
 a{color:inherit;text-decoration:none}
-::selection{background:rgba(var(--accent),.3)}
+::selection{background:rgba(255,255,255,.25)}
 
 /* ── Wallpaper: soft macOS-style gradient field (gives the glass something to bend) ── */
 .wall{position:fixed;inset:0;z-index:-2;overflow:hidden;background:
-  radial-gradient(120% 90% at 15% 10%,#2b2f6e 0%,transparent 55%),
-  radial-gradient(90% 80% at 85% 20%,#6b3f8f 0%,transparent 55%),
-  radial-gradient(100% 90% at 70% 95%,#b4572f 0%,transparent 55%),
-  radial-gradient(90% 80% at 10% 90%,#173e5c 0%,transparent 60%),#0b0b14}
-.wall i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:float 30s ease-in-out infinite}
-.wall i:nth-child(1){width:42vw;height:42vw;left:-6vw;top:20vh;background:#3b6df0}
-.wall i:nth-child(2){width:34vw;height:34vw;right:-4vw;top:8vh;background:#c25ce8;animation-delay:-9s}
-.wall i:nth-child(3){width:38vw;height:38vw;left:38vw;bottom:-14vh;background:#ff8a3d;animation-delay:-17s;opacity:.4}
+  radial-gradient(90% 70% at 20% 0%,#3a3a40 0%,transparent 60%),
+  radial-gradient(80% 70% at 90% 30%,#2a2a30 0%,transparent 60%),
+  radial-gradient(100% 80% at 50% 110%,#34343a 0%,transparent 60%),#0a0a0c}
+.wall i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.22;animation:float 30s ease-in-out infinite}
+.wall i:nth-child(1){width:42vw;height:42vw;left:-6vw;top:20vh;background:#e8e8ee}
+.wall i:nth-child(2){width:34vw;height:34vw;right:-4vw;top:8vh;background:#9a9aa4;animation-delay:-9s}
+.wall i:nth-child(3){width:38vw;height:38vw;left:38vw;bottom:-14vh;background:#d0d0d8;animation-delay:-17s;opacity:.16}
 @keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(5vw,-4vh) scale(1.1)}66%{transform:translate(-4vw,5vh) scale(.92)}}
 .wall::after{content:"";position:absolute;inset:0;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
@@ -56,7 +55,7 @@ html.refract .glass{backdrop-filter:url(#lg) blur(14px) saturate(190%)}
 /* ── Menu bar ── */
 .menubar{position:fixed;top:0;left:0;right:0;height:30px;z-index:50;display:flex;align-items:center;gap:20px;padding:0 16px;font-size:13px;font-weight:500;
   background:rgba(20,20,30,.28);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.06)}
-.menubar b{font-family:var(--display);font-weight:700;letter-spacing:.02em}
+.menubar b{font-weight:700}
 .menubar span{opacity:.82}
 .menubar .r{margin-left:auto;display:flex;gap:16px;align-items:center;font-variant-numeric:tabular-nums}
 .menubar .r a{opacity:.85}
@@ -68,11 +67,10 @@ html.refract .glass{backdrop-filter:url(#lg) blur(14px) saturate(190%)}
 main{position:relative;z-index:1}
 section{padding:120px 24px;max-width:1180px;margin:0 auto}
 .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
-h1,h2{font-family:var(--display);font-weight:800;letter-spacing:-.035em;line-height:1}
-h1{font-size:clamp(34px,9vw,104px)}
+h1,h2{font-family:var(--display);font-weight:700;letter-spacing:-.045em;line-height:1.02}
+h1{font-size:clamp(44px,9vw,96px)}
 h2{font-size:clamp(34px,5vw,60px);margin:14px 0 16px}
-.lede{font-size:clamp(17px,2vw,20px);color:var(--t2);max-width:620px;font-weight:300}
-.accent{color:rgb(var(--accent))}
+.lede{font-size:clamp(17px,2vw,21px);color:var(--t2);max-width:620px;font-weight:400;letter-spacing:-.015em}
 
 /* ── Hero ── */
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:110px;gap:26px}
@@ -89,7 +87,7 @@ kbd{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;bac
 .palette{width:min(720px,94vw);margin-top:26px;border-radius:20px;text-align:left;overflow:hidden;animation:materialize .9s var(--out) .15s both}
 @keyframes materialize{from{opacity:0;transform:scale(.94) translateY(20px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
 .p-search{display:flex;align-items:center;gap:12px;height:58px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.1)}
-.p-search input{flex:1;background:none;border:none;outline:none;color:#fff;font:400 18px var(--sans);letter-spacing:-.01em}
+.p-search input{flex:1;background:none;border:none;outline:none;color:#fff;font:400 18px var(--sans);letter-spacing:-.015em}
 .p-search input::placeholder{color:rgba(255,255,255,.4)}
 .p-list{padding:8px;max-height:330px;overflow:hidden;position:relative}
 .p-sec{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);padding:8px 12px 4px}
@@ -126,7 +124,7 @@ kbd{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;bac
 .ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;font-weight:700}
 .ring circle{transition:stroke-dashoffset 1.2s var(--out)}
 .np{display:flex;gap:14px;align-items:center;flex:1}
-.art{width:96px;height:96px;border-radius:14px;flex-shrink:0;background:conic-gradient(from 210deg,#f6b26b,#e05a8b,#6a5ae0,#3db3e3,#f6b26b);box-shadow:0 10px 26px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4);animation:spin 18s linear infinite}
+.art{width:96px;height:96px;border-radius:14px;flex-shrink:0;background:conic-gradient(from 210deg,#f4f4f6,#8e8e96,#3a3a40,#c8c8ce,#f4f4f6);box-shadow:0 10px 26px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4);animation:spin 18s linear infinite}
 @keyframes spin{to{filter:hue-rotate(360deg)}}
 .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;margin:10px 0 4px}
 .bar i{display:block;height:100%;background:rgba(255,255,255,.85);border-radius:4px;width:38%;animation:prog 30s linear infinite}
@@ -159,7 +157,6 @@ kbd{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;bac
 .dl-opt:hover{transform:translateY(-3px)}
 .dl-opt strong{font-size:16px}
 .dl-opt span{font-size:12.5px;color:var(--t3);font-family:var(--mono)}
-.dl-opt.rec-opt{outline:1px solid rgba(var(--accent),.45)}
 .note{font-size:12.5px;color:var(--t3);max-width:560px}
 .note code{font-family:var(--mono);font-size:12px;color:var(--t2)}
 @media(max-width:600px){.dl-grid{grid-template-columns:1fr}}
@@ -230,7 +227,7 @@ footer{text-align:center;padding:40px 24px 150px;font-size:13px;color:var(--t3)}
     <div class="widgets">
       <div class="w glass" data-tilt><svg class="clock" viewBox="0 0 100 100" id="aclock"></svg></div>
       <div class="w glass" data-tilt>
-        <div class="lab" style="color:rgba(var(--accent),.95)" id="c-wd"></div>
+        <div class="lab" id="c-wd"></div>
         <div class="big tn" id="c-d"></div>
         <div style="margin-top:auto"><div style="font-size:13px;font-weight:600">Design review</div><div class="sub">in 30 min</div></div>
       </div>
@@ -249,7 +246,7 @@ footer{text-align:center;padding:40px 24px 150px;font-size:13px;color:var(--t3)}
         <div class="rings">
           <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".34" cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg><b class="rn">34%</b></div>
           <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".71" cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg><b>71%</b></div>
-          <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".88" cx="32" cy="32" r="27" fill="none" stroke="rgb(232,164,48)" stroke-width="7" stroke-linecap="round"/></svg><b>88%</b></div>
+          <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".88" cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg><b>88%</b></div>
         </div>
         <div class="sub" style="display:flex;justify-content:space-around"><span>CPU</span><span>Memory</span><span>Disk</span></div>
       </div>
@@ -442,8 +439,8 @@ function drawClock() {
   for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6, big = i % 3 === 0; ticks += `<line x1="${50 + Math.sin(a) * (big ? 37 : 40)}" y1="${50 - Math.cos(a) * (big ? 37 : 40)}" x2="${50 + Math.sin(a) * 44}" y2="${50 - Math.cos(a) * 44}" stroke="rgba(20,20,28,.8)" stroke-width="${big ? 2.6 : 1.2}" stroke-linecap="round"/>`; }
   $("#aclock").innerHTML = `<defs><radialGradient id="cf" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#dfe2ea"/></radialGradient></defs>
     <circle cx="50" cy="50" r="48" fill="url(#cf)"/>${ticks}
-    ${hand((h + m / 60) * Math.PI / 6, 23, 4.4, "#15151b")}${hand((m + s / 60) * Math.PI / 30, 34, 3, "#15151b")}${hand(s * Math.PI / 30, 38, 1.3, "rgb(232,164,48)")}
-    <circle cx="50" cy="50" r="2.8" fill="rgb(232,164,48)"/>`;
+    ${hand((h + m / 60) * Math.PI / 6, 23, 4.4, "#15151b")}${hand((m + s / 60) * Math.PI / 30, 34, 3, "#15151b")}${hand(s * Math.PI / 30, 38, 1.2, "#6e6e76")}
+    <circle cx="50" cy="50" r="2.8" fill="#15151b"/>`;
 }
 drawClock(); setInterval(drawClock, 1000);
 const now = new Date();
