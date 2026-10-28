@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { CommandPalette } from "./components/CommandPalette";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { IN_TAURI, invoke, resizeWindow } from "./lib/tauri";
 import "./styles/globals.css";
 
@@ -90,6 +91,7 @@ export default function App() {
   if (screen === "loading") return null;
 
   return (
+    <ErrorBoundary label="app">
     <Suspense fallback={null}>
       {screen === "setup" && <Setup onReady={() => setScreen("onboarding")} />}
 
@@ -114,5 +116,6 @@ export default function App() {
         />
       )}
     </Suspense>
+    </ErrorBoundary>
   );
 }

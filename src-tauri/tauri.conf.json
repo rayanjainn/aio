@@ -16,7 +16,7 @@
         "title": "Cortex",
         "width": 740,
         "height": 580,
-        "minWidth": 740,
+        "minWidth": 600,
         "minHeight": 200,
         "resizable": false,
         "fullscreen": false,
@@ -25,7 +25,17 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "center": true,
-        "visible": false
+        "visible": false,
+        "label": "main",
+        "shadow": true,
+        "windowEffects": {
+          "effects": [
+            "hudWindow",
+            "acrylic"
+          ],
+          "state": "active",
+          "radius": 14
+        }
       }
     ],
     "security": {

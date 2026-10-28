@@ -928,9 +928,9 @@ function StepIndexing({
             {terminals.map(t => (
               <button key={t} onClick={() => chooseTerminal(t)} style={{
                 padding: "6px 14px", borderRadius: 7, cursor: "pointer", fontSize: 13,
-                border: `1px solid ${terminal === t ? "rgba(255,200,90,0.4)" : "rgba(255,255,255,0.12)"}`,
-                background: terminal === t ? "rgba(255,200,90,0.12)" : "rgba(255,255,255,0.04)",
-                color: terminal === t ? "rgba(255,205,110,0.95)" : "rgba(255,255,255,0.6)",
+                border: `1px solid ${terminal === t ? "rgba(var(--accent-rgb),0.4)" : "rgba(255,255,255,0.12)"}`,
+                background: terminal === t ? "rgba(var(--accent-rgb),0.12)" : "rgba(255,255,255,0.04)",
+                color: terminal === t ? "rgba(var(--accent-rgb),0.95)" : "rgba(255,255,255,0.6)",
               }}>{t}</button>
             ))}
           </div>
@@ -956,8 +956,8 @@ function StepIndexing({
           ].map(([k, v]) => (
             <div key={v} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
               <span style={{
-                fontFamily: "var(--font-mono)", fontSize: 11, color: "rgba(255,205,110,0.85)",
-                background: "rgba(255,200,90,0.10)", border: "1px solid rgba(255,200,90,0.2)",
+                fontFamily: "var(--font-mono)", fontSize: 11, color: "rgba(var(--accent-rgb),0.85)",
+                background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.2)",
                 borderRadius: 4, padding: "1px 6px", minWidth: 34, textAlign: "center", flexShrink: 0,
               }}>{k}</span>
               {v}

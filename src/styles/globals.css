@@ -1,6 +1,10 @@
 /* ============================================================
    CORTEX — Liquid Glass Theme
-   White at varying opacity on transparent/blurred backdrop
+   On macOS the blur comes from a native NSVisualEffectView behind the
+   transparent webview (tauri.conf windowEffects). CSS only adds the tint,
+   specular rim, moving sheen and motion — `backdrop-filter` cannot see the
+   desktop through a transparent WKWebView, so it is used only in browser
+   preview (html.web).
    ============================================================ */
 
 *, *::before, *::after {
@@ -31,10 +35,10 @@
   --text-inv: rgba(0,0,0,0.85);
 
   /* ── Semantic colors (all rgba, no solid) ─────────────── */
-  --amber:       rgba(255,200,80,0.85);
-  --amber-dim:   rgba(255,200,80,0.12);
-  --amber-glow:  rgba(255,200,80,0.06);
-  --amber-pulse: rgba(255,200,80,0.35);
+  --amber:       rgba(var(--accent-rgb),0.85);
+  --amber-dim:   rgba(var(--accent-rgb),0.12);
+  --amber-glow:  rgba(var(--accent-rgb),0.06);
+  --amber-pulse: rgba(var(--accent-rgb),0.35);
 
   --green:       rgba(100,255,180,0.80);
   --green-dim:   rgba(100,255,180,0.12);
@@ -60,6 +64,18 @@
   --surface-2: var(--g-2);
   --surface-3: var(--g-3);
 
+  /* ── Appearance (overridden at runtime by lib/appearance.ts) ── */
+  --accent-rgb:   232,164,48;              /* phosphor amber #e8a430 */
+  --accent:       rgb(var(--accent-rgb));
+  --accent-soft:  rgba(var(--accent-rgb),0.16);
+  --accent-line:  rgba(var(--accent-rgb),0.32);
+  --tint-rgb:     14,14,20;
+  --tint-alpha:   0.42;                    /* glass density */
+  --glass-tint:   rgba(var(--tint-rgb),var(--tint-alpha));
+  --radius-win:   14px;
+  --radius-card:  12px;
+  --radius-row:   9px;
+
   /* ── Font stack ───────────────────────────────────────── */
   /* Native SF Pro on macOS — the right, premium choice for a launcher. */
   --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
@@ -81,7 +97,7 @@ html, body, #root {
   overflow: hidden;
   background: transparent;
   /* Round window corners by clipping the transparent WebView */
-  border-radius: 12px;
+  border-radius: var(--radius-win);
 }
 
 body {
@@ -109,11 +125,11 @@ kbd, .tnum, [data-tnum] { font-variant-numeric: tabular-nums; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
 /* Selection */
-::selection { background: rgba(255,200,80,0.25); color: rgba(255,240,200,0.95); }
+::selection { background: rgba(var(--accent-rgb),0.25); color: rgba(255,240,200,0.95); }
 
 /* Focus */
 :focus-visible {
-  outline: 1.5px solid rgba(255,200,80,0.6);
+  outline: 1.5px solid rgba(var(--accent-rgb),0.6);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -154,3 +170,186 @@ kbd, .tnum, [data-tnum] { font-variant-numeric: tabular-nums; }
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
 }
+
+
+/* ── Reduced motion ─────────────────────────────────────── */
+html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-motion="reduced"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+
+/* ============================================================
+   Glass primitives
+   ============================================================ */
+
+/* Top-level window surface. Light follows the cursor via --mx/--my. */
+.glass-window {
+  position: relative;
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+  border-radius: var(--radius-win);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 38%),
+    var(--glass-tint);
+  border: 1px solid rgba(255,255,255,0.13);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    inset 0 0 0 0.5px rgba(255,255,255,0.05);
+  animation: glass-materialize 420ms var(--ease-out) both;
+  isolation: isolate;
+}
+html.web .glass-window, html.web .glass {
+  -webkit-backdrop-filter: blur(48px) saturate(190%);
+  backdrop-filter: blur(48px) saturate(190%);
+}
+html.web body { background: radial-gradient(1200px 700px at 20% 10%, #2a2440, #0b0b12 60%), #06060a; }
+
+/* Specular sheen that tracks the pointer — the "liquid" highlight. */
+.glass-window::before, .glass::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(520px circle at var(--mx, 30%) var(--my, -10%),
+              rgba(255,255,255,0.075), transparent 42%);
+  z-index: 0;
+  transition: background 60ms linear;
+}
+/* Slow caustic drift — barely there, gives the surface depth. */
+.glass-window::after {
+  content: "";
+  position: absolute; inset: -40%;
+  pointer-events: none;
+  background: conic-gradient(from 0deg at 50% 50%,
+              rgba(var(--accent-rgb),0.045), transparent 25%,
+              rgba(120,160,255,0.035) 50%, transparent 75%,
+              rgba(var(--accent-rgb),0.045));
+  filter: blur(40px);
+  animation: caustic-drift 28s linear infinite;
+  z-index: 0;
+  opacity: 0.9;
+}
+.glass-window > * { position: relative; z-index: 1; }
+
+/* Card / widget surface */
+.glass {
+  position: relative;
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.025) 45%, rgba(255,255,255,0.05)),
+    var(--glass-tint);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.20),
+    inset 1px 0 0 rgba(255,255,255,0.06),
+    inset 0 -8px 24px rgba(0,0,0,0.12),
+    0 10px 30px rgba(0,0,0,0.28);
+  overflow: hidden;
+  isolation: isolate;
+}
+.glass > * { position: relative; z-index: 1; }
+
+/* Inset well (inputs, segmented controls) */
+.glass-well {
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
+  border-radius: 9px;
+}
+
+/* Liquid selection pill (rendered by framer-motion layoutId) */
+.liquid-pill {
+  position: absolute; inset: 0; z-index: -1;
+  border-radius: var(--radius-row);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.06)),
+    rgba(var(--accent-rgb),0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 4px 14px rgba(0,0,0,0.18);
+  pointer-events: none;
+}
+
+/* Buttons */
+.btn-glass {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 7px 13px; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.82); font-size: 12px; font-family: var(--font-sans);
+  cursor: pointer; white-space: nowrap;
+  transition: transform 160ms var(--ease-spring), background 140ms, border-color 140ms;
+}
+.btn-glass:hover  { background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.06)); border-color: rgba(255,255,255,0.22); }
+.btn-glass:active { transform: scale(0.96); }
+.btn-glass:disabled { opacity: 0.45; cursor: default; transform: none; }
+.btn-accent {
+  border-color: var(--accent-line);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.26), rgba(var(--accent-rgb),0.12));
+  color: rgba(255,240,215,0.96);
+}
+.btn-accent:hover { background: linear-gradient(180deg, rgba(var(--accent-rgb),0.34), rgba(var(--accent-rgb),0.16)); border-color: rgba(var(--accent-rgb),0.5); }
+.btn-danger { border-color: rgba(255,100,100,0.32); background: rgba(255,100,100,0.10); color: rgba(255,140,140,0.92); }
+.btn-icon { padding: 6px; border-radius: 8px; }
+
+/* Segmented control */
+.segmented { display: inline-flex; padding: 2px; gap: 2px; }
+.segmented button {
+  position: relative; border: none; background: transparent; cursor: pointer;
+  padding: 5px 11px; border-radius: 7px; font-size: 12px; color: rgba(255,255,255,0.55);
+  font-family: var(--font-sans); z-index: 0;
+}
+.segmented button[data-active="true"] { color: rgba(255,255,255,0.95); }
+
+/* Text input */
+.input-glass {
+  width: 100%; padding: 8px 12px; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.9); font-size: 13px; outline: none; font-family: var(--font-sans);
+  transition: border-color 140ms, box-shadow 140ms;
+}
+.input-glass:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.12); }
+.input-glass::placeholder { color: rgba(255,255,255,0.28); }
+
+/* Range slider */
+input[type="range"].slider-glass {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 50%), rgba(255,255,255,0.14) var(--fill, 50%));
+  outline: none;
+}
+input[type="range"].slider-glass::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #d8d8de); border: 0.5px solid rgba(0,0,0,0.2);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4); cursor: pointer;
+}
+
+.text-dim  { color: var(--text-2); }
+.text-faint{ color: var(--text-3); }
+.mono      { font-family: var(--font-mono); }
+.display   { font-family: var(--font-display); letter-spacing: -0.01em; }
+.eyebrow   { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.32); }
+
+/* Shimmer skeleton */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes glass-materialize {
+  from { opacity: 0; transform: scale(0.965) translateY(6px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes caustic-drift {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ring-spin { to { transform: rotate(360deg); } }

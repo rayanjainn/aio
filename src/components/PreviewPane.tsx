@@ -91,7 +91,7 @@ function FilePreview({ r, query }: { r: SearchResult; query: string }) {
           <pre style={C.code}>
             {code.split("\n").map((line, i) => {
               const hit = terms.length > 0 && terms.some(tm => line.toLowerCase().includes(tm));
-              return <span key={i} style={{ display: "block", background: hit ? "rgba(255,200,80,0.12)" : undefined, borderRadius: 3 }}>{line || " "}</span>;
+              return <span key={i} style={{ display: "block", background: hit ? "rgba(var(--accent-rgb),0.12)" : undefined, borderRadius: 3 }}>{line || " "}</span>;
             })}
           </pre>
         )}
@@ -162,7 +162,7 @@ function GitPreview({ r }: { r: SearchResult }) {
   return (
     <div style={{ ...C.pane, padding: 20, gap: 14 }}>
       <div style={C.label}>Git Commit</div>
-      {sha && <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "rgba(255,205,110,0.85)", background: "rgba(255,200,90,0.1)", padding: "3px 10px", borderRadius: 6, alignSelf: "flex-start" }}>{sha.slice(0, 10)}</span>}
+      {sha && <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "rgba(var(--accent-rgb),0.85)", background: "rgba(var(--accent-rgb),0.1)", padding: "3px 10px", borderRadius: 6, alignSelf: "flex-start" }}>{sha.slice(0, 10)}</span>}
       <div style={{ fontSize: 15, color: "rgba(255,255,255,0.9)", lineHeight: 1.5 }}>{r.title.replace(/^[a-f0-9]{7,10}\s*[—-]\s*/, "")}</div>
       {(m?.author as string) && <MetaRow k="Author" v={m.author as string} />}
       {r.timestamp && <MetaRow k="Date" v={new Date(r.timestamp).toLocaleString()} />}
@@ -182,7 +182,7 @@ function UrlPreview({ r }: { r: SearchResult }) {
         </div>
       )}
       <div style={{ fontSize: 15, color: "rgba(255,255,255,0.9)", fontWeight: 600, lineHeight: 1.4 }}>{r.title}</div>
-      {r.url && <div style={{ fontSize: 11, color: "rgba(255,205,110,0.8)", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{r.url}</div>}
+      {r.url && <div style={{ fontSize: 11, color: "rgba(var(--accent-rgb),0.8)", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{r.url}</div>}
       {r.timestamp && <MetaRow k="Visited" v={new Date(r.timestamp).toLocaleString()} />}
     </div>
   );
