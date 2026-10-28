@@ -27,15 +27,7 @@
         "center": true,
         "visible": false,
         "label": "main",
-        "shadow": true,
-        "windowEffects": {
-          "effects": [
-            "hudWindow",
-            "acrylic"
-          ],
-          "state": "active",
-          "radius": 14
-        }
+        "shadow": true
       }
     ],
     "security": {

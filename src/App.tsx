@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { CommandPalette } from "./components/CommandPalette";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { IN_TAURI, invoke, resizeWindow } from "./lib/tauri";
@@ -8,6 +8,7 @@ const Onboarding       = lazy(() => import("./components/Onboarding"));
 const Setup            = lazy(() => import("./components/Setup"));
 const Settings         = lazy(() => import("./components/Settings"));
 const ExecutionConfirm = lazy(() => import("./components/ExecutionConfirm"));
+const Studio           = lazy(() => import("./components/Studio"));
 
 type AppScreen = "loading" | "setup" | "onboarding" | "main";
 
@@ -21,6 +22,7 @@ export default function App() {
   const [screen, setScreen]             = useState<AppScreen>("loading");
   const [showSettings, setShowSettings] = useState(false);
   const [execPlan, setExecPlan]         = useState<ExecutorPlan | null>(null);
+  const [studioTab, setStudioTab]       = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -39,19 +41,21 @@ export default function App() {
   useEffect(() => {
     if (!IN_TAURI || screen === "loading") return;
     const [w, h] =
+      studioTab                 ? [1080, 720] :
       showSettings              ? [820, 600] :
       screen === "onboarding"   ? [820, 680] :
       screen === "setup"        ? [640, 560] :
                                   [880, 540];   // main palette (room for preview pane)
     resizeWindow(w, h);
-  }, [screen, showSettings]);
+  }, [screen, showSettings, studioTab]);
 
   // Click-away closes the window everywhere. External opens (OAuth, perms,
   // downloads) suppress this; it re-arms whenever Cortex regains focus.
   useEffect(() => {
     if (!IN_TAURI || screen === "loading") return;
-    invoke("set_autohide", { enabled: true }).catch(() => {});
-  }, [screen, showSettings]);
+    // The studio stays open while you click on the widgets it is arranging.
+    invoke("set_autohide", { enabled: !studioTab }).catch(() => {});
+  }, [screen, showSettings, studioTab]);
 
   useEffect(() => {
     if (!IN_TAURI) return;
@@ -59,7 +63,24 @@ export default function App() {
     (async () => {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       unlisten = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-        if (focused) invoke("set_autohide", { enabled: true }).catch(() => {});
+        if (focused && !studioRef.current) invoke("set_autohide", { enabled: true }).catch(() => {});
+      });
+    })();
+    return () => unlisten?.();
+  }, []);
+
+  const studioRef = useRef<string | null>(null);
+  studioRef.current = studioTab;
+
+  // Tray / widget menus / search widget → open the studio (or just the palette).
+  useEffect(() => {
+    if (!IN_TAURI) return;
+    let unlisten: (() => void) | undefined;
+    (async () => {
+      const { listen } = await import("@tauri-apps/api/event");
+      unlisten = await listen<string>("open-studio", e => {
+        setShowSettings(false);
+        setStudioTab(e.payload === "palette" ? null : e.payload || "widgets");
       });
     })();
     return () => unlisten?.();
@@ -97,15 +118,18 @@ export default function App() {
 
       {screen === "onboarding" && <Onboarding onComplete={() => setScreen("main")} />}
 
-      {screen === "main" && (
+      {screen === "main" && !studioTab && (
         <CommandPalette
           onOpenSettings={() => setShowSettings(true)}
           onExecPlan={(plan: ExecutorPlan) => setExecPlan(plan)}
           onOpenOnboarding={() => setScreen("onboarding")}
+          onOpenStudio={(tab: string) => setStudioTab(tab)}
         />
       )}
 
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+
+      {studioTab && <Studio tab={studioTab} onClose={() => setStudioTab(null)} />}
 
       {execPlan && (
         <ExecutionConfirm

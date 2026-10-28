@@ -59,8 +59,9 @@ type Kind = "calc" | "exec" | "ai" | "emoji" | "web" | "cmd" | "local" | "chatop
 type Item = SearchResult & { _kind?: Kind; _emoji?: string; _cmd?: Cmd; _local?: boolean; _chatId?: string; _copy?: string; _snipId?: string };
 
 /* Root capability commands (the "what can I do" list). */
-interface Cmd { id: string; label: string; sub: string; icon: SourceId; mode: "files" | "source" | "ai" | "calc" | "emoji" | "chats" | "memory" | "clips" | "snippets" | "savesnip" | "winaction"; source?: SourceId; ask?: string; action?: string; }
+interface Cmd { id: string; label: string; sub: string; icon: SourceId; mode: "files" | "source" | "ai" | "calc" | "emoji" | "chats" | "memory" | "clips" | "snippets" | "savesnip" | "winaction" | "studio"; source?: SourceId; ask?: string; action?: string; }
 const COMMANDS: Cmd[] = [
+  { id: "studio",    label: "Widgets & Dock",         sub: "Add desktop widgets, customize your dock", icon: "apps", mode: "studio", action: "widgets" },
   { id: "ai",        label: "Ask AI",                 sub: "Chat with Cortex about your data", icon: "ai",  mode: "ai" },
   { id: "ghstats",   label: "GitHub Stats",           sub: "Your activity summary",      icon: "github",    mode: "ai", ask: "give me a summary of my github activity and stats" },
   { id: "rewind",    label: "Rewind",                 sub: "What you saw on screen earlier", icon: "screenshots", mode: "memory" },
@@ -344,8 +345,8 @@ function Footer({ selected, indexedItems, storageBytes, recording, onOpenSetting
     <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 14px", height: 34, flexShrink: 0, background: "rgba(0,0,0,0.18)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <CortexMark s={15} active={recording} />
-        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: recording ? "rgba(110,225,150,0.62)" : "rgba(255,110,110,0.55)", fontFamily: "var(--font-mono)" }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: recording ? "rgba(110,225,150,0.85)" : "rgba(255,110,110,0.75)" }} />{recording ? "REC" : "PAUSED"}
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: recording ? "rgba(255,255,255,0.45)" : "rgba(var(--accent-rgb),0.8)", fontFamily: "var(--font-mono)" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: recording ? "rgba(255,255,255,0.7)" : "rgba(var(--accent-rgb),0.9)" }} />{recording ? "REC" : "PAUSED"}
         </span>
         {indexedItems > 0 && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-mono)" }}><AnimatedCount value={indexedItems} />{storageBytes > 0 && ` · ${formatBytes(storageBytes)}`}</span>}
       </div>
@@ -367,9 +368,10 @@ interface CommandPaletteProps {
   onOpenSettings?: () => void;
   onExecPlan?: (plan: { command: string; explanation: string; is_destructive: boolean }) => void;
   onOpenOnboarding?: () => void;
+  onOpenStudio?: (tab: string) => void;
 }
 
-export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _onb }: CommandPaletteProps = {}) {
+export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _onb, onOpenStudio }: CommandPaletteProps = {}) {
   const { query, setQuery, response, loading, toasts, dismissToast, execute, ollamaHealth } = useSearch();
   const { status: liveStatus } = useStatus(5_000);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -623,6 +625,7 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
         const c = item._cmd;
         if (c.mode === "ai") openChat(c.ask);
         else if (c.mode === "savesnip") saveClipSnippet();
+        else if (c.mode === "studio") { setQuery(""); onOpenStudio?.(c.action ?? "widgets"); }
         else if (c.mode === "winaction") { const a = c.action; setQuery(""); hideWindow(); setTimeout(() => invoke("window_action", { action: a }).catch(e => console.error(e)), 200); }
         else enterScope(c);
       } return;
@@ -648,7 +651,7 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
         if (item._local && item.path) { openExternal(item.path); setQuery(""); hideWindow(); return; }
         await execute(item.id); setQuery(""); hideWindow(); return;
     }
-  }, [q, execute, onExecPlan, openChat, openSavedChat, copy, setQuery, enterScope, saveClipSnippet]);
+  }, [q, execute, onExecPlan, openChat, openSavedChat, copy, setQuery, enterScope, saveClipSnippet, onOpenStudio]);
 
   const actions: Action[] = useMemo(() => {
     const it = selected;
@@ -751,7 +754,7 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
         )}
         <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} placeholder={placeholder} spellCheck={false} autoComplete="off"
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 400, color: "rgba(255,255,255,0.92)", caretColor: "rgba(255,255,255,0.70)", letterSpacing: "-0.01em" }} />
-        {(copied || flash) && <span style={{ fontSize: 12, color: "rgba(110,225,150,0.85)", display: "flex", alignItems: "center", gap: 4 }}><CheckIcon s={13} /> {flash || "Copied"}</span>}
+        {(copied || flash) && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 4 }}><CheckIcon s={13} /> {flash || "Copied"}</span>}
         {query && <button onClick={() => setQuery("")} style={{ background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 5, color: "rgba(255,255,255,0.40)", cursor: "pointer", padding: "3px 5px", display: "flex", alignItems: "center" }}><CloseIcon s={13} /></button>}
       </div>
 

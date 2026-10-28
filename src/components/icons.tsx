@@ -134,23 +134,23 @@ export interface SourceMeta {
 }
 
 export const SOURCE_META: Record<SourceId, SourceMeta> = {
-  files:       { label: "File",       Icon: FileIcon,      tint: "rgba(96,140,255,0.14)",  fg: "rgba(150,180,255,0.95)" },
-  shell:       { label: "Command",    Icon: TerminalIcon,  tint: "rgba(80,210,140,0.14)",  fg: "rgba(120,230,170,0.95)" },
-  browser:     { label: "Browser",    Icon: GlobeIcon,     tint: "rgba(255,160,70,0.14)",  fg: "rgba(var(--accent-rgb),0.95)" },
-  git:         { label: "Commit",     Icon: GitIcon,       tint: "rgba(180,120,255,0.14)", fg: "rgba(200,160,255,0.95)" },
-  clipboard:   { label: "Clipboard",  Icon: ClipboardIcon, tint: "rgba(235,195,80,0.14)",  fg: "rgba(245,215,130,0.95)" },
-  github:      { label: "GitHub",     Icon: GitHubIcon,    tint: "rgba(220,220,230,0.12)", fg: "rgba(235,235,245,0.92)" },
-  gmail:       { label: "Email",      Icon: MailIcon,      tint: "rgba(255,110,100,0.14)", fg: "rgba(255,150,140,0.95)" },
-  slack:       { label: "Slack",      Icon: ChatIcon,      tint: "rgba(130,110,255,0.14)", fg: "rgba(170,150,255,0.95)" },
-  docker:      { label: "Docker",     Icon: CubeIcon,      tint: "rgba(70,180,255,0.14)",  fg: "rgba(120,205,255,0.95)" },
-  calendar:    { label: "Calendar",   Icon: CalendarIcon,  tint: "rgba(255,110,100,0.14)", fg: "rgba(255,150,140,0.95)" },
-  screenshots: { label: "Screenshot", Icon: ImageIcon,     tint: "rgba(200,200,210,0.12)", fg: "rgba(225,225,235,0.92)" },
-  notes:       { label: "Note",       Icon: NoteIcon,      tint: "rgba(245,210,90,0.14)",  fg: "rgba(250,225,140,0.95)" },
-  obsidian:    { label: "Obsidian",   Icon: NoteIcon,      tint: "rgba(180,120,255,0.14)", fg: "rgba(200,160,255,0.95)" },
-  notion:      { label: "Notion",     Icon: NoteIcon,      tint: "rgba(220,220,230,0.12)", fg: "rgba(235,235,245,0.92)" },
-  apps:        { label: "Application",Icon: AppsIcon,      tint: "rgba(120,160,255,0.14)", fg: "rgba(160,190,255,0.95)" },
-  commands:    { label: "Command",    Icon: CommandIcon,   tint: "rgba(255,255,255,0.08)", fg: "rgba(230,230,240,0.92)" },
-  calc:        { label: "Calculator", Icon: CalcIcon,      tint: "rgba(100,220,160,0.14)", fg: "rgba(140,235,185,0.95)" },
+  files:       { label: "File",       Icon: FileIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  shell:       { label: "Command",    Icon: TerminalIcon,  tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  browser:     { label: "Browser",    Icon: GlobeIcon,     tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  git:         { label: "Commit",     Icon: GitIcon,       tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  clipboard:   { label: "Clipboard",  Icon: ClipboardIcon, tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  github:      { label: "GitHub",     Icon: GitHubIcon,    tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  gmail:       { label: "Email",      Icon: MailIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  slack:       { label: "Slack",      Icon: ChatIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  docker:      { label: "Docker",     Icon: CubeIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  calendar:    { label: "Calendar",   Icon: CalendarIcon,  tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  screenshots: { label: "Screenshot", Icon: ImageIcon,     tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  notes:       { label: "Note",       Icon: NoteIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  obsidian:    { label: "Obsidian",   Icon: NoteIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  notion:      { label: "Notion",     Icon: NoteIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  apps:        { label: "Application",Icon: AppsIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  commands:    { label: "Command",    Icon: CommandIcon,   tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
+  calc:        { label: "Calculator", Icon: CalcIcon,      tint: "rgba(255,255,255,0.09)", fg: "rgba(255,255,255,0.88)" },
   ai:          { label: "Cortex AI",  Icon: SparkleIcon,   tint: "rgba(232,164,48,0.16)",  fg: "rgba(var(--accent-rgb),0.95)" },
 };
 
@@ -160,8 +160,9 @@ export function SourceTile({ pluginId, size = 30 }: { pluginId: SourceId; size?:
   return (
     <div style={{
       width: size, height: size, borderRadius: 7, flexShrink: 0,
-      background: m.tint,
-      border: "1px solid rgba(255,255,255,0.06)",
+      background: `linear-gradient(180deg, rgba(255,255,255,0.08), transparent), ${m.tint}`,
+      border: "1px solid rgba(255,255,255,0.08)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)",
       display: "flex", alignItems: "center", justifyContent: "center",
       color: m.fg,
     }}>

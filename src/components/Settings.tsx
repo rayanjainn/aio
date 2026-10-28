@@ -6,7 +6,7 @@ import {
 } from "./icons";
 import type { SourceId } from "../types";
 import { motion } from "framer-motion";
-import { ACCENTS, DEFAULT_APPEARANCE, loadAppearance, saveAppearance, type Appearance, type Tint } from "../lib/appearance";
+import { DEFAULT_APPEARANCE, loadAppearance, saveAppearance, type Appearance, type Tint } from "../lib/appearance";
 
 /* ── Types ── */
 
@@ -460,20 +460,6 @@ function AppearanceSection({ onSaved }: { onSaved: () => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <h2 style={h2}>Appearance</h2>
-      <div style={card}>
-        <label style={label}>Accent</label>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {Object.entries(ACCENTS).map(([id, c]) => (
-            <button key={id} onClick={() => set({ accent: id })} title={c.label}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer" }}>
-              <span style={{ width: 28, height: 28, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), rgb(${c.rgb}) 55%)`,
-                boxShadow: a.accent === id ? `0 0 0 2px rgba(10,10,14,0.9), 0 0 0 4px rgb(${c.rgb})` : "inset 0 1px 0 rgba(255,255,255,0.3)",
-                transition: "box-shadow 160ms" }} />
-              <span style={{ fontSize: 11, color: a.accent === id ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.4)" }}>{c.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
       <div style={card}>
         <Row label="Glass density">
           <div className="segmented glass-well">
