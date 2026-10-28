@@ -1,0 +1,156 @@
+/* ============================================================
+   CORTEX — Liquid Glass Theme
+   White at varying opacity on transparent/blurred backdrop
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ── Glass layers ─────────────────────────────────────── */
+  --g-0:        rgba(255,255,255,0.04);
+  --g-1:        rgba(255,255,255,0.07);
+  --g-2:        rgba(255,255,255,0.10);
+  --g-3:        rgba(255,255,255,0.14);
+  --g-hover:    rgba(255,255,255,0.07);
+  --g-selected: rgba(255,255,255,0.12);
+
+  /* ── Borders ──────────────────────────────────────────── */
+  --border:    rgba(255,255,255,0.10);
+  --border-hi: rgba(255,255,255,0.18);
+  --divider:   rgba(255,255,255,0.06);
+
+  /* ── Text hierarchy ───────────────────────────────────── */
+  --text:   rgba(255,255,255,0.92);
+  --text-2: rgba(255,255,255,0.52);
+  --text-3: rgba(255,255,255,0.28);
+  --text-4: rgba(255,255,255,0.16);
+  --text-inv: rgba(0,0,0,0.85);
+
+  /* ── Semantic colors (all rgba, no solid) ─────────────── */
+  --amber:       rgba(255,200,80,0.85);
+  --amber-dim:   rgba(255,200,80,0.12);
+  --amber-glow:  rgba(255,200,80,0.06);
+  --amber-pulse: rgba(255,200,80,0.35);
+
+  --green:       rgba(100,255,180,0.80);
+  --green-dim:   rgba(100,255,180,0.12);
+  --red:         rgba(255,100,100,0.80);
+  --red-dim:     rgba(255,100,100,0.12);
+  --blue:        rgba(120,180,255,0.75);
+  --violet:      rgba(180,140,255,0.75);
+
+  /* ── Source accent (unified white for glass theme) ─────── */
+  --source-chip-bg:   rgba(255,255,255,0.08);
+  --source-chip-text: rgba(255,255,255,0.55);
+
+  /* ── Glass panel ──────────────────────────────────────── */
+  --glass-panel-bg: rgba(12,12,20,0.55);
+  --glass-blur:     blur(40px) saturate(180%);
+  --glass-shadow:   0 8px 32px rgba(0,0,0,0.55),
+                    inset 0 1px 0 rgba(255,255,255,0.10);
+
+  /* ── Legacy aliases (keeps old components working) ─────── */
+  --bg:        rgba(10,10,18,0.80);
+  --surface-0: var(--g-0);
+  --surface-1: var(--g-1);
+  --surface-2: var(--g-2);
+  --surface-3: var(--g-3);
+
+  /* ── Font stack ───────────────────────────────────────── */
+  /* Native SF Pro on macOS — the right, premium choice for a launcher. */
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  --font-sans:    -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+  --font-display: 'Syne', -apple-system, 'SF Pro Display', sans-serif;
+
+  /* ── Motion ───────────────────────────────────────────── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:    120ms;
+  --dur-base:    200ms;
+  --dur-slow:    350ms;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  /* Round window corners by clipping the transparent WebView */
+  border-radius: 12px;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  letter-spacing: -0.006em;          /* subtle optical tightening */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Numerals align in counts / metadata */
+kbd, .tnum, [data-tnum] { font-variant-numeric: tabular-nums; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* Selection */
+::selection { background: rgba(255,200,80,0.25); color: rgba(255,240,200,0.95); }
+
+/* Focus */
+:focus-visible {
+  outline: 1.5px solid rgba(255,200,80,0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Keyframes ───────────────────────────────────────────── */
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0;   }
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1.0); opacity: 1;   }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glass-open {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}

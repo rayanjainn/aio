@@ -1,0 +1,27 @@
+pub mod apps;
+pub mod commands;
+pub mod files;
+pub mod shell;
+pub mod clipboard;
+pub mod browser;
+pub mod git_plugin;
+pub mod calendar;
+pub mod gmail;
+pub mod slack;
+pub mod github;
+pub mod docker;
+pub mod vscode;
+
+pub use apps::AppsPlugin;
+pub use commands::CommandsPlugin;
+pub use files::FilesPlugin;
+pub use shell::ShellPlugin;
+pub use clipboard::ClipboardPlugin;
+pub use browser::BrowserPlugin;
+pub use git_plugin::GitPlugin;
+pub use calendar::CalendarPlugin;
+pub use gmail::EmailPlugin;
+pub use slack::SlackPlugin;
+pub use github::GithubPlugin;
+pub use docker::DockerPlugin;
+pub use vscode::VscodePlugin;

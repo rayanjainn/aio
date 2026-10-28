@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Cortex Memory Bridge",
+  "version": "0.1.0",
+  "description": "Sends tab lifecycle events to the Cortex daemon for live-tab search.",
+
+  "permissions": [
+    "tabs",
+    "activeTab"
+  ],
+
+  "host_permissions": [
+    "ws://localhost:27182/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "action": {
+    "default_title": "Cortex Memory Bridge",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_popup": "popup.html"
+  }
+}

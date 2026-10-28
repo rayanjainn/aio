@@ -1,0 +1,113 @@
+[package]
+name = "aio-cortex"
+version = "0.1.0"
+description = "Cortex — Neural Command Palette with Episodic Memory"
+authors = ["AIO Team"]
+edition = "2021"
+
+[lib]
+name = "aio_cortex_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "aio-cortex"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = ["tray-icon", "macos-private-api", "image-png"] }
+tauri-plugin-shell = "2.0"
+tauri-plugin-global-shortcut = "2.0"
+tauri-plugin-single-instance = "2.0"
+
+serde       = { version = "1.0", features = ["derive"] }
+serde_json  = "1.0"
+tokio       = { version = "1",   features = ["full"] }
+anyhow      = "1.0"
+thiserror   = "1.0"
+tracing     = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Storage
+rusqlite    = { version = "0.31", features = ["bundled"] }
+uuid        = { version = "1.0",  features = ["v4", "v5"] }
+chrono      = { version = "0.4",  features = ["serde"] }
+
+# Indexing & search
+tantivy     = "0.22"
+fuzzy-matcher = "0.3"
+rayon       = "1.8"
+async-trait = "0.1"
+futures     = "0.3"
+
+# File watching
+notify      = "6.0"
+walkdir     = "2"
+ignore      = "0.4"               # gitignore-aware walker for files plugin
+
+# Hashing
+sha2        = "0.10"              # SHA-256 clipboard dedup
+hex         = "0.4"               # hex-encode hash digest
+
+# WebSocket server — receives Chrome extension tab events on :27182
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+futures-util      = "0.3"         # StreamExt for ws messages
+
+# Version control
+git2        = { version = "0.19", default-features = false }
+
+# Clipboard
+arboard     = "3.4"
+
+# Screen capture + image processing (daemon/capture.rs)
+screenshots = "0.8"
+image       = { version = "0.25", features = ["jpeg"] }
+
+# Frame compression (daemon/storage.rs)
+zstd        = "0.13"
+
+# Execution helpers
+opener      = "0.7"
+webbrowser  = "1.0"
+
+# System utilities
+dirs        = "5.0"
+regex       = "1.10"
+
+# HTTP client — OAuth2 + Google APIs + Slack API
+reqwest     = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+
+# OAuth2
+oauth2      = "4.4"
+url         = "2.5"
+base64      = "0.22"
+
+# OS keychain — token storage
+keyring     = "3.3"
+
+# Calendar (.ics parsing — Apple Calendar + Google Calendar export)
+icalendar   = "0.16"
+
+# Email parsing (.emlx + raw RFC 2822)
+mailparse   = "0.14"
+
+# Slack desktop LevelDB cache
+rusty-leveldb = "3.0"
+
+# Docker daemon client
+bollard     = "0.17"
+
+# Embeddings + vector search (Nomic via Ollama, Qdrant via REST)
+# No extra dep — uses reqwest above
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic   = "abort"
+codegen-units = 1
+lto     = true
+opt-level = 3
+strip   = true

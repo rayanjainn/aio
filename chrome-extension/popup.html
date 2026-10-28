@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cortex Memory Bridge</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 220px;
+      background: #06060a;
+      color: #c8c8d0;
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+      font-size: 11px;
+      padding: 14px 16px;
+    }
+    .header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #e8a430;
+      box-shadow: 0 0 6px #e8a43060;
+    }
+    .dot.disconnected { background: #f87171; box-shadow: none; }
+    .title { color: #e8a430; font-weight: 700; letter-spacing: 0.08em; }
+    .row { display: flex; justify-content: space-between; margin-top: 6px; }
+    .label { color: #555; }
+    .value { color: #9ca3af; }
+    #status { color: #4ade80; }
+    #status.off { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="dot" id="dot"></div>
+    <span class="title">CORTEX</span>
+  </div>
+
+  <div class="row">
+    <span class="label">daemon</span>
+    <span id="status">checking…</span>
+  </div>
+  <div class="row">
+    <span class="label">tabs tracked</span>
+    <span class="value" id="tab-count">—</span>
+  </div>
+  <div class="row">
+    <span class="label">ws</span>
+    <span class="value" id="ws-state">—</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
