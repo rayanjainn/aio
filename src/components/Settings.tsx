@@ -109,7 +109,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   return (
     <button onClick={() => onChange(!checked)} style={{
       width: 38, height: 21, borderRadius: 11, flexShrink: 0,
-      background: checked ? "rgba(var(--accent-rgb),0.9)" : "rgba(255,255,255,0.13)",
+      background: checked ? "rgba(var(--accent-rgb),0.5)" : "rgba(255,255,255,0.13)",
       border: "none", cursor: "pointer", position: "relative", transition: "background 180ms",
     }}>
       <span style={{ position: "absolute", top: 2.5, left: checked ? 19.5 : 2.5,

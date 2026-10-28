@@ -285,6 +285,13 @@ pub fn run() {
             desktop::providers::photo_pick,
             desktop::providers::list_installed_apps,
             desktop::providers::launch_path,
+            desktop::dock::macos_dock_get,
+            desktop::dock::macos_dock_set,
+            desktop::dock::macos_dock_set_apps,
+            desktop::dock::macos_dock_restore,
+            desktop::dock::dock_get_config,
+            desktop::dock::dock_set_config,
+            desktop::dock::dock_resize,
             open_studio,
         ])
         .run(tauri::generate_context!())
