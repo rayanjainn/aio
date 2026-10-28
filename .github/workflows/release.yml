@@ -1,12 +1,18 @@
-# Push a tag like v0.2.0 → builds Cortex for macOS (Apple Silicon + Intel)
-# and Linux, and attaches the installers to a GitHub Release. The marketing
-# site links to the newest release automatically.
+# Push a tag like v0.2.0 — or run this workflow manually with a version — to
+# build Cortex for macOS (Apple Silicon + Intel) and Linux and attach the
+# installers to a GitHub Release (the tag is created if it doesn't exist).
+# The marketing site links to the newest release automatically.
 name: Release
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to create, e.g. v0.1.0"
+        required: true
+        default: v0.1.0
 
 permissions:
   contents: write
@@ -55,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Cortex ${{ github.ref_name }}
+          tagName: ${{ inputs.version || github.ref_name }}
+          releaseName: Cortex ${{ inputs.version || github.ref_name }}
           releaseBody: Download the .dmg for your Mac (Apple Silicon = aarch64, Intel = x64). Builds are not notarized — right-click → Open on first launch.
           releaseDraft: false
           prerelease: false
