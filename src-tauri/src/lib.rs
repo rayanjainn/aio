@@ -7,6 +7,7 @@
 mod auth;
 mod config_ipc;
 mod daemon;
+mod desktop;
 mod embed;
 mod embeddings;
 mod exec_ipc;
@@ -81,7 +82,7 @@ pub struct AppState {
 }
 
 /// Bring the main window to the front and stamp `shown_at`.
-fn show_main(app: &tauri::AppHandle) {
+pub(crate) fn show_main(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         if let Some(state) = app.try_state::<AppState>() {
             state.shown_at.store(now_ms(), Ordering::Relaxed);
@@ -125,7 +126,14 @@ pub fn toggle_recording(app: &tauri::AppHandle) -> bool {
 
 /// Tray menu items whose labels change at runtime.
 pub struct TrayItems {
-    pub pause: MenuItem<tauri::Wry>,
+    pub pause:   MenuItem<tauri::Wry>,
+    pub widgets: MenuItem<tauri::Wry>,
+}
+
+/// Open the Widgets & Dock studio inside the main window.
+#[tauri::command]
+fn open_studio(tab: Option<String>, app: tauri::AppHandle) {
+    desktop::open_studio(&app, tab.as_deref().unwrap_or("widgets"));
 }
 
 /* ─── Library entry point ───────────────────────────────── */
@@ -179,6 +187,10 @@ pub fn run() {
         )
         .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| {
+            // Widget / dock windows have their own handling — and must never
+            // inherit the palette's hide-on-blur below.
+            if desktop::on_window_event(window, event) { return; }
+            if window.label() != "main" { return; }
             // Raycast-style hide-on-blur, but DEBOUNCED. macOS rapidly toggles
             // key focus (windowDidResignKey/BecomeKey) when a transparent,
             // always-on-top window is shown — hiding immediately on the first
@@ -253,6 +265,27 @@ pub fn run() {
             config_ipc::snippet_delete,
             config_ipc::get_github_stats,
             config_ipc::window_action,
+            desktop::widgets::widgets_list,
+            desktop::widgets::widget_get,
+            desktop::widgets::widget_add,
+            desktop::widgets::widget_update,
+            desktop::widgets::widget_remove,
+            desktop::widgets::widgets_set_visible,
+            desktop::widgets::widgets_visible,
+            desktop::widgets::widgets_edit_mode,
+            desktop::providers::sys_stats,
+            desktop::providers::now_playing,
+            desktop::providers::media_control,
+            desktop::providers::weather_get,
+            desktop::providers::calendar_upcoming,
+            desktop::providers::git_repo_status,
+            desktop::providers::docker_containers,
+            desktop::providers::docker_action,
+            desktop::providers::github_activity,
+            desktop::providers::photo_pick,
+            desktop::providers::list_installed_apps,
+            desktop::providers::launch_path,
+            open_studio,
         ])
         .run(tauri::generate_context!())
         .expect("tauri run failed");
@@ -524,11 +557,13 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::PredefinedMenuItem;
     let open_i    = MenuItem::with_id(app, "open",     "Open Cortex",        true, Some("Cmd+K"))?;
     let pause_i   = MenuItem::with_id(app, "pause",    "Pause Capture",      true, Some("CmdOrCtrl+Shift+P"))?;
+    let widgets_i = MenuItem::with_id(app, "widgets",  "Hide Widgets",       true, None::<&str>)?;
+    let studio_i  = MenuItem::with_id(app, "studio",   "Widgets & Dock…",    true, None::<&str>)?;
     let reindex_i = MenuItem::with_id(app, "reindex",  "Re-index Now",       true, None::<&str>)?;
     let reset_i   = MenuItem::with_id(app, "reset",    "Re-run Onboarding",  true, None::<&str>)?;
     let sep1      = PredefinedMenuItem::separator(app)?;
     let quit_i    = MenuItem::with_id(app, "quit",     "Quit Cortex",        true, Some("Cmd+Q"))?;
-    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &reindex_i, &reset_i, &sep1, &quit_i])?;
+    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &PredefinedMenuItem::separator(app)?, &studio_i, &widgets_i, &PredefinedMenuItem::separator(app)?, &reindex_i, &reset_i, &sep1, &quit_i])?;
 
     let tray_rgba = image::load_from_memory(include_bytes!("../icons/tray.png"))
         .expect("decode tray icon")
@@ -545,6 +580,16 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             "quit"    => app.exit(0),
             "open"    => show_main(app),
             "pause"   => { toggle_recording(app); }
+            "studio"  => desktop::open_studio(app, "widgets"),
+            "widgets" => {
+                use tauri::Emitter;
+                if let Some(st) = app.try_state::<Arc<desktop::widgets::WidgetStore>>() {
+                    let show = !st.visible();
+                    st.set_visible(show);
+                    if show { desktop::widgets::show_all(app) } else { desktop::widgets::hide_all(app) }
+                    let _ = app.emit("widgets-changed", ());
+                }
+            }
             "reindex" => {
                 if let Some(state) = app.try_state::<AppState>() {
                     let reg = state.registry.clone();
@@ -564,7 +609,26 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         })
         .build(app)?;
-    app.manage(TrayItems { pause: pause_i });
+    app.manage(TrayItems { pause: pause_i, widgets: widgets_i });
+
+    // Liquid Glass behind the palette (native on macOS 26+, vibrancy before).
+    if let Some(w) = app.get_webview_window("main") { desktop::glass::apply(&w, 14.0); }
+
+    // Desktop widgets — after AppState so providers can reach shared state.
+    desktop::init(app.handle(), &data_dir);
+    if let Some(items) = app.try_state::<TrayItems>() {
+        let visible = app.state::<Arc<desktop::widgets::WidgetStore>>().visible();
+        let _ = items.widgets.set_text(if visible { "Hide Widgets" } else { "Show Widgets" });
+    }
+    {
+        use tauri::Listener;
+        let h = app.handle().clone();
+        app.listen_any("widgets-changed", move |_| {
+            if let (Some(items), Some(st)) = (h.try_state::<TrayItems>(), h.try_state::<Arc<desktop::widgets::WidgetStore>>()) {
+                let _ = items.widgets.set_text(if st.visible() { "Hide Widgets" } else { "Show Widgets" });
+            }
+        });
+    }
 
     Ok(())
 }

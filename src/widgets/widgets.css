@@ -1,0 +1,99 @@
+/* Widget surfaces — Liquid Glass slabs. Neutral white typography; the accent
+   only appears for state that needs attention. */
+
+.w-root {
+  position: fixed; inset: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  color: rgba(255,255,255,0.95);
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+}
+.w-card {
+  position: absolute; inset: 0;
+  border-radius: 22px;
+  padding: 14px 15px;
+  display: flex; flex-direction: column;
+  animation: w-in 520ms cubic-bezier(.2,.9,.25,1.15) both;
+}
+.w-card.bleed { padding: 0; }
+.w-card[data-edit="true"] { animation: w-wiggle 0.36s ease-in-out infinite alternate; }
+@keyframes w-in { from { opacity: 0; transform: scale(0.9); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes w-wiggle { from { transform: rotate(-0.7deg); } to { transform: rotate(0.7deg); } }
+
+.w-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; }
+.w-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.w-huge { font-size: 40px; font-weight: 300; letter-spacing: -0.03em; font-family: var(--font-sans); }
+.w-big { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.w-sub { font-size: 12px; color: rgba(255,255,255,0.62); }
+.w-faint { color: rgba(255,255,255,0.42); }
+.w-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.w-divider { height: 1px; background: rgba(255,255,255,0.10); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+.w-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.92);
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.07));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 180ms cubic-bezier(.3,1.6,.5,1), background 150ms;
+}
+.w-iconbtn[data-big="true"] { width: 38px; height: 38px; }
+.w-iconbtn:hover { background: linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0.10)); transform: scale(1.06); }
+.w-iconbtn:active { transform: scale(0.88); }
+
+.w-listbtn {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  padding: 6px 8px; margin: 0 -8px; width: calc(100% + 16px);
+  border: none; border-radius: 10px; background: transparent; color: inherit; cursor: pointer;
+  transition: background 140ms;
+}
+.w-listbtn:hover { background: rgba(255,255,255,0.08); }
+
+.w-art {
+  border-radius: 12px; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 22px rgba(0,0,0,0.3);
+  color: rgba(255,255,255,0.7);
+}
+
+.w-textarea {
+  flex: 1; resize: none; border: none; outline: none; background: transparent;
+  color: rgba(255,255,255,0.92); font: 13px/1.5 var(--font-sans); padding: 0;
+  -webkit-user-select: text; user-select: text;
+}
+.w-textarea::placeholder, .w-input::placeholder { color: rgba(255,255,255,0.35); }
+.w-input {
+  flex: 1; min-width: 0; padding: 6px 10px; border-radius: 10px; outline: none;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.14);
+  color: #fff; font: 12px var(--font-sans);
+  -webkit-user-select: text; user-select: text;
+}
+.w-todo { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.w-check {
+  width: 17px; height: 17px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(255,255,255,0.45); background: transparent; color: #111;
+  transition: background 160ms, border-color 160ms, transform 180ms cubic-bezier(.3,1.6,.5,1);
+}
+.w-check[data-done="true"] { background: rgba(255,255,255,0.92); border-color: transparent; }
+.w-check:active { transform: scale(0.8); }
+.w-x { border: none; background: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 15px; line-height: 1; }
+.w-app { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: inherit; cursor: pointer; padding: 0; }
+.w-search {
+  display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 14px; border-radius: 999px;
+  border: none; cursor: text; color: rgba(255,255,255,0.65); font: 13px var(--font-sans);
+  background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(255,255,255,0.05);
+}
+
+/* Edit-mode remove badge (iOS style) */
+.w-remove {
+  position: absolute; top: 6px; left: 6px; z-index: 10;
+  width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(235,235,240,0.95); color: #222; font-size: 15px; font-weight: 700; line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}

@@ -2,7 +2,11 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default capabilities for Cortex",
-  "windows": ["main"],
+  "windows": [
+    "main",
+    "widget-*",
+    "dock"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-hide",
@@ -13,6 +17,11 @@
     "core:window:allow-start-dragging",
     "shell:allow-open",
     "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister"
+    "global-shortcut:allow-unregister",
+    "core:window:allow-set-position",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-always-on-top",
+    "core:menu:default",
+    "core:event:default"
   ]
 }
