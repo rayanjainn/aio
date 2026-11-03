@@ -732,37 +732,11 @@ pub async fn get_open_tabs() -> Vec<TabInfo> {
 
 /* ─── IPC: get_running_apps (currently open apps) ───────── */
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RunningApp { pub name: String, pub path: String }
+pub use crate::desktop::macos::RunningApp;
 
 #[tauri::command]
 pub async fn get_running_apps() -> Vec<RunningApp> {
-    tokio::task::spawn_blocking(|| {
-        #[cfg(target_os = "macos")]
-        {
-            let script = r#"tell application "System Events"
-                set out to ""
-                repeat with p in (every process whose background only is false)
-                    try
-                        set out to out & (POSIX path of (file of p)) & linefeed
-                    end try
-                end repeat
-                return out
-            end tell"#;
-            let Ok(out) = std::process::Command::new("osascript").args(["-e", script]).output() else { return vec![] };
-            String::from_utf8_lossy(&out.stdout).lines()
-                .filter(|p| p.ends_with(".app"))
-                .map(|p| RunningApp {
-                    name: std::path::Path::new(p).file_stem().map(|f| f.to_string_lossy().to_string()).unwrap_or_default(),
-                    path: p.to_string(),
-                })
-                .filter(|a| !a.name.is_empty() && a.name != "Cortex")
-                .collect()
-        }
-        #[cfg(not(target_os = "macos"))]
-        { vec![] }
-    }).await.unwrap_or_default()
+    tokio::task::spawn_blocking(crate::desktop::macos::running_apps).await.unwrap_or_default()
 }
 
 /* ─── IPC: file metadata + Finder / Quick Look ──────────── */

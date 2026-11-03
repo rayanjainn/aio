@@ -224,7 +224,7 @@ await test("island: compact activity, hover expands, toast and timer", async () 
   await p.waitForSelector(".is-compact >> text=Copied");
   await p.evaluate(() => window.__emit("island-timer", { minutes: 25 }));
   await p.waitForTimeout(2500); // toast clears, timer takes over
-  await p.waitForSelector(".is-compact >> text=Focus");
+  await p.waitForSelector(".is-compact >> text=/^2[45]:\\d\\d$/"); // timer owns the right wing (music keeps the left)
   const pillReports = await p.evaluate(() => window.__CALLS__.filter(([c]) => c === "island_pill").length);
   assert(pillReports > 0, "pill rect never reported to backend");
   await noErrors(p); await p.close();

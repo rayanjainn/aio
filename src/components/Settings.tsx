@@ -467,7 +467,13 @@ const TINTS: { id: Tint; label: string }[] = [
 
 function AppearanceSection({ onSaved }: { onSaved: () => void }) {
   const [a, setA] = useState<Appearance>(DEFAULT_APPEARANCE);
+  const [glass, setGlass] = useState<{ liquid: boolean; material: string } | null>(null);
   useEffect(() => { loadAppearance().then(setA); }, []);
+  useEffect(() => { invoke<{ liquid: boolean; material: string }>("glass_info").then(setGlass).catch(() => {}); }, []);
+  const pickGlass = (kind: string) => {
+    setGlass(g => g && { ...g, material: kind });
+    invoke("set_glass_material", { kind }).then(onSaved).catch(() => {});
+  };
   const set = (patch: Partial<Appearance>) => {
     const next = { ...a, ...patch };
     setA(next);
@@ -476,6 +482,23 @@ function AppearanceSection({ onSaved }: { onSaved: () => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <h2 style={h2}>Appearance</h2>
+      {glass?.liquid && (
+        <div style={card}>
+          <Row label="Glass material">
+            <div className="segmented glass-well">
+              {[{ id: "liquid", label: "Liquid Glass" }, { id: "frosted", label: "Frosted" }].map(t => (
+                <button key={t.id} data-active={glass.material === t.id} onClick={() => pickGlass(t.id)}>
+                  {glass.material === t.id && <motion.span layoutId="glass-seg" className="liquid-pill" transition={{ type: "spring", stiffness: 500, damping: 36 }} />}
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </Row>
+          <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.32)", marginTop: 10 }}>
+            Liquid Glass is the macOS 26+ material with lensing. If widgets, the dock or the Island look flat or grey, switch to Frosted.
+          </div>
+        </div>
+      )}
       <div style={card}>
         <Row label="Glass density">
           <div className="segmented glass-well">

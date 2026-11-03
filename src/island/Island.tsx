@@ -48,7 +48,7 @@ function Equalizer({ on, color }: { on: boolean; color?: string }) {
 function ToastIcon({ icon }: { icon: string }) {
   const d: Record<string, string> = {
     copy: "M8 8h11v11H8zM5 16V5h11", window: "M3 5h18v14H3zM12 5v14", pause: "M8 5v14M16 5v14",
-    record: "", warning: "M12 3 2 21h20L12 3zm0 6v5m0 3v.5", check: "M20 6 9 17l-5-5", timer: "M12 8v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z",
+    volume: "M4 9v6h4l5 4V5L8 9H4zM17 8a5 5 0 0 1 0 8", mute: "M4 9v6h4l5 4V5L8 9H4zM17 9l4 6m0-6-4 6", record: "", warning: "M12 3 2 21h20L12 3zm0 6v5m0 3v.5", check: "M20 6 9 17l-5-5", timer: "M12 8v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z",
   };
   if (icon === "record") return <span className="is-rec" />;
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d[icon] ?? d.check} /></svg>;
@@ -60,6 +60,7 @@ export default function Island() {
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [volumeHud, setVolumeHud] = useState<{ level: number; muted: boolean; id: number } | null>(null);
   const [charging, setCharging] = useState<number | null>(null); // flash on plug-in
   const [timer, setTimer] = useState<Timer>(() => {
     try { return JSON.parse(localStorage.getItem("cortex.island.timer") ?? "") as Timer; } catch { return { endsAt: null, total: 25 * 60, remaining: 25 * 60, label: "Focus" }; }
@@ -70,7 +71,8 @@ export default function Island() {
   useEffect(() => {
     document.documentElement.classList.add("island-window");
     invoke<Cfg>("island_get_config").then(c => c && setCfg({ ...DEFAULT_CFG, ...c })).catch(() => {});
-    invoke<Geo>("island_geometry").then(g => g && setGeo(g)).catch(() => {});
+    invoke<Geo>("island_geometry").then(g => g && setGeo(g)).catch(() => {})
+      .finally(() => requestAnimationFrame(() => requestAnimationFrame(() => { invoke("surface_ready").catch(() => {}); })));
     const offs: (() => void)[] = [];
     let toastTimer: ReturnType<typeof setTimeout>;
     import("@tauri-apps/api/event").then(async ({ listen }) => {
@@ -98,6 +100,23 @@ export default function Island() {
   const { data: agenda } = usePoll<Agenda[]>("calendar_upcoming", { limit: 2 }, 60_000);
   const { data: stats } = usePoll<Stats>("sys_stats", undefined, 10_000);
   const now = useNow(1000);
+
+  // Volume HUD: flash the level when it changes (key press or menu-bar slider).
+  const { data: vol } = usePoll<[number, boolean] | null>("sys_volume", undefined, 1200);
+  const lastVol = useRef<string | null>(null);
+  useEffect(() => {
+    if (!vol) return;
+    const key = `${vol[0]}:${vol[1]}`;
+    if (lastVol.current !== null && lastVol.current !== key && cfg.toasts) {
+      setVolumeHud({ level: vol[0], muted: vol[1], id: Date.now() });
+    }
+    lastVol.current = key;
+  }, [vol, cfg.toasts]);
+  useEffect(() => {
+    if (!volumeHud) return;
+    const t = setTimeout(() => setVolumeHud(null), 1600);
+    return () => clearTimeout(t);
+  }, [volumeHud?.id]);
 
   // Plugging in flashes a charging activity for a few seconds.
   const wasCharging = useRef<boolean | null>(null);
@@ -130,8 +149,9 @@ export default function Island() {
   const nextMeeting = (agenda ?? []).find(a => a.start * 1000 > now.getTime() - 60_000 && a.start * 1000 - now.getTime() < 10 * 60_000);
 
   // Which activity owns the compact pill (highest priority first).
-  type Act = "toast" | "timer" | "charging" | "meeting" | "music" | "coding" | "idle";
-  const act: Act = toast && cfg.toasts ? "toast"
+  type Act = "volume" | "toast" | "timer" | "charging" | "meeting" | "music" | "coding" | "idle";
+  const act: Act = volumeHud && cfg.toasts ? "volume"
+    : toast && cfg.toasts ? "toast"
     : timer.endsAt && cfg.timer ? "timer"
     : charging !== null && cfg.battery ? "charging"
     : nextMeeting && cfg.calendar ? "meeting"
@@ -141,7 +161,7 @@ export default function Island() {
 
   const H = Math.max(28, Math.round(geo.menuBarHeight));
   const notchW = geo.hasNotch ? geo.notchWidth : 0;
-  const wing = act === "toast" || act === "meeting" ? 132 : act === "idle" ? 0 : 74;
+  const wing = act === "toast" || act === "meeting" || act === "volume" ? 132 : act === "idle" ? 0 : 74;
   const compactW = geo.hasNotch ? notchW + wing * 2 : act === "idle" ? 0 : 150 + wing;
   const W = expanded ? 600 : compactW;
   const Hh = expanded ? 262 : H;
@@ -165,8 +185,11 @@ export default function Island() {
   // ── Compact wings ──
   const left = (() => {
     switch (act) {
+      case "volume": return <span className="is-wing-row"><ToastIcon icon={volumeHud!.muted || volumeHud!.level === 0 ? "mute" : "volume"} /><span>{volumeHud!.muted ? "Muted" : "Volume"}</span></span>;
       case "toast": return <span className="is-wing-row"><ToastIcon icon={toast!.icon} /><span className="is-ellipsis">{toast!.text}</span></span>;
-      case "timer": return <span className="is-wing-row"><ToastIcon icon="timer" /><span>{timer.label}</span></span>;
+      case "timer": return playing && cfg.music
+        ? <span className="is-art-sm">{np?.artwork ? <img src={np.artwork} alt="" /> : <MusicIcon s={12} />}</span>
+        : <span className="is-wing-row"><ToastIcon icon="timer" /><span>{timer.label}</span></span>;
       case "charging": return <span className="is-wing-row is-green"><BoltIcon s={13} /><span>Charging</span></span>;
       case "meeting": return <span className="is-wing-row"><span className="is-dot" /><span className="is-ellipsis">{nextMeeting!.title}</span></span>;
       case "music": return <span className="is-art-sm">{np?.artwork ? <img src={np.artwork} alt="" /> : <MusicIcon s={12} />}</span>;
@@ -176,6 +199,10 @@ export default function Island() {
   })();
   const right = (() => {
     switch (act) {
+      case "volume": return (
+        <span className="is-vol"><i style={{ width: `${volumeHud!.muted ? 0 : volumeHud!.level}%` }} /></span>
+      );
+      // Music keeps the left wing's artwork while a timer owns the right wing.
       case "timer": return <span className="tnum">{mmss(timerLeft)}</span>;
       case "charging": return <span className="tnum is-green">{Math.round(charging ?? 0)}%</span>;
       case "meeting": return <span className="tnum">{relative(nextMeeting!.start, now.getTime()).replace("in ", "")}</span>;

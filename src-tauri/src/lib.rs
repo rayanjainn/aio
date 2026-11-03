@@ -179,6 +179,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(panel_plugin())
         .on_window_event(|window, event| {
             // Widget / dock windows have their own handling — and must never
             // inherit the palette's hide-on-blur below.
@@ -267,8 +268,12 @@ pub fn run() {
             desktop::widgets::widgets_visible,
             desktop::widgets::widgets_edit_mode,
             desktop::providers::sys_stats,
-            desktop::providers::now_playing,
-            desktop::providers::media_control,
+            desktop::nowplaying::now_playing,
+            desktop::nowplaying::media_control,
+            desktop::nowplaying::media_seek,
+            desktop::automation::automation_status,
+            desktop::automation::automation_request,
+            desktop::automation::open_privacy_pane,
             desktop::providers::weather_get,
             desktop::providers::calendar_upcoming,
             desktop::providers::git_repo_status,
@@ -292,6 +297,8 @@ pub fn run() {
             desktop::dock::dock_resize,
             desktop::dock::system_dock_set_hidden,
             desktop::glass::glass_info,
+            desktop::glass::set_glass_material,
+            desktop::anim::surface_ready,
             desktop::shortcuts::shortcuts_get,
             desktop::shortcuts::shortcut_set,
             desktop::shortcuts::shortcuts_suspend,
@@ -306,6 +313,7 @@ pub fn run() {
             desktop::island::island_geometry,
             desktop::island::island_pill,
             desktop::island::island_toast,
+            desktop::island::sys_volume,
             open_studio,
         ])
         .run(tauri::generate_context!())
@@ -657,4 +665,12 @@ pub fn dir_size_bytes(path: &std::path::Path) -> u64 {
         .filter_map(|e| e.metadata().ok())
         .map(|m| m.len())
         .sum()
+}
+
+/// Non-activating panels exist only on macOS; elsewhere this is an empty plugin.
+#[cfg(target_os = "macos")]
+fn panel_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> { tauri_nspanel::init() }
+#[cfg(not(target_os = "macos"))]
+fn panel_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("cortex-panel").build()
 }

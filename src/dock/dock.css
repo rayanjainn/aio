@@ -16,10 +16,6 @@ html.dock-window, html.dock-window body, html.dock-window #root { border-radius:
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
-.dk-bar.dk-hidden.dk-bottom { transform: translateY(120%); opacity: 0; }
-.dk-bar.dk-hidden.dk-top    { transform: translateY(-120%); opacity: 0; }
-.dk-bar.dk-hidden.dk-left   { transform: translateX(-120%); opacity: 0; }
-.dk-bar.dk-hidden.dk-right  { transform: translateX(120%); opacity: 0; }
 
 .dk-tile {
   position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;

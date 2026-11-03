@@ -81,7 +81,7 @@ export function WeatherWidget({ size, config }: WidgetProps) {
 
 /* ── Now playing ────────────────────────────────────────── */
 
-interface NowPlaying { app: string; state: string; title: string; artist: string; album: string; position: number; duration: number; artwork: string | null }
+interface NowPlaying { app: string; state: string; title: string; artist: string; album: string; position: number; duration: number; artwork: string | null; trackId?: string; permission?: string; deniedApp?: string }
 
 export function MusicWidget({ size }: WidgetProps) {
   const { data } = usePoll<NowPlaying>("now_playing", undefined, 2000);
@@ -96,6 +96,13 @@ export function MusicWidget({ size }: WidgetProps) {
   useCardBrand(np && np.app && np.state !== "stopped" ? knownBrand(np.app === "Music" ? "apple music" : np.app) : null);
   const ctl = (action: string) => np?.app && invoke("media_control", { action, app: np.app }).catch(() => {});
 
+  if (np?.permission === "denied" && !np.app) return (
+    <div className="w-center" style={{ gap: 8, textAlign: "center" }}>
+      <div className="w-art" style={{ width: 54, height: 54 }}><MusicIcon s={22} /></div>
+      <div className="w-sub">Allow Cortex to control {np.deniedApp || "your music app"} in System Settings → Automation</div>
+      <button data-nodrag className="w-chip" onClick={() => invoke("open_privacy_pane", { pane: "automation" }).catch(() => {})}>Allow access</button>
+    </div>
+  );
   if (!np || !np.app || np.state === "stopped") return (
     <div className="w-center" style={{ gap: 8 }}>
       <div className="w-art" style={{ width: 54, height: 54 }}><MusicIcon s={22} /></div>
