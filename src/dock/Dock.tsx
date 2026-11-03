@@ -103,6 +103,45 @@ function MiniWeather({ size, city }: { size: number; city: string }) {
   );
 }
 
+function MiniCoding({ size }: { size: number }) {
+  const { data } = usePoll<{ claude: { todayTokens: number; active: boolean }; codex: { todayTokens: number; active: boolean } }>("coding_usage", undefined, 8000);
+  const total = (data?.claude.todayTokens ?? 0) + (data?.codex.todayTokens ?? 0);
+  const active = !!(data?.claude.active || data?.codex.active);
+  const t = total >= 1e6 ? `${(total / 1e6).toFixed(1)}M` : total >= 1e3 ? `${Math.round(total / 1e3)}K` : String(total);
+  return (
+    <div className={`dk-mini dk-coding${active ? " on" : ""}`} style={{ height: size, padding: `0 ${size * 0.24}px`, flexDirection: "row", gap: size * 0.14 }} title={active ? "An AI assistant is working" : "Tokens today"}>
+      <span className="dk-spark" />
+      <div style={{ textAlign: "left", lineHeight: 1.1 }}>
+        <div className="tnum" style={{ fontSize: size * 0.3, fontWeight: 650 }}>{t}</div>
+        <div style={{ fontSize: size * 0.17, opacity: 0.55 }}>{active ? "working" : "today"}</div>
+      </div>
+    </div>
+  );
+}
+
+/** Mirrors the Island's focus timer (shared localStorage across windows). */
+function MiniTimer({ size }: { size: number }) {
+  const now = useNow(1000);
+  const [t, setT] = useState<{ endsAt: number | null; total: number; remaining: number } | null>(null);
+  useEffect(() => {
+    const read = () => { try { setT(JSON.parse(localStorage.getItem("cortex.island.timer") ?? "null")); } catch { setT(null); } };
+    read();
+    addEventListener("storage", read);
+    return () => removeEventListener("storage", read);
+  }, []);
+  const left = t?.endsAt ? Math.max(0, (t.endsAt - now.getTime()) / 1000) : t?.remaining ?? 25 * 60;
+  const total = t?.total ?? 25 * 60;
+  const start = () => import("@tauri-apps/api/event").then(({ emit }) => emit("island-timer", t?.endsAt ? { action: "stop" } : { minutes: Math.round(total / 60) }));
+  return (
+    <div className="dk-mini" style={{ width: size, height: size, cursor: "pointer" }} onClick={start} title={t?.endsAt ? "Stop focus" : "Start focus"}>
+      <Ring value={left / total} size={size * 0.78} stroke={size * 0.075}>
+        <span className="tnum" style={{ fontSize: size * 0.2, fontWeight: 700 }}>{t?.endsAt ? `${Math.ceil(left / 60)}` : "▶︎"}</span>
+        {t?.endsAt && <span style={{ fontSize: size * 0.12, opacity: 0.55 }}>min</span>}
+      </Ring>
+    </div>
+  );
+}
+
 /* ── Bar ────────────────────────────────────────────────── */
 
 export default function Dock() {
@@ -216,7 +255,9 @@ export default function Dock() {
         const body = it.kind === "clock" ? <MiniClock size={sz} />
           : it.kind === "music" ? <MiniMusic size={sz} />
           : it.kind === "weather" ? <MiniWeather size={sz} city={String((it.config as Record<string, unknown> | null)?.city ?? "")} />
-          : <MiniStat kind={it.kind} size={sz} />;
+          : it.kind === "coding" ? <MiniCoding size={sz} />
+          : it.kind === "timer" ? <MiniTimer size={sz} />
+          : <MiniStat kind={it.kind as "cpu" | "battery"} size={sz} />;
         return <div key={`w${i}`} onContextMenu={e => context(e, i)} className="dk-widget">{body}</div>;
       }
     }

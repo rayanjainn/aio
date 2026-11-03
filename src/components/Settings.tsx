@@ -6,6 +6,8 @@ import {
 } from "./icons";
 import type { SourceId } from "../types";
 import { motion } from "framer-motion";
+import ShortcutsSection from "./ShortcutsSection";
+import UpdatesCard from "./UpdatesCard";
 import { DEFAULT_APPEARANCE, loadAppearance, saveAppearance, type Appearance, type Tint } from "../lib/appearance";
 
 /* ── Types ── */
@@ -36,7 +38,7 @@ const DEFAULT_CONFIG: Config = {
   fileRoots: [], quotaBytes: 5 * 1024 * 1024 * 1024, terminal: "Terminal",
 };
 
-type Section = "general" | "appearance" | "connections" | "sources" | "storage" | "about";
+type Section = "general" | "appearance" | "shortcuts" | "connections" | "sources" | "storage" | "about";
 interface SettingsProps { onClose: () => void; }
 
 /* ── Glass tokens ── */
@@ -219,6 +221,7 @@ export default function Settings({ onClose }: SettingsProps) {
   const SECTIONS: { id: Section; label: string }[] = [
     { id: "general",     label: "General" },
     { id: "appearance",  label: "Appearance" },
+    { id: "shortcuts",   label: "Shortcuts" },
     { id: "connections", label: "Connections" },
     { id: "sources",     label: "Sources" },
     { id: "storage",     label: "Storage" },
@@ -423,11 +426,14 @@ export default function Settings({ onClose }: SettingsProps) {
 
           {section === "appearance" && <AppearanceSection onSaved={() => showToast("Saved")} />}
 
+          {section === "shortcuts" && <ShortcutsSection />}
+
           {section === "about" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <h2 style={h2}>About Cortex</h2>
+              <UpdatesCard />
               <div style={card}>
-                {[["Version","0.1.0"],["Toggle palette","⌘K"],["Settings","⌘,"],["Pause capture","⌘⇧P"]].map(([k,v]) => (
+                {[["Toggle palette","⌘K"],["Settings","⌘,"],["Pause capture","⌘⇧P"],["All shortcuts","Settings → Shortcuts"]].map(([k,v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13 }}>
                     <span style={{ color: "rgba(255,255,255,0.45)" }}>{k}</span>
                     <span style={{ color: "rgba(255,255,255,0.80)", fontFamily: "var(--font-mono)" }}>{v}</span>

@@ -429,11 +429,11 @@ fn open(app: &AppHandle) -> tauri::Result<()> {
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html#/dock".into()))
         .title("Cortex Dock")
         .decorations(false).transparent(true).shadow(false).resizable(false)
-        .skip_taskbar(true).focused(false).always_on_top(true)
+        .skip_taskbar(true).focused(false).focusable(false).always_on_top(true)
         .visible_on_all_workspaces(true).accept_first_mouse(true)
         .inner_size(600.0, 76.0)
         .build()?;
-    super::glass::apply(&win, 28.0);
+    super::glass::apply_material(&win, 28.0, super::glass::Material::Vivid);
     #[cfg(target_os = "macos")]
     super::widgets::mac::float_everywhere(&win);
     place(app);

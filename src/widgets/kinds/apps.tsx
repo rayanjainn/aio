@@ -211,3 +211,61 @@ export function ShellWidget({ size }: WidgetProps) {
     </div>
   );
 }
+
+/* ── Coding usage (Claude Code / Codex) ─────────────────── */
+
+type Tool = { installed: boolean; todayTokens: number; todayMessages: number; week: number[]; blockTokens: number; blockEndsAt: number | null; lastActive: number | null; active: boolean; model: string; project: string };
+
+function tok(n: number): string {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}K`;
+  return String(n);
+}
+
+export function CodingWidget({ size }: WidgetProps) {
+  const { data } = usePoll<{ claude: Tool; codex: Tool }>("coding_usage", undefined, 6000);
+  useCardBrand(data?.claude.active ? { rgb: "217,119,87" } : null);
+  if (!data) return <div className="skeleton" style={{ width: "100%", height: "100%" }} />;
+  const { claude, codex } = data;
+  if (!claude.installed && !codex.installed) return <WEmpty>No Claude Code or Codex sessions found on this Mac</WEmpty>;
+  const week = claude.week.map((v, i) => v + (codex.week[i] ?? 0));
+  const max = Math.max(1, ...week);
+  const days = ["S", "M", "T", "W", "T", "F", "S"];
+  const today = new Date().getDay();
+  const status = claude.active ? `Claude is working${claude.project ? ` · ${claude.project}` : ""}` : codex.active ? "Codex is working" : claude.lastActive ? `Active ${relative(claude.lastActive)}` : "Idle";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 8 }}>
+      <WTitle right={<span className={claude.active || codex.active ? "w-live on" : "w-live"} />}>Coding</WTitle>
+      <div style={{ display: "flex", gap: 18, alignItems: "baseline" }}>
+        <div>
+          <div className="w-big tnum">{tok(claude.todayTokens)}</div>
+          <div className="w-faint" style={{ fontSize: 11 }}>Claude today</div>
+        </div>
+        {size !== "s" && (
+          <div>
+            <div className="w-big tnum">{tok(codex.todayTokens)}</div>
+            <div className="w-faint" style={{ fontSize: 11 }}>Codex today</div>
+          </div>
+        )}
+        {size !== "s" && claude.blockEndsAt && (
+          <div style={{ marginLeft: "auto", textAlign: "right" }}>
+            <div className="w-big tnum">{tok(claude.blockTokens)}</div>
+            <div className="w-faint" style={{ fontSize: 11 }}>5h block · {Math.max(0, Math.round((claude.blockEndsAt * 1000 - Date.now()) / 60000))}m left</div>
+          </div>
+        )}
+      </div>
+      {size === "l" && (
+        <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 8, paddingTop: 8 }}>
+          {week.map((v, i) => (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, height: "100%", justifyContent: "flex-end" }}>
+              <div style={{ width: "100%", height: `${Math.max(4, (v / max) * 100)}%`, borderRadius: 6,
+                background: i === 6 ? "var(--w-accent, #fff)" : "rgba(255,255,255,0.22)", transition: "height 700ms var(--ease-out)" }} />
+              <span className="w-faint" style={{ fontSize: 10 }}>{days[(today - 6 + i + 7) % 7]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="w-sub" style={{ marginTop: "auto", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{status}{claude.model ? ` · ${claude.model}` : ""}</div>
+    </div>
+  );
+}

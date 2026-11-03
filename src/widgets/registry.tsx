@@ -5,7 +5,7 @@ import { BatteryWidget, SystemWidget } from "./kinds/system";
 import { MusicWidget, PhotoWidget, WeatherWidget } from "./kinds/media";
 import { ClipboardWidget, LauncherWidget, NotesWidget, TodosWidget } from "./kinds/productivity";
 import { DockerWidget, GitWidget, GithubWidget } from "./kinds/dev";
-import { AppWidget, FilesWidget, ProjectsWidget, RunningWidget, ShellWidget, TabsWidget } from "./kinds/apps";
+import { AppWidget, CodingWidget, FilesWidget, ProjectsWidget, RunningWidget, ShellWidget, TabsWidget } from "./kinds/apps";
 
 export type FieldType = "text" | "select" | "toggle" | "number" | "date" | "zones" | "apps" | "app" | "repos";
 export interface Field { key: string; label: string; type: FieldType; options?: { value: string; label: string }[]; placeholder?: string }
@@ -81,6 +81,7 @@ export const KINDS: WidgetKind[] = [
   { kind: "system", name: "System", description: "CPU, memory, disk and network", category: "System", sizes: ["s", "m", "l"], Component: SystemWidget },
   { kind: "battery", name: "Battery", description: "Charge and time remaining", category: "System", sizes: ["s", "m"], Component: BatteryWidget },
 
+  { kind: "coding", name: "Coding Usage", description: "Claude Code & Codex tokens, 5-hour block, live status", category: "Developer", sizes: ["s", "m", "l"], Component: CodingWidget },
   { kind: "git", name: "Git Repos", description: "Branch, changes, ahead/behind", category: "Developer", sizes: ["s", "m", "l"], Component: GitWidget,
     fields: [{ key: "repos", label: "Repositories", type: "repos" }] },
   { kind: "docker", name: "Docker", description: "Containers with start/stop", category: "Developer", sizes: ["s", "m", "l"], Component: DockerWidget },

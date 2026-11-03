@@ -27,6 +27,7 @@ export function WidgetCard({ widget, setConfig, preview, edit, onRemove }: {
     <BrandContext.Provider value={setBrand}>
     <div ref={ref} className={`glass w-card${k?.bleed ? " bleed" : ""}${brand ? " branded" : ""}${brand?.base ? " based" : ""}`} data-edit={edit ? "true" : undefined}
       style={{ borderRadius: 22, ...brandVars }}>
+      <span className="w-sweep" aria-hidden />
       {edit && onRemove && <button data-nodrag className="w-remove" onClick={onRemove} title="Remove widget">−</button>}
       <ErrorBoundary label={widget.kind}>
         {k ? <k.Component widget={widget} size={size} config={widget.config ?? {}} setConfig={setConfig} preview={preview} />

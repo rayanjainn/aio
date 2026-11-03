@@ -79,6 +79,8 @@ pub struct AppState {
     /// Name of the app that was frontmost just before Cortex (for window-mgmt
     /// commands — so they resize YOUR app, not Finder/Cortex).
     pub last_app:      Arc<std::sync::Mutex<String>>,
+    /// Same app with pid/path (Accessibility window management needs the pid).
+    pub last_front:    Arc<std::sync::Mutex<desktop::macos::FrontApp>>,
 }
 
 /// Bring the main window to the front and stamp `shown_at`.
@@ -87,25 +89,26 @@ pub(crate) fn show_main(app: &tauri::AppHandle) {
         if let Some(state) = app.try_state::<AppState>() {
             state.shown_at.store(now_ms(), Ordering::Relaxed);
             // Capture the app you're in RIGHT NOW — before Cortex takes focus — so
-            // window-management commands target it. Authoritative vs the 1.2s poller
-            // (which can be stale if you switch apps then hit ⌘K quickly).
-            // lsappinfo needs no Accessibility.
-            #[cfg(target_os = "macos")]
-            if let Ok(o) = std::process::Command::new("sh")
-                .args(["-c", "lsappinfo info -only name \"$(lsappinfo front)\" 2>/dev/null"])
-                .output()
-            {
-                let raw  = String::from_utf8_lossy(&o.stdout);
-                let name = raw.rsplit('=').next().unwrap_or("").trim().trim_matches('"').to_string();
-                if !name.is_empty() && !name.to_lowercase().contains("cortex") {
-                    if let Ok(mut g) = state.last_app.lock() { *g = name; }
-                }
-            }
+            // window-management commands target it. NSWorkspace answers in
+            // microseconds (the old `lsappinfo` subprocess delayed every ⌘K).
+            remember_front_app(&state);
         }
         let _ = w.unminimize();
         let _ = w.center();
         let _ = w.show();
         let _ = w.set_focus();
+        use tauri::Emitter;
+        let _ = w.emit("palette-shown", ());
+    }
+}
+
+/// Record the frontmost non-Cortex app (target of window commands).
+fn remember_front_app(state: &AppState) {
+    if let Some(f) = desktop::macos::frontmost_app() {
+        if f.pid != std::process::id() as i32 && !f.name.is_empty() && !f.name.eq_ignore_ascii_case("cortex") {
+            if let Ok(mut g) = state.last_app.lock() { *g = f.name.clone(); }
+            if let Ok(mut g) = state.last_front.lock() { *g = f; }
+        }
     }
 }
 
@@ -121,6 +124,10 @@ pub fn toggle_recording(app: &tauri::AppHandle) -> bool {
         let _ = items.pause.set_text(if recording { "Pause Capture" } else { "Resume Capture" });
     }
     let _ = app.emit("recording-changed", recording);
+    let _ = app.emit("island-toast", serde_json::json!({
+        "icon": if recording { "record" } else { "pause" },
+        "text": if recording { "Screen memory on" } else { "Screen memory paused" },
+    }));
     recording
 }
 
@@ -128,6 +135,7 @@ pub fn toggle_recording(app: &tauri::AppHandle) -> bool {
 pub struct TrayItems {
     pub pause:   MenuItem<tauri::Wry>,
     pub widgets: MenuItem<tauri::Wry>,
+    pub update:  MenuItem<tauri::Wry>,
 }
 
 /// Open the Widgets & Dock studio inside the main window.
@@ -152,7 +160,7 @@ pub fn run() {
         .compact()
         .init();
 
-    use tauri_plugin_global_shortcut::{Code, Modifiers, ShortcutState};
+    use tauri_plugin_global_shortcut::ShortcutState;
     tauri::Builder::default()
         // Single instance MUST be the first plugin — a second launch focuses the
         // existing window instead of spawning a duplicate (and duplicate tray).
@@ -163,29 +171,14 @@ pub fn run() {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
                     if event.state() != ShortcutState::Pressed { return; }
-                    if shortcut.matches(Modifiers::SUPER | Modifiers::SHIFT, Code::KeyP)
-                        || shortcut.matches(Modifiers::CONTROL | Modifiers::SHIFT, Code::KeyP)
-                    {
-                        toggle_recording(app);
-                        return;
-                    }
-                    {
-                        if let Some(w) = app.get_webview_window("main") {
-                            // Toggle only when visible AND focused; otherwise bring
-                            // forward. `is_visible` alone is unreliable post blur-hide.
-                            let visible = w.is_visible().unwrap_or(false);
-                            let focused = w.is_focused().unwrap_or(false);
-                            if visible && focused {
-                                let _ = w.hide();
-                            } else {
-                                show_main(app);
-                            }
-                        }
-                    }
+                    // Every hotkey (⌘K, pause, island, window snapping…) is
+                    // user-configurable; see desktop::shortcuts.
+                    desktop::shortcuts::handle(app, shortcut);
                 })
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .on_window_event(|window, event| {
             // Widget / dock windows have their own handling — and must never
             // inherit the palette's hide-on-blur below.
@@ -299,6 +292,20 @@ pub fn run() {
             desktop::dock::dock_resize,
             desktop::dock::system_dock_set_hidden,
             desktop::glass::glass_info,
+            desktop::shortcuts::shortcuts_get,
+            desktop::shortcuts::shortcut_set,
+            desktop::shortcuts::shortcuts_suspend,
+            desktop::shortcuts::shortcut_reset_all,
+            desktop::window::window_snap,
+            desktop::window::accessibility_status,
+            desktop::coding::coding_usage,
+            desktop::updater::update_check,
+            desktop::updater::update_restart,
+            desktop::island::island_get_config,
+            desktop::island::island_set_config,
+            desktop::island::island_geometry,
+            desktop::island::island_pill,
+            desktop::island::island_toast,
             open_studio,
         ])
         .run(tauri::generate_context!())
@@ -516,30 +523,17 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         autohide:      Arc::new(AtomicBool::new(false)),
         shown_at:      Arc::new(AtomicI64::new(now_ms())),
         last_app:      Arc::new(std::sync::Mutex::new(String::new())),
+        last_front:    Arc::new(std::sync::Mutex::new(Default::default())),
     });
 
     // Track the frontmost non-Cortex app so window-management commands resize
     // the app you were actually using.
-    #[cfg(target_os = "macos")]
     {
-        let la = app.state::<AppState>().last_app.clone();
+        let h = app.handle().clone();
         tauri::async_runtime::spawn(async move {
             loop {
-                // lsappinfo needs NO Accessibility permission (unlike System Events).
-                // `lsappinfo front` → ASN; `info -only name <asn>` → "LSDisplayName"="Safari".
-                let out = tokio::task::spawn_blocking(|| {
-                    std::process::Command::new("sh")
-                        .args(["-c", "lsappinfo info -only name \"$(lsappinfo front)\" 2>/dev/null"])
-                        .output().ok().map(|o| String::from_utf8_lossy(&o.stdout).to_string())
-                }).await.ok().flatten();
-                if let Some(raw) = out {
-                    // raw = "LSDisplayName"="Safari"
-                    let name = raw.rsplit('=').next().unwrap_or("").trim().trim_matches('"').to_string();
-                    if !name.is_empty() && !name.to_lowercase().contains("cortex") {
-                        if let Ok(mut g) = la.lock() { *g = name; }
-                    }
-                }
-                tokio::time::sleep(std::time::Duration::from_millis(1200)).await;
+                if let Some(state) = h.try_state::<AppState>() { remember_front_app(&state); }
+                tokio::time::sleep(std::time::Duration::from_millis(700)).await;
             }
         });
     }
@@ -563,14 +557,11 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── Global shortcut ⌘K ────────────────────────────────
-    // Plugin already initialized with handler in run(); just register the key.
-    use tauri_plugin_global_shortcut::GlobalShortcutExt;
-    app.global_shortcut().register("CommandOrControl+K")?;
-    // Privacy pause — failure to register is logged loudly but must not abort
-    // startup (another app may own the combo; the tray item still works).
-    if let Err(e) = app.global_shortcut().register("CommandOrControl+Shift+P") {
-        tracing::error!(target: "aio_cortex_lib", "could not register ⌘⇧P pause hotkey: {e}");
-    }
+    // Hotkeys from config (defaults: ⌘K palette, ⌘⇧P privacy pause, ⌃⌥ +
+    // arrows/letters for window snapping). A combo another app owns is logged
+    // and shown in Settings, never fatal.
+    app.manage(desktop::shortcuts::Registered::default());
+    desktop::shortcuts::register_all(app.handle());
 
     // ── System tray ───────────────────────────────────────
     use tauri::menu::PredefinedMenuItem;
@@ -579,10 +570,11 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let widgets_i = MenuItem::with_id(app, "widgets",  "Hide Widgets",       true, None::<&str>)?;
     let studio_i  = MenuItem::with_id(app, "studio",   "Widgets & Dock…",    true, None::<&str>)?;
     let reindex_i = MenuItem::with_id(app, "reindex",  "Re-index Now",       true, None::<&str>)?;
+    let update_i  = MenuItem::with_id(app, "update",   "Check for Updates…", true, None::<&str>)?;
     let reset_i   = MenuItem::with_id(app, "reset",    "Re-run Onboarding",  true, None::<&str>)?;
     let sep1      = PredefinedMenuItem::separator(app)?;
     let quit_i    = MenuItem::with_id(app, "quit",     "Quit Cortex",        true, Some("Cmd+Q"))?;
-    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &PredefinedMenuItem::separator(app)?, &studio_i, &widgets_i, &PredefinedMenuItem::separator(app)?, &reindex_i, &reset_i, &sep1, &quit_i])?;
+    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &PredefinedMenuItem::separator(app)?, &studio_i, &widgets_i, &PredefinedMenuItem::separator(app)?, &reindex_i, &update_i, &reset_i, &sep1, &quit_i])?;
 
     let tray_rgba = image::load_from_memory(include_bytes!("../icons/tray@2x.png"))
         .expect("decode tray icon")
@@ -600,6 +592,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             "open"    => show_main(app),
             "pause"   => { toggle_recording(app); }
             "studio"  => desktop::open_studio(app, "widgets"),
+            "update"  => desktop::updater::tray_clicked(app),
             "widgets" => {
                 use tauri::Emitter;
                 if let Some(st) = app.try_state::<Arc<desktop::widgets::WidgetStore>>() {
@@ -628,7 +621,8 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         })
         .build(app)?;
-    app.manage(TrayItems { pause: pause_i, widgets: widgets_i });
+    app.manage(TrayItems { pause: pause_i, widgets: widgets_i, update: update_i });
+    desktop::updater::init(app.handle());
 
     // Liquid Glass behind the palette (native on macOS 26+, vibrancy before).
     if let Some(w) = app.get_webview_window("main") { desktop::glass::apply(&w, 14.0); }

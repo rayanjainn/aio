@@ -12,7 +12,6 @@ import {
 import { invoke, hideWindow, openExternal } from "../lib/tauri";
 import { tryConvert } from "../lib/convert";
 import { searchEmoji } from "../lib/emoji";
-import { useGlassPointer } from "../hooks/useGlassPointer";
 
 /* ── Utilities ──────────────────────────────────────────── */
 function relativeTime(iso: string): string {
@@ -59,7 +58,7 @@ type Kind = "calc" | "exec" | "ai" | "emoji" | "web" | "cmd" | "local" | "chatop
 type Item = SearchResult & { _kind?: Kind; _emoji?: string; _cmd?: Cmd; _local?: boolean; _chatId?: string; _copy?: string; _snipId?: string };
 
 /* Root capability commands (the "what can I do" list). */
-interface Cmd { id: string; label: string; sub: string; icon: SourceId; mode: "files" | "source" | "ai" | "calc" | "emoji" | "chats" | "memory" | "clips" | "snippets" | "savesnip" | "winaction" | "studio"; source?: SourceId; ask?: string; action?: string; }
+interface Cmd { id: string; label: string; sub: string; icon: SourceId; mode: "files" | "source" | "ai" | "calc" | "emoji" | "chats" | "memory" | "clips" | "snippets" | "savesnip" | "winaction" | "studio" | "timer" | "island" | "settings"; source?: SourceId; ask?: string; action?: string; }
 const COMMANDS: Cmd[] = [
   { id: "studio",    label: "Widgets & Dock",         sub: "Add desktop widgets, customize your dock", icon: "apps", mode: "studio", action: "widgets" },
   { id: "ai",        label: "Ask AI",                 sub: "Chat with Cortex about your data", icon: "ai",  mode: "ai" },
@@ -76,11 +75,17 @@ const COMMANDS: Cmd[] = [
   { id: "chats",     label: "Chat History",           sub: "Resume past AI conversations", icon: "ai",      mode: "chats" },
   { id: "calc",      label: "Calculator",             sub: "Math & unit conversions",    icon: "calc",      mode: "calc" },
   { id: "emoji",     label: "Emoji Picker",           sub: "Search & copy emoji",        icon: "calc",      mode: "emoji" },
-  { id: "wl", label: "Window: Left Half",  sub: "Snap the active app left",     icon: "commands", mode: "winaction", action: "left" },
-  { id: "wr", label: "Window: Right Half", sub: "Snap the active app right",    icon: "commands", mode: "winaction", action: "right" },
-  { id: "wm", label: "Window: Maximize",   sub: "Fill the screen",             icon: "commands", mode: "winaction", action: "max" },
-  { id: "wc", label: "Window: Center",     sub: "Center the active window",    icon: "commands", mode: "winaction", action: "center" },
-  { id: "wf", label: "Window: Fullscreen", sub: "Toggle native fullscreen",   icon: "commands", mode: "winaction", action: "full" },
+  ...([
+    ["left", "Left Half"], ["right", "Right Half"], ["top", "Top Half"], ["bottom", "Bottom Half"],
+    ["topLeft", "Top Left Quarter"], ["topRight", "Top Right Quarter"], ["bottomLeft", "Bottom Left Quarter"], ["bottomRight", "Bottom Right Quarter"],
+    ["leftThird", "Left Third"], ["centerThird", "Center Third"], ["rightThird", "Right Third"], ["leftTwoThirds", "Left Two Thirds"], ["rightTwoThirds", "Right Two Thirds"],
+    ["max", "Maximize"], ["almostMax", "Almost Maximize"], ["center", "Center"], ["fullscreen", "Toggle Fullscreen"], ["restore", "Restore"], ["nextDisplay", "Move to Next Display"],
+  ] as const).map(([action, label]): Cmd => ({ id: `w-${action}`, label: `Window: ${label}`, sub: "Arrange the app you were using", icon: "commands", mode: "winaction", action })),
+  { id: "focus25",  label: "Start Focus Timer",      sub: "25 minutes in the Island",      icon: "commands", mode: "timer", action: "25" },
+  { id: "focus50",  label: "Start Deep Focus",       sub: "50 minutes in the Island",      icon: "commands", mode: "timer", action: "50" },
+  { id: "focusoff", label: "Stop Focus Timer",       sub: "Cancel the running timer",      icon: "commands", mode: "timer", action: "stop" },
+  { id: "island",   label: "Island Settings",        sub: "Dynamic Island: music, coding, timer…", icon: "commands", mode: "studio", action: "island" },
+  { id: "keys",     label: "Keyboard Shortcuts",     sub: "Change ⌘K and every other hotkey", icon: "commands", mode: "settings", action: "shortcuts" },
 ];
 
 interface Scope { cmd: Cmd; }
@@ -373,7 +378,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _onb, onOpenStudio }: CommandPaletteProps = {}) {
   const { query, setQuery, response, loading, toasts, dismissToast, execute, ollamaHealth } = useSearch();
-  const { status: liveStatus } = useStatus(5_000);
+  const { status: liveStatus } = useStatus(10_000);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [ollamaDismissed, setOllamaDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -394,7 +399,6 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
   const [flash, setFlash] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  useGlassPointer(rootRef);
   const inputRef = useRef<HTMLInputElement>(null);
   const spotRef = useRef<ReturnType<typeof setTimeout>>();
   const srcRef = useRef<ReturnType<typeof setTimeout>>();
@@ -572,7 +576,13 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
   const selected = items[selectedIndex] ?? null;
   const clampIndex = useCallback((n: number) => Math.max(0, Math.min(n, items.length - 1)), [items.length]);
 
-  const copy = useCallback(async (text: string) => { try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} }, []);
+  const copy = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true); setTimeout(() => setCopied(false), 1200);
+      invoke("island_toast", { icon: "copy", text: "Copied" }).catch(() => {});
+    } catch { /* clipboard denied */ }
+  }, []);
 
   // Send a conversation turn → ask_ai_chat (RAG + history, persisted).
   const sendChat = useCallback(async (id: string, msgs: ChatMsg[]) => {
@@ -626,7 +636,17 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
         if (c.mode === "ai") openChat(c.ask);
         else if (c.mode === "savesnip") saveClipSnippet();
         else if (c.mode === "studio") { setQuery(""); onOpenStudio?.(c.action ?? "widgets"); }
-        else if (c.mode === "winaction") { const a = c.action; setQuery(""); hideWindow(); setTimeout(() => invoke("window_action", { action: a }).catch(e => console.error(e)), 200); }
+        else if (c.mode === "winaction") {
+          // Hide first so the target app is frontmost again, then snap it.
+          const a = c.action; setQuery(""); hideWindow();
+          setTimeout(() => invoke<string>("window_snap", { action: a })
+            .catch(e => invoke("island_toast", { icon: "warning", text: String(e) }).catch(() => {})), 120);
+        }
+        else if (c.mode === "timer") {
+          setQuery(""); hideWindow();
+          import("@tauri-apps/api/event").then(({ emit }) => emit("island-timer", c.action === "stop" ? { action: "stop" } : { minutes: Number(c.action) }));
+        }
+        else if (c.mode === "settings") { setQuery(""); onOpenSettings?.(); }
         else enterScope(c);
       } return;
       case "chatopen": if (item._chatId) openSavedChat(item._chatId); return;
@@ -721,6 +741,15 @@ export function CommandPalette({ onOpenSettings, onExecPlan, onOpenOnboarding: _
   useEffect(() => { setSelectedIndex(0); setActionsOpen(false); }, [q, scope]);
   useEffect(() => { const el = listRef.current?.querySelector(`[data-idx="${selectedIndex}"]`) as HTMLElement; el?.scrollIntoView({ block: "nearest" }); }, [selectedIndex]);
   useEffect(() => { inputRef.current?.focus(); }, []);
+  // Every ⌘K: focus + select the query (type to replace), refresh running apps.
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => listen("palette-shown", () => {
+      requestAnimationFrame(() => { inputRef.current?.focus(); inputRef.current?.select(); });
+      invoke<{ name: string; path: string }[]>("get_running_apps").then(r => setRunning(r.map(runningItem))).catch(() => {});
+    })).then(u => { off = u; }).catch(() => {});
+    return () => off?.();
+  }, []);
 
   const showOllama = !ollamaDismissed && ollamaHealth !== null && (!ollamaHealth.available || ollamaHealth.missingModels.length > 0);
   const showPreview = !chat && !actionsOpen && (selected?._local || isPreviewable(selected)) && selected?._kind !== "cmd";

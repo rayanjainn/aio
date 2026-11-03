@@ -4,7 +4,7 @@ export type DockItem =
   | { type: "widget"; kind: DockWidgetKind; config?: Record<string, unknown> | null }
   | { type: "separator" };
 
-export type DockWidgetKind = "clock" | "battery" | "cpu" | "music" | "weather";
+export type DockWidgetKind = "clock" | "battery" | "cpu" | "music" | "weather" | "coding" | "timer";
 
 export interface DockConfig {
   enabled: boolean;
@@ -23,4 +23,6 @@ export const DOCK_WIDGETS: { kind: DockWidgetKind; name: string }[] = [
   { kind: "cpu", name: "CPU" },
   { kind: "battery", name: "Battery" },
   { kind: "weather", name: "Weather" },
+  { kind: "coding", name: "Coding (Claude / Codex)" },
+  { kind: "timer", name: "Focus Timer" },
 ];
