@@ -52,6 +52,19 @@ Temporal queries work: "last Tuesday", "before the incident".
 - `widgets.rs` — one window per widget, `~/.cortex/widgets.json`; frontend `src/widgets/`
 - `dock.rs` — Cortex Dock (`~/.cortex/dock.json`, frontend `src/dock/`) + macOS Dock editor
 - `providers.rs` — widget data (sysinfo, pmset, Open-Meteo, git2, Docker, …)
+- `island.rs` — Dynamic-Island window above the menu bar (frontend `src/island/`)
+- `coding.rs` — Claude Code / Codex usage from local JSONL logs (incremental reads)
+- `shortcuts.rs` — all global hotkeys, configurable (`config.json → shortcuts`)
+- `window.rs` — Accessibility-API window snapping (halves, quarters, thirds…)
+- `updater.rs` — auto-update from GitHub Releases (`latest.json`, minisign key)
+- Widgets/dock/island use always-active vibrancy (`glass::Material::Vivid`):
+  Liquid Glass renders foggy in non-key windows.
+
+## Tests
+- `cargo test` (src-tauri) — unit tests incl. parsers, layout math, shortcuts.
+- `npm run test:e2e` — every window in Chromium against `e2e/mock.js`.
+- macOS-only code can be type-checked from Linux with a stubbed C toolchain
+  (`cargo check --target aarch64-apple-darwin`).
 - Windows are routed by hash: `#/widget/<id>`, `#/dock`, otherwise the palette.
 
 ## IPC pattern

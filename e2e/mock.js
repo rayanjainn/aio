@@ -29,7 +29,7 @@
     'plugin:event|unlisten': () => null,
     'plugin:event|emit': () => null,
     dock_resize: () => null, dock_set_config: (a) => a.cfg, macos_dock_set: () => handlers.macos_dock_get(),
-    glass_info: () => ({ native: !!window.__MOCK_NATIVE__ }),
+    glass_info: () => ({ native: window.__MOCK_NATIVE__ !== false, liquid: true }),
     app_status: () => ({ running: true, cpu: 4 + Math.random() * 6, memBytes: 812e6, processes: 9 }),
     get_open_tabs: () => [{ browser: 'Brave Browser', title: 'Liquid Glass — Apple Developer', url: 'https://developer.apple.com/design/' }, { browser: 'Brave Browser', title: 'rayanjainn/aio: Cortex', url: 'https://github.com/rayanjainn/aio' }, { browser: 'Safari', title: 'Tauri 2 — Window customization', url: 'https://v2.tauri.app/learn/window-customization/' }, { browser: 'Safari', title: 'Open-Meteo API', url: 'https://open-meteo.com/' }],
     recent_files: () => [{ name: 'Q4 roadmap.pdf', path: '/Users/r/Downloads/Q4 roadmap.pdf', modified: Date.now()/1000 - 600, size: 2.4e6, isDir: false }, { name: 'IMG_2041.HEIC', path: '/x', modified: Date.now()/1000 - 3600, size: 3.1e6, isDir: false }, { name: 'cortex-design', path: '/y', modified: Date.now()/1000 - 86400, size: 0, isDir: true }, { name: 'invoice-oct.xlsx', path: '/z', modified: Date.now()/1000 - 172800, size: 48e3, isDir: false }],
@@ -68,6 +68,7 @@
     shortcuts_suspend: () => null, shortcut_reset_all: () => handlers.shortcuts_get(),
     window_snap: (a) => { window.__LAST_SNAP__ = a.action; return 'Left Half'; },
     accessibility_status: () => true,
+    update_check: () => ({ current: '0.2.0', available: null, ready: null, notes: null, error: null }), update_restart: () => null,
   };
   Object.assign(handlers, (window.__MOCK__ || {}).handlers || {});
   window.__CALLS__ = [];

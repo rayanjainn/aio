@@ -135,6 +135,7 @@ pub fn toggle_recording(app: &tauri::AppHandle) -> bool {
 pub struct TrayItems {
     pub pause:   MenuItem<tauri::Wry>,
     pub widgets: MenuItem<tauri::Wry>,
+    pub update:  MenuItem<tauri::Wry>,
 }
 
 /// Open the Widgets & Dock studio inside the main window.
@@ -177,6 +178,7 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .on_window_event(|window, event| {
             // Widget / dock windows have their own handling — and must never
             // inherit the palette's hide-on-blur below.
@@ -297,6 +299,8 @@ pub fn run() {
             desktop::window::window_snap,
             desktop::window::accessibility_status,
             desktop::coding::coding_usage,
+            desktop::updater::update_check,
+            desktop::updater::update_restart,
             desktop::island::island_get_config,
             desktop::island::island_set_config,
             desktop::island::island_geometry,
@@ -566,10 +570,11 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let widgets_i = MenuItem::with_id(app, "widgets",  "Hide Widgets",       true, None::<&str>)?;
     let studio_i  = MenuItem::with_id(app, "studio",   "Widgets & Dock…",    true, None::<&str>)?;
     let reindex_i = MenuItem::with_id(app, "reindex",  "Re-index Now",       true, None::<&str>)?;
+    let update_i  = MenuItem::with_id(app, "update",   "Check for Updates…", true, None::<&str>)?;
     let reset_i   = MenuItem::with_id(app, "reset",    "Re-run Onboarding",  true, None::<&str>)?;
     let sep1      = PredefinedMenuItem::separator(app)?;
     let quit_i    = MenuItem::with_id(app, "quit",     "Quit Cortex",        true, Some("Cmd+Q"))?;
-    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &PredefinedMenuItem::separator(app)?, &studio_i, &widgets_i, &PredefinedMenuItem::separator(app)?, &reindex_i, &reset_i, &sep1, &quit_i])?;
+    let menu      = Menu::with_items(app, &[&open_i, &pause_i, &PredefinedMenuItem::separator(app)?, &studio_i, &widgets_i, &PredefinedMenuItem::separator(app)?, &reindex_i, &update_i, &reset_i, &sep1, &quit_i])?;
 
     let tray_rgba = image::load_from_memory(include_bytes!("../icons/tray@2x.png"))
         .expect("decode tray icon")
@@ -587,6 +592,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             "open"    => show_main(app),
             "pause"   => { toggle_recording(app); }
             "studio"  => desktop::open_studio(app, "widgets"),
+            "update"  => desktop::updater::tray_clicked(app),
             "widgets" => {
                 use tauri::Emitter;
                 if let Some(st) = app.try_state::<Arc<desktop::widgets::WidgetStore>>() {
@@ -615,7 +621,8 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         })
         .build(app)?;
-    app.manage(TrayItems { pause: pause_i, widgets: widgets_i });
+    app.manage(TrayItems { pause: pause_i, widgets: widgets_i, update: update_i });
+    desktop::updater::init(app.handle());
 
     // Liquid Glass behind the palette (native on macOS 26+, vibrancy before).
     if let Some(w) = app.get_webview_window("main") { desktop::glass::apply(&w, 14.0); }

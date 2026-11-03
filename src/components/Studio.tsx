@@ -11,6 +11,7 @@ import { SIZES, sizeClass, type SizeClass, type Widget, type WidgetConfig } from
 import { WidgetCard } from "../widgets/WidgetCard";
 import { AppIcon, CloseIcon } from "./icons";
 import { CortexDockTab, MacDockTab, SystemDockSwitch } from "./DockStudio";
+import IslandTab from "./IslandStudio";
 
 export interface StudioTab { id: string; label: string; render: () => ReactNode }
 
@@ -211,7 +212,7 @@ function WidgetsTab({ focusId }: { focusId: string | null }) {
   useEffect(() => setSelected(focusId), [focusId]);
 
   const refresh = useCallback(() => {
-    invoke<Widget[]>("widgets_list").then(setPlaced).catch(() => {});
+    invoke<Widget[]>("widgets_list").then(ws => setPlaced(ws.filter((w, i) => ws.findIndex(x => x.id === w.id) === i))).catch(() => {});
     invoke<boolean>("widgets_visible").then(setVisible).catch(() => {});
   }, []);
   useEffect(() => {
@@ -223,7 +224,8 @@ function WidgetsTab({ focusId }: { focusId: string | null }) {
 
   const add = async (k: WidgetKind, size: SizeClass) => {
     const w = await invoke<Widget>("widget_add", { kind: k.kind, w: SIZES[size].w, h: SIZES[size].h, config: k.defaults ?? {} });
-    if (w) { setPlaced(p => [...p, w]); if (k.fields?.length) setSelected(w.id); }
+    // The backend also emits widgets-changed (→ refresh); never list it twice.
+    if (w) { setPlaced(p => p.some(x => x.id === w.id) ? p : [...p, w]); if (k.fields?.length) setSelected(w.id); }
   };
   const cats = ["All", "Essentials", "Apps", "Productivity", "System", "Developer"];
   const sel = placed.find(p => p.id === selected) ?? null;
@@ -290,6 +292,7 @@ export default function Studio({ tab, onClose, extraTabs = [] }: { tab: string; 
         <div style={{ flex: 1, minHeight: 0 }}><MacDockTab /></div>
       </div>
     ) },
+    { id: "island", label: "Island", render: () => <IslandTab /> },
     ...extraTabs,
   ];
   const cur = tabs.find(t => t.id === active) ?? tabs[0];

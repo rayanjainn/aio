@@ -5,3 +5,4 @@ src-tauri/target/
 .env.local
 *.DS_Store
 ~/.cortex/
+e2e/screenshots/

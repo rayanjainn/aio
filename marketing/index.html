@@ -155,6 +155,35 @@ kbd{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;bac
 @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.grid{grid-template-columns:1fr}}
 .k-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+
+/* ── Island demo ── */
+.isl-stage{position:relative;margin-top:44px;height:330px;border-radius:28px;overflow:hidden;
+  background:radial-gradient(80% 120% at 50% 0%,#3a3a42,#101014 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.isl-stage::before{content:"";position:absolute;left:0;right:0;top:0;height:34px;background:rgba(255,255,255,.06);backdrop-filter:blur(20px)}
+.isl{--e:cubic-bezier(.32,.72,0,1);position:absolute;top:0;left:50%;transform:translateX(-50%);width:330px;height:34px;background:#000;
+  border-radius:0 0 21px 21px;overflow:hidden;cursor:pointer;transition:width .56s var(--e),height .56s var(--e),border-radius .56s var(--e);
+  box-shadow:0 10px 30px rgba(0,0,0,.4);outline:none}
+.isl:hover,.isl:focus{width:600px;height:262px;border-radius:0 0 36px 36px}
+.isl-compact{position:absolute;inset:0 0 auto;height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;transition:opacity .2s .15s}
+.isl:hover .isl-compact,.isl:focus .isl-compact{opacity:0;transition-delay:0s}
+.isl-art{width:22px;height:22px;border-radius:6px;background:conic-gradient(from 210deg,#1ed760,#0f5c2e,#121212,#2b7a4b,#1ed760)}
+.isl-eq{display:flex;align-items:flex-end;gap:2px;height:13px}.isl-eq i{width:2.6px;border-radius:2px;background:#1ed760;animation:iq 1s ease-in-out infinite}
+.isl-eq i:nth-child(2){animation-delay:-.25s}.isl-eq i:nth-child(3){animation-delay:-.5s}.isl-eq i:nth-child(4){animation-delay:-.75s}
+@keyframes iq{0%,100%{height:25%}50%{height:100%}}
+.isl-full{position:absolute;inset:0;padding:42px 16px 16px;display:grid;grid-template-columns:1.15fr 1fr;gap:10px;opacity:0;transform:scale(.96) translateY(-10px);transition:opacity .2s,transform .42s var(--e)}
+.isl:hover .isl-full,.isl:focus .isl-full{opacity:1;transform:none;transition-delay:.14s,.06s}
+.isl-card{border-radius:20px;padding:12px 13px;background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03));box-shadow:inset 0 1px 0 rgba(255,255,255,.12);font-size:13px;text-align:left;min-width:0}
+.isl-music{display:flex;gap:12px;align-items:center;background:radial-gradient(120% 120% at 0% 0%,rgba(30,215,96,.45),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}
+.isl-cover{width:84px;height:84px;border-radius:16px;flex-shrink:0;background:conic-gradient(from 210deg,#1ed760,#0f5c2e,#121212,#2b7a4b,#1ed760);box-shadow:0 10px 24px rgba(0,0,0,.4)}
+.isl-bar{height:4px;border-radius:4px;background:rgba(255,255,255,.18);margin-top:10px;overflow:hidden}.isl-bar i{display:block;height:100%;width:38%;background:#1ed760}
+.isl-ctl{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:10px;font-size:12px}.isl-ctl .big{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14)}
+.isl-col{display:flex;flex-direction:column;gap:10px;min-width:0}.isl-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1}
+.isl-lab{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px}
+.isl-big{font-size:21px;font-weight:650;letter-spacing:-.03em}.isl-sub{font-size:11.5px;color:rgba(255,255,255,.55)}
+.isl-spark{width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,#fff 0 30%,rgba(217,119,87,.9) 60%,transparent 70%);box-shadow:0 0 10px rgba(217,119,87,.9);animation:ib 1.6s ease-in-out infinite}
+@keyframes ib{50%{transform:scale(1.35);opacity:.7}}
+.isl-hint{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-size:12px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
+@media(max-width:640px){.isl:hover,.isl:focus{width:92vw;height:300px}.isl-full{grid-template-columns:1fr}}
 .chip{padding:8px 14px;border-radius:999px;font-size:13.5px;font-family:var(--mono)}
 
 /* ── Download ── */
@@ -300,6 +329,37 @@ footer{text-align:center;padding:40px 24px 150px;font-size:13px;color:var(--t3)}
     </div>
   </section>
 
+  <section id="island" class="reveal">
+    <div class="eyebrow">New · The Island</div>
+    <h2>A Dynamic Island<br/>for your Mac.</h2>
+    <p class="lede">It lives around the notch. Music with controls, your focus timer, the next meeting, charging — and whether Claude Code or Codex is working right now, with today's tokens and your 5-hour block. Hover to open it.</p>
+    <div class="isl-stage">
+      <div class="isl" tabindex="0" aria-label="Island demo — hover to expand">
+        <div class="isl-compact"><span class="isl-art"></span><span class="isl-eq"><i></i><i></i><i></i><i></i></span></div>
+        <div class="isl-full">
+          <div class="isl-card isl-music">
+            <div class="isl-cover"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:650">Midnight City</div><div class="isl-sub">M83</div>
+              <div class="isl-bar"><i></i></div>
+              <div class="isl-ctl"><span>⏮</span><span class="big">❚❚</span><span>⏭</span></div>
+            </div>
+          </div>
+          <div class="isl-col">
+            <div class="isl-card"><div class="isl-lab"><span class="isl-spark"></span>Coding today</div>
+              <div style="display:flex;gap:20px"><div><div class="isl-big">1.8M</div><div class="isl-sub">Claude · Sonnet</div></div><div><div class="isl-big">420K</div><div class="isl-sub">Codex</div></div></div>
+              <div class="isl-sub">Claude is working in aio…</div></div>
+            <div class="isl-row"><div class="isl-card"><div class="isl-big">25:00</div><div class="isl-sub">Focus</div></div><div class="isl-card"><div class="isl-lab">Next</div><div style="font-weight:650">Design review</div><div class="isl-sub">in 12m</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="isl-hint">hover the island</div>
+    </div>
+    <div class="k-list">
+      <span class="chip glass">⌃⌥ ← → halves</span><span class="chip glass">⌃⌥ U I J K quarters</span><span class="chip glass">⌃⌥ D F G thirds</span><span class="chip glass">⌃⌥ ↩ maximize</span><span class="chip glass">every shortcut re-bindable</span>
+    </div>
+  </section>
+
   <section id="features" class="reveal">
     <div class="eyebrow">All in one</div>
     <h2>Your Mac, searchable<br/>and yours again.</h2>
@@ -348,6 +408,7 @@ footer{text-align:center;padding:40px 24px 150px;font-size:13px;color:var(--t3)}
   <a href="#top" class="app-ic active" data-l="Cortex" data-spy="top"><img src="cortex-icon.svg" alt="" /><span class="dot"></span></a>
   <a href="#palette-demo" data-l="Command Palette" data-spy="palette-demo">⌕<span class="dot"></span></a>
   <a href="#widgets" data-l="Widgets" data-spy="widgets">▦<span class="dot"></span></a>
+  <a href="#island" data-l="Island" data-spy="island"><svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="25" height="11" rx="5.5" fill="currentColor"/></svg><span class="dot"></span></a>
   <a href="#features" data-l="Features" data-spy="features">✦<span class="dot"></span></a>
   <a href="#privacy" data-l="Privacy" data-spy="privacy">⛨<span class="dot"></span></a>
   <div class="sep"></div>

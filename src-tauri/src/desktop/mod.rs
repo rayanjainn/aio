@@ -8,6 +8,7 @@ pub mod glass;
 pub mod island;
 pub mod providers;
 pub mod shortcuts;
+pub mod updater;
 pub mod window;
 pub mod widgets;
 

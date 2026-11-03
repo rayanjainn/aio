@@ -71,11 +71,40 @@ npm run tauri build
 # Binary at src-tauri/target/release/aio-cortex
 ```
 
+## The Island
+
+A Dynamic Island around the notch (or centred in the menu bar on displays
+without one). Compact, it shows the most important live thing — a toast, your
+focus timer, charging, a meeting about to start, music, or Claude Code / Codex
+working. Hover (or press ⌃⌥Space) to expand it: now playing with controls,
+today's Claude and Codex tokens and the current 5-hour block, a focus timer,
+and what's next. Coding stats come from the local session logs in
+`~/.claude/projects` and `~/.codex/sessions` — nothing is uploaded.
+
+## Window management
+
+Snap the focused window with the keyboard or from ⌘K — halves, quarters,
+thirds, two-thirds, maximize, almost-maximize, center, fullscreen, restore and
+next display. Uses the Accessibility API (grant once in System Settings →
+Privacy & Security → Accessibility).
+
+| Default | Action |
+|---------|--------|
+| ⌃⌥ ← / → / ↑ / ↓ | Left / right / top / bottom half |
+| ⌃⌥ U / I / J / K | Top-left / top-right / bottom-left / bottom-right |
+| ⌃⌥ D / F / G | Left / center / right third |
+| ⌃⌥ E / T | Left / right two thirds |
+| ⌃⌥ ↩ · ⌃⌥⇧ ↩ | Maximize · almost maximize |
+| ⌃⌥ C · ⌃⌥ ⌫ | Center · restore |
+| ⌃⌥⌘ → | Next display |
+
+Every shortcut — including ⌘K — can be changed in **Settings → Shortcuts**.
+
 ## Widgets & Dock
 
 Open **Widgets & Dock** from the palette (or the menu-bar icon) to get the Studio.
 
-- **Desktop widgets** — 17 kinds in Small / Medium / Large: clock & world clocks,
+- **Desktop widgets** — 25 kinds in Small / Medium / Large: clock & world clocks,
   calendar, weather, now playing, photo frame, search, sticky note, to-dos, focus
   timer, countdown, app shelf, clipboard, system, battery, git repos, Docker,
   GitHub. Drag to move; right-click for size, layer (desktop / floating), lock,
