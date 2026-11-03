@@ -375,13 +375,15 @@ pub struct DockState {
     /// Glass margins (top, right, bottom, left) — headroom for magnification.
     inset:    Mutex<(f64, f64, f64, f64)>,
     revealed: AtomicBool,
+    /// A show/hide slide is running — don't fight it with `place()`.
+    moving:   AtomicBool,
 }
 
 impl DockState {
     pub fn load(path: PathBuf) -> Self {
         let cfg = std::fs::read_to_string(&path).ok()
             .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-        Self { path, cfg: Mutex::new(cfg), size: Mutex::new((600.0, 76.0)), inset: Mutex::new((0.0, 0.0, 0.0, 0.0)), revealed: AtomicBool::new(true) }
+        Self { path, cfg: Mutex::new(cfg), size: Mutex::new((600.0, 76.0)), inset: Mutex::new((0.0, 0.0, 0.0, 0.0)), revealed: AtomicBool::new(true), moving: AtomicBool::new(false) }
     }
     pub fn config(&self) -> DockConfig { self.cfg.lock().map(|c| c.clone()).unwrap_or_default() }
 }
@@ -408,36 +410,100 @@ fn primary_area(app: &AppHandle) -> super::widgets::Rect {
     }
 }
 
-fn place(app: &AppHandle) {
-    let (Some(st), Some(win)) = (app.try_state::<Arc<DockState>>(), app.get_webview_window(LABEL)) else { return };
+const MARGIN: f64 = 4.0;
+
+/// Where the bar sits when shown.
+fn rest_position(app: &AppHandle) -> Option<(f64, f64)> {
+    let st = app.try_state::<Arc<DockState>>()?;
     let cfg = st.config();
     let (w, h) = st.size.lock().map(|s| *s).unwrap_or((600.0, 76.0));
-    let (x, y) = dock_frame(primary_area(app), &cfg.edge, w, h, 4.0);
+    Some(dock_frame(primary_area(app), &cfg.edge, w, h, MARGIN))
+}
+
+fn place(app: &AppHandle) {
+    let (Some(st), Some(win)) = (app.try_state::<Arc<DockState>>(), app.get_webview_window(LABEL)) else { return };
+    let (w, h) = st.size.lock().map(|s| *s).unwrap_or((600.0, 76.0));
+    let Some((x, y)) = rest_position(app) else { return };
     // Only touch the native window when something actually changed — every
     // resize makes WebKit re-composite, which read as a blank "buffering" flash.
     let scale = win.scale_factor().unwrap_or(1.0);
     let same_size = win.inner_size().map(|s| ((s.width as f64 / scale) - w).abs() < 1.0 && ((s.height as f64 / scale) - h).abs() < 1.0).unwrap_or(false);
-    let same_pos = win.outer_position().map(|p| ((p.x as f64 / scale) - x).abs() < 1.0 && ((p.y as f64 / scale) - y).abs() < 1.0).unwrap_or(false);
     if !same_size { let _ = win.set_size(tauri::LogicalSize::new(w, h)); }
-    if !same_pos { let _ = win.set_position(tauri::LogicalPosition::new(x, y)); }
+    // While hidden or sliding the window is parked off-position on purpose.
+    if st.revealed.load(Ordering::Relaxed) && !st.moving.load(Ordering::Relaxed) {
+        let same_pos = win.outer_position().map(|p| ((p.x as f64 / scale) - x).abs() < 1.0 && ((p.y as f64 / scale) - y).abs() < 1.0).unwrap_or(false);
+        if !same_pos { let _ = win.set_position(tauri::LogicalPosition::new(x, y)); }
+    }
     let (t, r, b, l) = st.inset.lock().map(|i| *i).unwrap_or_default();
     super::glass::set_inset(&win, t, r, b, l);
 }
 
 fn open(app: &AppHandle) -> tauri::Result<()> {
     if app.get_webview_window(LABEL).is_some() { place(app); return Ok(()); }
+    let (x, y) = rest_position(app).unwrap_or((100.0, 700.0));
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html#/dock".into()))
         .title("Cortex Dock")
         .decorations(false).transparent(true).shadow(false).resizable(false)
-        .skip_taskbar(true).focused(false).focusable(false).always_on_top(true)
+        .skip_taskbar(true).visible(false).focused(false).always_on_top(true)
         .visible_on_all_workspaces(true).accept_first_mouse(true)
-        .inner_size(600.0, 76.0)
+        .inner_size(600.0, 76.0).position(x, y)
         .build()?;
-    super::glass::apply_material(&win, 28.0, super::glass::Material::Vivid);
+    // First click lands (non-activating panel); glass stays active when unfocused.
+    super::panel::convert(&win, false);
+    super::glass::apply(&win, 28.0);
     #[cfg(target_os = "macos")]
     super::widgets::mac::float_everywhere(&win);
     place(app);
+    // Safety net: if the page never reports ready, show it anyway.
+    let a = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(3000)).await;
+        if let Some(w) = a.get_webview_window(LABEL) {
+            if !w.is_visible().unwrap_or(true) { reveal_initial(&a); }
+        }
+    });
     Ok(())
+}
+
+/// Slide the dock in from its screen edge, fading the glass and content together.
+fn show_dock(app: &AppHandle) {
+    let Some(st) = app.try_state::<Arc<DockState>>() else { return };
+    let (Some(rest), (_, h)) = (rest_position(app), st.size.lock().map(|s| *s).unwrap_or((600.0, 76.0))) else { return };
+    let cfg = st.config();
+    let from = super::anim::hidden_offset(&cfg.edge, rest, h + 40.0);
+    st.revealed.store(true, Ordering::Relaxed);
+    st.moving.store(true, Ordering::Relaxed);
+    let (a, st2) = (app.clone(), st.inner().clone());
+    tauri::async_runtime::spawn(async move {
+        super::anim::animate(a, LABEL.to_string(), (0.0, 1.0), Some((from, rest)), 340, true).await;
+        st2.moving.store(false, Ordering::Relaxed);
+    });
+}
+
+/// Slide the dock out and hide the window once it is fully gone.
+fn hide_dock(app: &AppHandle) {
+    let Some(st) = app.try_state::<Arc<DockState>>() else { return };
+    let (Some(rest), (_, h)) = (rest_position(app), st.size.lock().map(|s| *s).unwrap_or((600.0, 76.0))) else { return };
+    let cfg = st.config();
+    let to = super::anim::hidden_offset(&cfg.edge, rest, h + 40.0);
+    st.revealed.store(false, Ordering::Relaxed);
+    st.moving.store(true, Ordering::Relaxed);
+    let (a, st2) = (app.clone(), st.inner().clone());
+    tauri::async_runtime::spawn(async move {
+        super::anim::animate(a, LABEL.to_string(), (1.0, 0.0), Some((rest, to)), 240, false).await;
+        st2.moving.store(false, Ordering::Relaxed);
+    });
+}
+
+/// First show (page ready): visible unless auto-hide keeps it tucked away.
+pub fn reveal_initial(app: &AppHandle) {
+    let Some(st) = app.try_state::<Arc<DockState>>() else { return };
+    let cfg = st.config();
+    if cfg.enabled && cfg.autohide {
+        st.revealed.store(false, Ordering::Relaxed);
+    } else {
+        show_dock(app);
+    }
 }
 
 fn apply(app: &AppHandle, prev: Option<&DockConfig>) {
@@ -448,8 +514,8 @@ fn apply(app: &AppHandle, prev: Option<&DockConfig>) {
     if prev.map(|p| p.enabled) != Some(cfg.enabled) {
         if cfg.enabled {
             if let Err(e) = open(app) { tracing::warn!(target: "aio_cortex_lib", "dock: {e}"); }
-        } else if let Some(w) = app.get_webview_window(LABEL) {
-            let _ = w.destroy();
+        } else {
+            super::anim::fade_out_and_destroy(app, LABEL, 200);
         }
     }
     // Keep the system Dock out of the way only while ours is showing.
@@ -511,16 +577,20 @@ fn spawn_autohide(app: AppHandle, st: Arc<DockState>) {
             tokio::time::sleep(Duration::from_millis(66)).await;
             let cfg = st.config();
             let Some(win) = app.get_webview_window(LABEL) else { continue };
+            // A freshly created window is hidden until its page is ready.
+            if !win.is_visible().unwrap_or(false) && st.revealed.load(Ordering::Relaxed) && !st.moving.load(Ordering::Relaxed) { continue; }
             if !cfg.enabled || !cfg.autohide {
-                if !st.revealed.swap(true, Ordering::Relaxed) { let _ = win.show(); let _ = app.emit_to(LABEL, "dock-reveal", true); }
+                if !st.revealed.load(Ordering::Relaxed) { show_dock(&app); }
                 continue;
             }
             let Ok(p) = app.cursor_position() else { continue };
             let scale = win.scale_factor().unwrap_or(1.0);
             let (cx, cy) = (p.x / scale, p.y / scale);
             let (ax, ay, aw, ah) = primary_area(&app);
-            let (Ok(pos), Ok(size)) = (win.outer_position(), win.outer_size()) else { continue };
-            let (wx, wy, ww, wh) = (pos.x as f64 / scale, pos.y as f64 / scale, size.width as f64 / scale, size.height as f64 / scale);
+            // Measure against the resting frame (the window may be parked off-screen).
+            let (w, h) = st.size.lock().map(|s| *s).unwrap_or((600.0, 76.0));
+            let Some((wx, wy)) = rest_position(&app) else { continue };
+            let (ww, wh) = (w, h);
             let over = cx >= wx - 12.0 && cx <= wx + ww + 12.0 && cy >= wy - 12.0 && cy <= wy + wh + 12.0;
             let at_edge = match cfg.edge.as_str() {
                 "left"  => cx <= ax + 3.0 && cy >= wy && cy <= wy + wh,
@@ -535,25 +605,11 @@ fn spawn_autohide(app: AppHandle, st: Arc<DockState>) {
             };
             let revealed = st.revealed.load(Ordering::Relaxed);
             if !revealed && at_edge {
-                st.revealed.store(true, Ordering::Relaxed);
                 away_ticks = 0;
-                // Hidden windows keep their geometry, so measure from that.
-                let _ = win.show();
-                let _ = app.emit_to(LABEL, "dock-reveal", true);
+                show_dock(&app);
             } else if revealed && !over {
                 away_ticks += 1;
-                if away_ticks > 8 {
-                    st.revealed.store(false, Ordering::Relaxed);
-                    let _ = app.emit_to(LABEL, "dock-reveal", false);
-                    // Let the slide-out play, then hide the window — the native
-                    // glass would otherwise linger as an empty slab.
-                    let w2 = win.clone();
-                    let st2 = st.clone();
-                    tauri::async_runtime::spawn(async move {
-                        tokio::time::sleep(Duration::from_millis(260)).await;
-                        if !st2.revealed.load(Ordering::Relaxed) { let _ = w2.hide(); }
-                    });
-                }
+                if away_ticks > 8 { hide_dock(&app); }
             } else {
                 away_ticks = 0;
             }

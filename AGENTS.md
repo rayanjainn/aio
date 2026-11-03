@@ -54,11 +54,15 @@ Temporal queries work: "last Tuesday", "before the incident".
 - `providers.rs` — widget data (sysinfo, pmset, Open-Meteo, git2, Docker, …)
 - `island.rs` — Dynamic-Island window above the menu bar (frontend `src/island/`)
 - `coding.rs` — Claude Code / Codex usage from local JSONL logs (incremental reads)
+- `panel.rs` — non-activating NSPanel conversion (tauri-nspanel): first click lands, no focus steal
+- `anim.rs` — window-level fade/slide (alpha+position from Rust); windows are created hidden and revealed by `surface_ready`
+- `automation.rs` / `nowplaying.rs` — Apple Events consent + per-player AppleScript (Music, Spotify)
 - `shortcuts.rs` — all global hotkeys, configurable (`config.json → shortcuts`)
 - `window.rs` — Accessibility-API window snapping (halves, quarters, thirds…)
 - `updater.rs` — auto-update from GitHub Releases (`latest.json`, minisign key)
-- Widgets/dock/island use always-active vibrancy (`glass::Material::Vivid`):
-  Liquid Glass renders foggy in non-key windows.
+- Glass: `glass::Material::{Liquid,Frosted}` (Settings → Appearance). Liquid = NSGlassEffectView kept active
+  via `_setForceMainAppearance:` (guarded); Frosted = NSVisualEffectView pinned `.active`.
+- App needs `Entitlements.plist` (apple-events) and must NOT use hardened runtime, or Music/Spotify control is silently denied.
 
 ## Tests
 - `cargo test` (src-tauri) — unit tests incl. parsers, layout math, shortcuts.

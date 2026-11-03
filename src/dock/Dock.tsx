@@ -146,7 +146,6 @@ function MiniTimer({ size }: { size: number }) {
 
 export default function Dock() {
   const [cfg, setCfg] = useState<DockConfig | null>(null);
-  const [shown, setShown] = useState(true);
   const [native, setNative] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const { data: running } = usePoll<{ name: string; path: string }[]>("get_running_apps", undefined, 3000);
@@ -154,12 +153,12 @@ export default function Dock() {
 
   useEffect(() => {
     document.documentElement.classList.add("dock-window");
-    invoke<DockConfig>("dock_get_config").then(setCfg).catch(() => {});
+    invoke<DockConfig>("dock_get_config").then(setCfg).catch(() => {})
+      .finally(() => requestAnimationFrame(() => requestAnimationFrame(() => { invoke("surface_ready").catch(() => {}); })));
     invoke<{ native: boolean }>("glass_info").then(g => setNative(!!g.native)).catch(() => {});
     const offs: (() => void)[] = [];
     import("@tauri-apps/api/event").then(async ({ listen }) => {
       offs.push(await listen<DockConfig>("dock-config", e => setCfg(e.payload)));
-      offs.push(await listen<boolean>("dock-reveal", e => setShown(e.payload)));
     });
     return () => offs.forEach(f => f());
   }, []);
@@ -269,7 +268,7 @@ export default function Dock() {
     <div className="dk-root" onContextMenu={e => context(e)}
       style={{ flexDirection: vertical ? "row" : "column", justifyContent: vertical ? align : justify, alignItems: vertical ? justify : align,
         padding: vertical ? `${side}px 0` : `0 ${side}px` }}>
-      <div ref={barRef} className={`dk-bar dk-${cfg.edge}${shown ? "" : " dk-hidden"}${native ? " native" : ""}`}
+      <div ref={barRef} className={`dk-bar dk-${cfg.edge}${native ? " native" : ""}`}
         onPointerMove={onMove} onPointerLeave={onLeave}
         style={{ flexDirection: vertical ? "column" : "row", padding: PAD, gap: Math.round(sz * 0.14), borderRadius: Math.round(sz * 0.36 + PAD) }}>
         {cfg.items.map(render)}

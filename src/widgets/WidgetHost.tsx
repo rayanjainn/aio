@@ -16,7 +16,9 @@ export default function WidgetHost({ id }: { id: string }) {
 
   useEffect(() => {
     document.documentElement.classList.add("widget-window");
-    invoke<Widget | null>("widget_get", { id }).then(setW).catch(() => {});
+    invoke<Widget | null>("widget_get", { id }).then(setW).catch(() => {})
+      // Window is created hidden; reveal (fade in) once the first frame is painted.
+      .finally(() => requestAnimationFrame(() => requestAnimationFrame(() => { invoke("surface_ready").catch(() => {}); })));
     const offs: (() => void)[] = [];
     import("@tauri-apps/api/event").then(async ({ listen }) => {
       offs.push(await listen<Widget>("widget-updated", e => { if (e.payload.id === id) setW(e.payload); }));

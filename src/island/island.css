@@ -109,3 +109,7 @@ html.island-window, html.island-window body, html.island-window #root { backgrou
 .is-coding-row > :last-child:not(:first-child) { margin-left: auto; }
 .is-timer { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .is-next { display: flex; flex-direction: column; justify-content: center; }
+
+/* Volume HUD bar in the right wing */
+.is-vol { display: block; width: 58px; height: 5px; border-radius: 5px; background: rgba(255,255,255,0.2); overflow: hidden; }
+.is-vol i { display: block; height: 100%; border-radius: 5px; background: rgba(255,255,255,0.92); transition: width 140ms var(--ease-out, ease-out); }

@@ -145,102 +145,6 @@ pub fn parse_pmset(s: &str) -> Option<Battery> {
     Some(Battery { percent, charging, minutes_left })
 }
 
-/* ─── Now playing ───────────────────────────────────────── */
-
-#[derive(Debug, Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct NowPlaying {
-    /// "Spotify" | "Music" | "" (nothing playing / unsupported).
-    pub app:      String,
-    /// "playing" | "paused" | "stopped"
-    pub state:    String,
-    pub title:    String,
-    pub artist:   String,
-    pub album:    String,
-    pub position: f64,
-    pub duration: f64,
-    pub artwork:  Option<String>,
-}
-
-#[cfg(target_os = "macos")]
-const NOW_PLAYING_SCRIPT: &str = r#"
-set sep to (ASCII character 31)
-on fmt(appName, st, t, a, al, pos, dur, art)
-  set sep to (ASCII character 31)
-  return appName & sep & st & sep & t & sep & a & sep & al & sep & (pos as string) & sep & (dur as string) & sep & art
-end fmt
-if application "Spotify" is running then
-  tell application "Spotify"
-    if player state is playing or player state is paused then
-      set t to current track
-      return my fmt("Spotify", (player state as string), name of t, artist of t, album of t, player position, (duration of t) / 1000, artwork url of t)
-    end if
-  end tell
-end if
-if application "Music" is running then
-  tell application "Music"
-    if player state is playing or player state is paused then
-      set t to current track
-      return my fmt("Music", (player state as string), name of t, artist of t, album of t, player position, duration of t, "")
-    end if
-  end tell
-end if
-return ""
-"#;
-
-/// Split the unit-separator-delimited AppleScript reply.
-pub fn parse_now_playing(raw: &str) -> NowPlaying {
-    let f: Vec<&str> = raw.trim_end_matches(['\n', '\r']).split('\u{1f}').collect();
-    if f.len() < 8 { return NowPlaying { state: "stopped".into(), ..Default::default() }; }
-    // AppleScript may localise decimals with a comma.
-    let num = |s: &str| s.trim().replace(',', ".").parse::<f64>().unwrap_or(0.0);
-    NowPlaying {
-        app: f[0].into(),
-        state: f[1].trim().into(),
-        title: f[2].into(),
-        artist: f[3].into(),
-        album: f[4].into(),
-        position: num(f[5]),
-        duration: num(f[6]),
-        artwork: Some(f[7].trim().to_string()).filter(|s| s.starts_with("http")),
-    }
-}
-
-#[tauri::command]
-pub async fn now_playing() -> NowPlaying {
-    #[cfg(target_os = "macos")]
-    {
-        return tokio::task::spawn_blocking(|| {
-            std::process::Command::new("osascript").args(["-e", NOW_PLAYING_SCRIPT]).output()
-                .map(|o| parse_now_playing(&String::from_utf8_lossy(&o.stdout)))
-                .unwrap_or_default()
-        }).await.unwrap_or_default();
-    }
-    #[allow(unreachable_code)]
-    NowPlaying { state: "stopped".into(), ..Default::default() }
-}
-
-#[tauri::command]
-pub async fn media_control(action: String, app: String) -> Result<(), String> {
-    let verb = match action.as_str() {
-        "playpause" => "playpause",
-        "next"      => "next track",
-        "previous"  => "previous track",
-        _ => return Err(format!("unknown media action {action}")),
-    };
-    let target = match app.as_str() { "Spotify" => "Spotify", _ => "Music" };
-    #[cfg(target_os = "macos")]
-    {
-        let script = format!("tell application \"{target}\" to {verb}");
-        return tokio::task::spawn_blocking(move || {
-            std::process::Command::new("osascript").args(["-e", &script]).status()
-                .map(|_| ()).map_err(|e| e.to_string())
-        }).await.map_err(|e| e.to_string())?;
-    }
-    #[allow(unreachable_code)]
-    { let _ = (verb, target); Err("media control is macOS-only".into()) }
-}
-
 /* ─── Weather (Open-Meteo, no key; only when a weather widget exists) ── */
 
 #[derive(Debug, Clone, Serialize, Default)]
@@ -850,18 +754,6 @@ mod tests {
     #[test]
     fn pmset_desktop_mac_has_no_battery() {
         assert!(parse_pmset("Now drawing from 'AC Power'\n").is_none());
-    }
-
-    #[test]
-    fn now_playing_fields() {
-        let raw = "Spotify\u{1f}playing\u{1f}Midnight City\u{1f}M83\u{1f}Hurry Up\u{1f}92,5\u{1f}244.0\u{1f}https://i.scdn.co/x\n";
-        let n = parse_now_playing(raw);
-        assert_eq!(n.app, "Spotify");
-        assert_eq!(n.state, "playing");
-        assert_eq!(n.position, 92.5);
-        assert_eq!(n.duration, 244.0);
-        assert_eq!(n.artwork.as_deref(), Some("https://i.scdn.co/x"));
-        assert_eq!(parse_now_playing("").state, "stopped");
     }
 
     #[test]

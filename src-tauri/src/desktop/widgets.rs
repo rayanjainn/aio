@@ -234,11 +234,17 @@ pub fn find_free_spot(existing: &[Rect], w: f64, h: f64, area: Rect) -> (f64, f6
 
 pub fn label_for(id: &str) -> String { format!("{LABEL_PREFIX}{id}") }
 
+/// Does this widget kind contain a text field (needs a panel that can become key)?
+fn takes_input(kind: &str) -> bool { matches!(kind, "notes" | "todos") }
+
 /// Create (or re-show) the native window for a widget.
+///
+/// New windows start hidden and are faded in when the page reports ready
+/// (`surface_ready`), so an empty glass slab never flashes while the UI boots.
 pub fn open_window(app: &AppHandle, w: &Widget) -> tauri::Result<()> {
     let label = label_for(&w.id);
-    if let Some(win) = app.get_webview_window(&label) {
-        let _ = win.show();
+    if app.get_webview_window(&label).is_some() {
+        super::anim::fade_in(app, &label, 260);
         return Ok(());
     }
     let url = WebviewUrl::App(format!("index.html#/widget/{}", w.id).into());
@@ -249,10 +255,8 @@ pub fn open_window(app: &AppHandle, w: &Widget) -> tauri::Result<()> {
         .shadow(false)
         .resizable(false)
         .skip_taskbar(true)
+        .visible(false)
         .focused(false)
-        // Non-focusable windows take clicks immediately (no "activate first"
-        // click); only widgets you type into need to become key.
-        .focusable(matches!(w.kind.as_str(), "notes" | "todos"))
         .visible_on_all_workspaces(true)
         .accept_first_mouse(true)
         .inner_size(w.w, w.h)
@@ -260,15 +264,23 @@ pub fn open_window(app: &AppHandle, w: &Widget) -> tauri::Result<()> {
         .always_on_top(w.layer == Layer::Floating)
         .always_on_bottom(w.layer == Layer::Desktop);
     let win = builder.build()?;
-    super::glass::apply_material(&win, 22.0, super::glass::Material::Vivid);
+    // First click lands (non-activating panel), glass stays active when unfocused.
+    super::panel::convert(&win, takes_input(&w.kind));
+    super::glass::apply(&win, 22.0);
     apply_layer(&win, w.layer);
+    // Safety net: if the page never reports ready, show it anyway.
+    let (a, l) = (app.clone(), label.clone());
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
+        if let Some(win) = a.get_webview_window(&l) {
+            if !win.is_visible().unwrap_or(true) { super::anim::reveal(&a, &l); }
+        }
+    });
     Ok(())
 }
 
 pub fn close_window(app: &AppHandle, id: &str) {
-    if let Some(win) = app.get_webview_window(&label_for(id)) {
-        let _ = win.destroy();
-    }
+    super::anim::fade_out_and_destroy(app, &label_for(id), 180);
 }
 
 /// Re-apply the stacking layer to an existing window.
@@ -440,8 +452,8 @@ pub fn show_all(app: &AppHandle) {
 }
 
 pub fn hide_all(app: &AppHandle) {
-    for (label, win) in app.webview_windows() {
-        if label.starts_with(LABEL_PREFIX) { let _ = win.hide(); }
+    for (label, _) in app.webview_windows() {
+        if label.starts_with(LABEL_PREFIX) { super::anim::fade_out(app, &label, 200); }
     }
 }
 

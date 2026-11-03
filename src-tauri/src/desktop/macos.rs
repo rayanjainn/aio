@@ -79,6 +79,9 @@ pub fn screens_main_thread() -> Vec<ScreenInfo> {
 pub fn screens(app: &tauri::AppHandle) -> Vec<ScreenInfo> {
     #[cfg(target_os = "macos")]
     {
+        // Already on the main thread (setup, sync commands): hopping and waiting
+        // would deadlock until the timeout and report "no notch".
+        if objc2::MainThreadMarker::new().is_some() { return screens_main_thread(); }
         let (tx, rx) = std::sync::mpsc::channel();
         if app.run_on_main_thread(move || { let _ = tx.send(screens_main_thread()); }).is_ok() {
             if let Ok(v) = rx.recv_timeout(std::time::Duration::from_millis(500)) { return v; }
@@ -97,3 +100,28 @@ pub fn screens(app: &tauri::AppHandle) -> Vec<ScreenInfo> {
         }
     }).collect()
 }
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunningApp { pub name: String, pub path: String, pub bundle_id: String, pub active: bool }
+
+/// Regular (Dock-visible) running apps, frontmost first. NSWorkspace answers in
+/// microseconds and needs no permission — the old System Events AppleScript
+/// needed Automation access and ~150 ms per call.
+#[cfg(target_os = "macos")]
+pub fn running_apps() -> Vec<RunningApp> {
+    use objc2_app_kit::{NSApplicationActivationPolicy, NSWorkspace};
+    let me = std::process::id() as i32;
+    let mut out: Vec<RunningApp> = NSWorkspace::sharedWorkspace().runningApplications().iter().filter_map(|a| {
+        if a.activationPolicy() != NSApplicationActivationPolicy::Regular || a.processIdentifier() == me { return None; }
+        let path = a.bundleURL().and_then(|u| u.path()).map(|p| p.to_string())?;
+        let name = a.localizedName().map(|n| n.to_string())
+            .or_else(|| std::path::Path::new(&path).file_stem().map(|s| s.to_string_lossy().to_string()))?;
+        Some(RunningApp { name, path, bundle_id: a.bundleIdentifier().map(|b| b.to_string()).unwrap_or_default(), active: a.isActive() })
+    }).collect();
+    out.sort_by_key(|a| !a.active); // stable: frontmost first, launch order otherwise
+    out
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn running_apps() -> Vec<RunningApp> { vec![] }

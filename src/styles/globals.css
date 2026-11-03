@@ -233,7 +233,8 @@ html.native-glass .glass-window {
 }
 html.native-glass .glass-window::before { opacity: 0.6; }
 html.native-glass.widget-window .w-card {
-  background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 45%), var(--glass-tint);
+  /* Native glass already blurs and tints the backdrop; keep CSS nearly clear so it shows through. */
+  background: linear-gradient(165deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 45%), rgba(var(--tint-rgb), 0.10);
   box-shadow: none;
 }
 html.native-glass.widget-window .w-card::after { opacity: 0.35; }

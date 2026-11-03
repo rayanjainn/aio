@@ -71,14 +71,23 @@ fn open(app: &AppHandle) -> tauri::Result<()> {
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html#/island".into()))
         .title("Cortex Island")
         .decorations(false).transparent(true).shadow(false).resizable(false)
-        .skip_taskbar(true).focused(false).focusable(false).always_on_top(true)
+        .skip_taskbar(true).visible(false).focused(false).always_on_top(true)
         .visible_on_all_workspaces(true).accept_first_mouse(true)
         .inner_size(WIN_W, WIN_H)
         .position(frame.x + (frame.w - WIN_W) / 2.0, frame.y)
         .build()?;
     let _ = win.set_ignore_cursor_events(true);
+    // Never activates Cortex or steals focus; clicks land immediately.
+    super::panel::convert(&win, false);
     #[cfg(target_os = "macos")]
     mac::above_menu_bar(&win);
+    let a = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(3000)).await;
+        if let Some(w) = a.get_webview_window(LABEL) {
+            if !w.is_visible().unwrap_or(true) { super::anim::reveal(&a, LABEL); }
+        }
+    });
     Ok(())
 }
 
@@ -86,8 +95,8 @@ fn apply(app: &AppHandle) {
     let Some(st) = app.try_state::<Arc<IslandState>>() else { return };
     if st.config().enabled {
         if let Err(e) = open(app) { tracing::warn!(target: "aio_cortex_lib", "island: {e}"); }
-    } else if let Some(w) = app.get_webview_window(LABEL) {
-        let _ = w.destroy();
+    } else {
+        super::anim::fade_out_and_destroy(app, LABEL, 180);
     }
 }
 
@@ -193,8 +202,35 @@ pub fn island_toast(icon: String, text: String, app: AppHandle) {
     let _ = app.emit("island-toast", serde_json::json!({ "icon": icon, "text": text }));
 }
 
+/// Output volume (0–100) and mute state, for the Island's volume HUD.
+/// `get volume settings` is a Standard Additions command: no Automation prompt.
+#[tauri::command]
+pub async fn sys_volume() -> Option<(u8, bool)> {
+    tokio::task::spawn_blocking(|| {
+        let raw = super::nowplaying::run_osascript(
+            r#"set v to get volume settings
+return ((output volume of v) as text) & "," & ((output muted of v) as text)"#,
+            Duration::from_secs(2))?;
+        parse_volume(&raw)
+    }).await.ok().flatten()
+}
+
+fn parse_volume(raw: &str) -> Option<(u8, bool)> {
+    let (v, m) = raw.trim().split_once(',')?;
+    // `output volume` is "missing value" on devices without software volume.
+    let vol: u8 = v.trim().parse::<f64>().ok()?.round().clamp(0.0, 100.0) as u8;
+    Some((vol, m.trim() == "true"))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn parses_volume_reply() {
+        assert_eq!(super::parse_volume("42,false\n"), Some((42, false)));
+        assert_eq!(super::parse_volume("0,true"), Some((0, true)));
+        assert_eq!(super::parse_volume("missing value,false"), None);
+    }
+
     use super::*;
     #[test]
     fn config_defaults_fill_missing_keys() {

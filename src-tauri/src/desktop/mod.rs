@@ -1,9 +1,13 @@
 //! Desktop layer: widget windows, the Cortex dock, macOS Dock preferences,
 //! and the live data providers behind them.
 
+pub mod anim;
+pub mod automation;
 pub mod coding;
 pub mod dock;
 pub mod macos;
+pub mod nowplaying;
+pub mod panel;
 pub mod glass;
 pub mod island;
 pub mod providers;
