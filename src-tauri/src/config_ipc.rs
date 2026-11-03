@@ -27,6 +27,8 @@ pub struct AppConfig {
     pub terminal:         String,
     /// Free-form UI state shared by all windows (appearance, …).
     pub ui:               serde_json::Map<String, JsonValue>,
+    /// Hotkey overrides: action id → accelerator ("" = disabled).
+    pub shortcuts:        HashMap<String, String>,
 }
 
 impl Default for AppConfig {
@@ -42,6 +44,7 @@ impl Default for AppConfig {
             quota_bytes:     5 * 1024 * 1024 * 1024,
             terminal:        default_terminal(),
             ui:              serde_json::Map::new(),
+            shortcuts:       HashMap::new(),
         }
     }
 }

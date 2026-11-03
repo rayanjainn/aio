@@ -114,8 +114,9 @@ leptess     = { version = "0.14", optional = true }
 [target.'cfg(target_os = "macos")'.dependencies]
 # Desktop-level widget windows (NSWindow level + Spaces behaviour)
 objc2         = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry"] }
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSWindow", "NSResponder", "NSView", "NSGlassEffectView", "NSColor"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry", "NSString", "NSArray", "NSURL"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSWindow", "NSResponder", "NSView", "NSGlassEffectView", "NSColor", "NSVisualEffectView", "NSWorkspace", "NSRunningApplication", "NSScreen", "objc2-quartz-core", "libc"] }
+objc2-quartz-core = { version = "0.3", default-features = false, features = ["std", "CALayer", "objc2-core-foundation"] }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

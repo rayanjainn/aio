@@ -1,9 +1,14 @@
 //! Desktop layer: widget windows, the Cortex dock, macOS Dock preferences,
 //! and the live data providers behind them.
 
+pub mod coding;
 pub mod dock;
+pub mod macos;
 pub mod glass;
+pub mod island;
 pub mod providers;
+pub mod shortcuts;
+pub mod window;
 pub mod widgets;
 
 use std::sync::Arc;
@@ -18,6 +23,7 @@ pub fn init(app: &AppHandle, data_dir: &std::path::Path) {
         widgets::show_all(app);
     }
     dock::init(app, data_dir);
+    island::init(app, data_dir);
 }
 
 /// Window events for desktop-layer windows. Returns true when handled.

@@ -250,6 +250,9 @@ pub fn open_window(app: &AppHandle, w: &Widget) -> tauri::Result<()> {
         .resizable(false)
         .skip_taskbar(true)
         .focused(false)
+        // Non-focusable windows take clicks immediately (no "activate first"
+        // click); only widgets you type into need to become key.
+        .focusable(matches!(w.kind.as_str(), "notes" | "todos"))
         .visible_on_all_workspaces(true)
         .accept_first_mouse(true)
         .inner_size(w.w, w.h)
@@ -257,7 +260,7 @@ pub fn open_window(app: &AppHandle, w: &Widget) -> tauri::Result<()> {
         .always_on_top(w.layer == Layer::Floating)
         .always_on_bottom(w.layer == Layer::Desktop);
     let win = builder.build()?;
-    super::glass::apply(&win, 22.0);
+    super::glass::apply_material(&win, 22.0, super::glass::Material::Vivid);
     apply_layer(&win, w.layer);
     Ok(())
 }

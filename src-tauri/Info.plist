@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Merged into the bundle's Info.plist by tauri.
+       Without this key macOS silently denies every Apple Event Cortex sends:
+       Spotify / Music controls, browser tabs, running apps, Finder, window
+       moves — the widgets just stayed empty. With it, macOS asks once. -->
+  <key>NSAppleEventsUsageDescription</key>
+  <string>Cortex controls Spotify and Music, reads your open browser tabs and arranges windows when you ask it to.</string>
+  <!-- Menu-bar agent: no Dock icon or ⌘-Tab entry, even while launching. -->
+  <key>LSUIElement</key>
+  <true/>
+</dict>
+</plist>

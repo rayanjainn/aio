@@ -88,11 +88,29 @@ pub async fn search(
         intent:        intent.clone(),
     };
 
-    // ── Fan-out: every plugin searched in parallel ─────────
-    let mut results: Vec<SearchResult> = {
+    // ── Fan-out + semantic search, concurrently ────────────
+    // The vector lookup (Ollama embed + Qdrant) used to run *after* the
+    // fan-out with a 500 ms budget, adding up to half a second per keystroke.
+    // Now it overlaps the fan-out, gets 150 ms, and is skipped entirely for a
+    // minute after Qdrant/Ollama is found unreachable.
+    let vector = async {
+        if !vector_backoff_ok() || req.query.trim().chars().count() < 3 { return HashMap::new(); }
+        match tokio::time::timeout(
+            std::time::Duration::from_millis(150),
+            s.vector_store.search("cortex_index", &req.query, 50),
+        ).await {
+            Ok(hits) => {
+                if hits.is_empty() { note_vector_miss(); }
+                hits.into_iter().collect::<HashMap<String, f32>>()
+            }
+            Err(_) => { note_vector_miss(); HashMap::new() }
+        }
+    };
+    let fanout = async {
         let registry = s.registry.read().await;
         registry.search_all(&query).await
     };
+    let (mut results, cosine_scores) = tokio::join!(fanout, vector);
     tracing::debug!(target: "aio_cortex_lib", "search: fan-out returned {} raw results", results.len());
 
     // ── Temporal filter: drop results outside detected range ─
@@ -103,19 +121,6 @@ pub async fn search(
             tf.before.map_or(true, |b| ts <= b)
         });
     }
-
-    // ── Cosine scores: try Qdrant search (500ms timeout) ──
-    let cosine_scores = {
-        let vs = s.vector_store.clone();
-        let q  = req.query.clone();
-        match tokio::time::timeout(
-            std::time::Duration::from_millis(500),
-            vs.search("cortex_index", &q, 50),
-        ).await {
-            Ok(hits) => hits.into_iter().collect::<HashMap<String, f32>>(),
-            Err(_)   => HashMap::new(), // timeout — pure BM25
-        }
-    };
 
     // ── Rank: BM25 × cosine × temporal decay × behavioral ─
     {
@@ -165,6 +170,19 @@ pub async fn search(
         },
         execution_preview: None, // set by AI layer (Phase 3)
     })
+}
+
+/* ─── Semantic-search circuit breaker ───────────────────── */
+
+static VECTOR_MISS_AT: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+fn note_vector_miss() {
+    VECTOR_MISS_AT.store(chrono::Utc::now().timestamp(), Ordering::Relaxed);
+}
+
+/// False for 60 s after the vector backend timed out or returned nothing.
+fn vector_backoff_ok() -> bool {
+    chrono::Utc::now().timestamp() - VECTOR_MISS_AT.load(Ordering::Relaxed) > 60
 }
 
 /* ─── get_suggestions ────────────────────────────────────
@@ -455,11 +473,9 @@ pub async fn get_daemon_status(
     let indexed_items = from_counts.max(cached);
     s.indexed_count.store(indexed_items, Ordering::Relaxed);
 
-    // Dir walk runs on blocking thread — won't stall the async executor
-    let data_dir    = s.data_dir.clone();
-    let storage_bytes = tokio::task::spawn_blocking(move || dir_size_bytes(&data_dir))
-        .await
-        .unwrap_or(0);
+    // Walking ~/.cortex is expensive (hundreds of thousands of index files);
+    // the size changes slowly, so measure at most once a minute.
+    let storage_bytes = cached_storage_bytes(s.data_dir.clone()).await;
 
     Ok(DaemonStatus {
         recording: !s.memory_daemon.is_paused(),
@@ -469,6 +485,19 @@ pub async fn get_daemon_status(
         active_plugins,
         last_sync: chrono::Utc::now().to_rfc3339(),
     })
+}
+
+async fn cached_storage_bytes(dir: std::path::PathBuf) -> u64 {
+    use std::sync::{Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<(i64, u64)>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new((0, 0)));
+    let now = chrono::Utc::now().timestamp();
+    if let Ok(c) = cache.lock() {
+        if now - c.0 < 60 && c.0 != 0 { return c.1; }
+    }
+    let bytes = tokio::task::spawn_blocking(move || dir_size_bytes(&dir)).await.unwrap_or(0);
+    if let Ok(mut c) = cache.lock() { *c = (now, bytes); }
+    bytes
 }
 
 /* ─── Memory: search + timeline (Rewind) ────────────────── */
