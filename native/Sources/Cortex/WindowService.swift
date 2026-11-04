@@ -152,7 +152,9 @@ enum WindowService {
                 }
             }
         }
-        walk(AXUIElementCreateApplication(dock.processIdentifier), depth: 0)
+        let root = AXUIElementCreateApplication(dock.processIdentifier)
+        AXUIElementSetMessagingTimeout(root, 0.5)
+        walk(root, depth: 0)
         return result
     }
 }

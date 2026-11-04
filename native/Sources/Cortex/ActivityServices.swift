@@ -19,36 +19,39 @@ final class BluetoothService: ObservableObject {
     @Published private(set) var connected: [BluetoothDevice] = []
     var onConnect: ((BluetoothDevice) -> Void)?
     private var timer: Timer?
-    private var known: Set<String>?
+    private var known: Set<String>?   // touched only on btQueue
 
     func start() {
         guard timer == nil else { return }
         poll()
-        timer = Timer.scheduledTimer(withTimeInterval: 6, repeats: true) { [weak self] _ in self?.poll() }
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.poll() }
     }
 
     func stop() { timer?.invalidate(); timer = nil }
 
+    private let btQueue = DispatchQueue(label: "cortex.bluetooth", qos: .utility)
+
     private func poll() {
-        let paired = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice]) ?? []
-        let now = paired.filter { $0.isConnected() }
-        let ids = Set(now.compactMap { $0.addressString })
-        let newcomers = ids.subtracting(known ?? ids)
-        known = ids
-        let base = now.map { BluetoothDevice(id: $0.addressString ?? UUID().uuidString, name: $0.name ?? "Bluetooth device", battery: nil) }
-        if base.map(\.id) != connected.map(\.id) || !newcomers.isEmpty {
-            DispatchQueue.global(qos: .utility).async { [weak self] in
-                let levels = Self.batteryLevels()
-                let enriched = base.map { d -> BluetoothDevice in
-                    var x = d
-                    x.battery = levels[d.name]
-                    return x
-                }
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    self.connected = enriched
-                    for d in enriched where newcomers.contains(d.id) { self.onConnect?(d) }
-                }
+        btQueue.async { [weak self] in
+            guard let self else { return }
+            let paired = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice]) ?? []
+            let now = paired.filter { $0.isConnected() }
+            let ids = Set(now.compactMap { $0.addressString })
+            let base = now.map { BluetoothDevice(id: $0.addressString ?? UUID().uuidString, name: $0.name ?? "Bluetooth device", battery: nil) }
+            let previous = self.known
+            let newcomers = ids.subtracting(previous ?? ids)
+            self.known = ids
+            let current = DispatchQueue.main.sync { self.connected.map(\.id) }
+            guard base.map(\.id) != current || !newcomers.isEmpty else { return }
+            let levels = Self.batteryLevels()
+            let enriched = base.map { d -> BluetoothDevice in
+                var x = d
+                x.battery = levels[d.name]
+                return x
+            }
+            DispatchQueue.main.async {
+                self.connected = enriched
+                for d in enriched where newcomers.contains(d.id) { self.onConnect?(d) }
             }
         }
     }
@@ -129,17 +132,24 @@ final class PrivacyIndicators: ObservableObject {
     func start() {
         guard timer == nil else { return }
         poll()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in self?.poll() }
+        timer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { [weak self] _ in self?.poll() }
     }
 
     func stop() { timer?.invalidate(); timer = nil }
 
+    private let queue = DispatchQueue(label: "cortex.privacy", qos: .utility)
+    private lazy var cameraSession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external], mediaType: .video, position: .unspecified)
+
     private func poll() {
-        let mic = Self.defaultInputRunning()
-        let cams = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external], mediaType: .video, position: .unspecified).devices
-        let cam = cams.contains { $0.isInUseByAnotherApplication }
-        if mic != micInUse { micInUse = mic }
-        if cam != cameraInUse { cameraInUse = cam }
+        queue.async { [weak self] in
+            guard let self else { return }
+            let mic = Self.defaultInputRunning()
+            let cam = self.cameraSession.devices.contains { $0.isInUseByAnotherApplication }
+            DispatchQueue.main.async {
+                if mic != self.micInUse { self.micInUse = mic }
+                if cam != self.cameraInUse { self.cameraInUse = cam }
+            }
+        }
     }
 
     private static func defaultInputRunning() -> Bool {

@@ -171,7 +171,7 @@ final class DockModel: ObservableObject {
     func startBadgePolling() {
         guard badgeTimer == nil else { return }
         pollBadges()
-        badgeTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        badgeTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.pollBadges() }
         }
     }

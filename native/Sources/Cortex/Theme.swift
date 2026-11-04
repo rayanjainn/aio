@@ -24,21 +24,34 @@ extension View {
     }
 }
 
-/// The cover art, blown up, blurred and darkened — the "ambient" backdrop behind a player.
+/// The cover art, shrunk to a few pixels and stretched back out: bilinear scaling gives the soft
+/// ambient wash for free, so nothing is blurred at render time.
 struct ArtworkBackdrop: View {
     let image: NSImage
     var strength: Double = 0.55
 
+    private static var cache: (NSImage, NSImage)?
+
+    private static func tiny(_ source: NSImage) -> NSImage {
+        if let (k, v) = cache, k === source { return v }
+        let side = 24
+        let out = NSImage(size: NSSize(width: side, height: side))
+        out.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        source.draw(in: NSRect(x: 0, y: 0, width: side, height: side), from: .zero, operation: .copy, fraction: 1)
+        out.unlockFocus()
+        cache = (source, out)
+        return out
+    }
+
     var body: some View {
-        Image(nsImage: image)
+        Image(nsImage: Self.tiny(image))
             .resizable()
+            .interpolation(.high)
             .aspectRatio(contentMode: .fill)
-            .blur(radius: 36)
             .saturation(1.35)
-            .scaleEffect(1.6)
             .opacity(strength)
             .overlay(Color.black.opacity(0.32))
-            .drawingGroup()
             .clipped()
             .allowsHitTesting(false)
             .transition(.opacity)
