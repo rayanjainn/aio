@@ -179,8 +179,10 @@ final class CodingUsageService: ObservableObject {
     /// "claude-sonnet-4-5-20250929" → "Sonnet 4.5"
     static func prettyModel(_ m: String) -> String {
         guard m.hasPrefix("claude-") else { return m }
-        let parts = m.dropFirst(7).split(separator: "-").filter { !($0.count == 8 && $0.allSatisfy(\.isNumber)) }
-        let name = parts.first(where: { $0.contains(where: \.isLetter) }).map { $0.prefix(1).uppercased() + $0.dropFirst() } ?? ""
+        let parts: [String] = String(m.dropFirst(7)).split(separator: "-").map(String.init)
+            .filter { !($0.count == 8 && $0.allSatisfy(\.isNumber)) }
+        let words = parts.filter { $0.contains(where: \.isLetter) }
+        let name = words.first.map { String($0.prefix(1)).uppercased() + String($0.dropFirst()) } ?? ""
         let ver = parts.filter { !$0.contains(where: \.isLetter) }.joined(separator: ".")
         return ver.isEmpty ? name : "\(name) \(ver)"
     }
