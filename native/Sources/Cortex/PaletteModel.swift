@@ -236,6 +236,8 @@ final class PaletteModel: ObservableObject {
             cmd("window.right", "Snap window to the right half", "Also ⌃⌥→", "rectangle.righthalf.filled"),
             cmd("window.max", "Maximise window", "Also ⌃⌥↩", "rectangle.inset.filled"),
             cmd("app.switcher", "Switch window", "Also ⌥⇥", "macwindow.on.rectangle"),
+            PaletteRow(id: "home:layout", title: "Window layouts", subtitle: "Type  layout <name>  to save the current arrangement", symbol: "rectangle.3.group",
+                       iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),
             sys("sys.screenshot", "Screenshot selection", "Copies to the clipboard", "camera.viewfinder"),
             sys("sys.pickColor", "Pick a colour", "Copies the hex value", "eyedropper"),
@@ -291,6 +293,22 @@ final class PaletteModel: ObservableObject {
                 }
             }
             if out.isEmpty { out.append(PaletteRow(id: "menu:none", title: WindowManager.isTrusted ? "No matching menu items" : "Grant Accessibility to search menus", subtitle: "", symbol: "filemenu.and.selection", iconPath: nil, tag: "", kind: .command("app.settings"), section: "Menu Items")) }
+            return out
+        }
+        if lower == "layout" || lower.hasPrefix("layout ") || lower == "layouts" {
+            let rest = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
+            if !rest.isEmpty {
+                out.append(PaletteRow(id: "layout.save", title: "Save current windows as “\(rest)”", subtitle: "Remembers where every window is", symbol: "square.and.arrow.down",
+                                      iconPath: nil, tag: "", kind: .command("layout.save:\(rest)"), section: "Window layouts"))
+            }
+            for name in WindowLayouts.names() where rest.isEmpty || name.lowercased().contains(rest.lowercased()) {
+                out.append(PaletteRow(id: "layout.\(name)", title: "Restore “\(name)”", subtitle: "Move windows back to where they were", symbol: "rectangle.3.group",
+                                      iconPath: nil, tag: "", kind: .command("layout.restore:\(name)"), section: "Window layouts"))
+            }
+            if out.isEmpty {
+                out.append(PaletteRow(id: "layout.hint", title: "Type a name to save this arrangement", subtitle: "e.g.  layout coding", symbol: "rectangle.3.group",
+                                      iconPath: nil, tag: "", kind: .copy(""), section: "Window layouts"))
+            }
             return out
         }
         if lower.hasPrefix("define ") || lower.hasPrefix("def ") {
@@ -444,7 +462,7 @@ final class PaletteModel: ObservableObject {
         case .engine(let r):
             var h: [(String, String)] = [("↩", r.pluginId == "apps" ? "Open" : (r.sourceType == "clipboard_text" ? "Paste" : "Open"))]
             if r.sourceType == "clipboard_text" { h.append(("⌘↩", "Copy")) }
-            if r.path != nil { h.append(("⌘↩", "Reveal")); h.append(("⌘⇧↩", "Copy path")) }
+            if r.path != nil { h.append(("⌘↩", "Reveal")); h.append(("⌥↩", "Quick Look")); h.append(("⌘⇧↩", "Copy path")) }
             else if r.url != nil { h.append(("⌘⇧↩", "Copy link")) }
             return h
         case .copy: return [("↩", "Copy")]
@@ -498,6 +516,11 @@ final class PaletteModel: ObservableObject {
             ScriptService.run(ScriptCommand(name: URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent, path: path))
             return true
         case .engine(let result):
+            if modifiers.contains(.option), let path = result.path {
+                // Quick Look, like pressing Space in Finder.
+                DispatchQueue.global().async { _ = SystemCommands.shell("/usr/bin/qlmanage", ["-p", path]) }
+                return true
+            }
             if cmd && shift { copy(result.path ?? result.url ?? result.title); return true }
             if cmd, let path = result.path {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])

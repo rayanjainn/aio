@@ -112,7 +112,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id.hasPrefix("window.") { WindowManager.perform(String(id.dropFirst("window.".count))) }
+            if id.hasPrefix("layout.save:") {
+                let n = String(id.dropFirst("layout.save:".count))
+                let c = WindowLayouts.save(n)
+                Toast.show("rectangle.3.group", c > 0 ? "Saved layout “\(n)” — \(c) windows" : "Grant Accessibility to save layouts")
+            }
+            else if id.hasPrefix("layout.restore:") { WindowLayouts.restore(String(id.dropFirst("layout.restore:".count))) }
+            else if id.hasPrefix("layout.delete:") { WindowLayouts.delete(String(id.dropFirst("layout.delete:".count))) }
+            else if id.hasPrefix("window.") { WindowManager.perform(String(id.dropFirst("window.".count))) }
             else if id.hasPrefix("app:") {
                 let bundle = String(id.dropFirst(4))
                 if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {

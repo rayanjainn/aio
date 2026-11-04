@@ -244,6 +244,11 @@ struct IslandPane: View {
 }
 
 struct DockPane: View {
+    static func apply(_ p: Prefs, size: Double, magnification: Double, spacing: Double, roundness: Double, dots: Bool = true) {
+        p.dockIconSize = size; p.dockMagnification = magnification; p.dockSpacing = spacing; p.dockRoundness = roundness
+        p.dockMagnify = magnification > 1.01; p.dockIndicators = dots
+    }
+
     @ObservedObject var prefs: Prefs
     let actions: SettingsActions
     @State private var hidden = false
@@ -265,6 +270,19 @@ struct DockPane: View {
                         Slider(value: $prefs.dockIconSize, in: 36...80, step: 2).frame(width: 220)
                         Text("\(Int(prefs.dockIconSize)) pt").monospacedDigit().foregroundStyle(.secondary)
                     }
+                }
+            }
+            Section("Presets") {
+                HStack {
+                    Button("Classic") { Self.apply(prefs, size: 48, magnification: 1.7, spacing: 8, roundness: 0.42) }
+                    Button("Compact") { Self.apply(prefs, size: 36, magnification: 1.35, spacing: 4, roundness: 0.3) }
+                    Button("Large") { Self.apply(prefs, size: 64, magnification: 1.3, spacing: 10, roundness: 0.5) }
+                    Button("Minimal") { Self.apply(prefs, size: 40, magnification: 1.0, spacing: 6, roundness: 0.2, dots: false) }
+                    Button("Showy") { Self.apply(prefs, size: 52, magnification: 2.1, spacing: 9, roundness: 0.6) }
+                }
+                Picker("Show the Dock on", selection: $prefs.dockDisplay) {
+                    Text("Main display").tag("main")
+                    ForEach(NSScreen.screens.dropFirst(), id: \.localizedName) { s in Text(s.localizedName).tag(s.localizedName) }
                 }
             }
             Section("Feel") {

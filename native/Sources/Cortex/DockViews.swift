@@ -172,11 +172,15 @@ struct DockIcon: View {
                 Button("Force Quit") { model.forceQuit(item) }
             }
             Button("Show in Finder") { model.reveal(item) }
+            Button("Change Icon…") { model.chooseIcon(for: item) }
+            if model.hasCustomIcon(item) { Button("Reset Icon") { model.resetIcon(for: item) } }
             Divider()
             if item.pinned { Button("Remove from Dock") { model.unpin(item) } }
             else { Button("Keep in Dock") { model.pin(item) } }
         case .folder:
             Button("Open in Finder") { model.activate(item) }
+            Button("Change Icon…") { model.chooseIcon(for: item) }
+            if model.hasCustomIcon(item) { Button("Reset Icon") { model.resetIcon(for: item) } }
             Button("Remove from Dock") { model.unpin(item) }
         case .trash:
             Button("Open Trash") { model.activate(item) }

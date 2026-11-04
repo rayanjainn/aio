@@ -13,6 +13,9 @@ enum WindowManager {
 
     private static var restoreFrames: [String: CGRect] = [:]
 
+    /// Space the Cortex Dock occupies, so snapping and maximising leave it clear.
+    static var reserved: (screen: CGRect, edge: String, thickness: CGFloat)?
+
     static func perform(_ action: String) {
         guard isTrusted else { requestAccess(); Log.warn("window: Accessibility permission missing"); return }
         guard let app = NSWorkspace.shared.frontmostApplication, app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
@@ -26,7 +29,14 @@ enum WindowManager {
         let key = "\(app.processIdentifier)"
         let screens = screensInAXSpace()
         guard let index = screens.firstIndex(where: { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) }) ?? (screens.isEmpty ? nil : 0) else { return }
-        let visible = screens[index].visible
+        var visible = screens[index].visible
+        if let r = reserved, NSScreen.screens.indices.contains(index), NSScreen.screens[index].frame == r.screen {
+            switch r.edge {
+            case "left": visible = CGRect(x: visible.minX + r.thickness, y: visible.minY, width: visible.width - r.thickness, height: visible.height)
+            case "right": visible = CGRect(x: visible.minX, y: visible.minY, width: visible.width - r.thickness, height: visible.height)
+            default: visible = CGRect(x: visible.minX, y: visible.minY, width: visible.width, height: visible.height - r.thickness)
+            }
+        }
 
         var target: CGRect?
         switch action {
@@ -72,7 +82,7 @@ enum WindowManager {
 
     // MARK: Accessibility plumbing
 
-    private static func frame(of window: AXUIElement) -> CGRect? {
+    static func frame(of window: AXUIElement) -> CGRect? {
         var pos = CGPoint.zero, size = CGSize.zero
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &value) == .success, let p = value,
@@ -83,7 +93,7 @@ enum WindowManager {
         return CGRect(origin: pos, size: size)
     }
 
-    private static func set(frame: CGRect, on window: AXUIElement) {
+    static func set(frame: CGRect, on window: AXUIElement) {
         var origin = frame.origin, size = frame.size
         // size → position → size: apps clamp the size to the screen they are currently on.
         if let s = AXValueCreate(.cgSize, &size) { AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, s) }

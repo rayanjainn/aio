@@ -218,8 +218,55 @@ final class DockModel: ObservableObject {
 
     // MARK: icons
 
+    private static var customIconsURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/icons.json")
+    }
+
+    private lazy var customIcons: [String: String] = {
+        guard let d = try? Data(contentsOf: Self.customIconsURL), let m = try? JSONDecoder().decode([String: String].self, from: d) else { return [:] }
+        return m
+    }()
+
+    func hasCustomIcon(_ item: DockItem) -> Bool { customIcons[item.id] != nil }
+
+    /// Pick an image (png, icns, jpg…) to use instead of an item's own icon.
+    func chooseIcon(for item: DockItem) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image, .icns]
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose an icon for \(item.name)"
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // Keep a private copy so moving the original never breaks the Dock.
+        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/icons", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dest = dir.appendingPathComponent(item.id.replacingOccurrences(of: "/", with: "_") + "." + url.pathExtension)
+        try? FileManager.default.removeItem(at: dest)
+        guard (try? FileManager.default.copyItem(at: url, to: dest)) != nil else { return }
+        customIcons[item.id] = dest.path
+        saveCustomIcons()
+    }
+
+    func resetIcon(for item: DockItem) {
+        if let p = customIcons[item.id] { try? FileManager.default.removeItem(atPath: p) }
+        customIcons[item.id] = nil
+        saveCustomIcons()
+    }
+
+    private func saveCustomIcons() {
+        if let d = try? JSONEncoder().encode(customIcons) { try? d.write(to: Self.customIconsURL, options: .atomic) }
+        icons.removeAll()
+        objectWillChange.send()
+        refresh()
+    }
+
     func icon(for item: DockItem) -> NSImage {
         if let cached = icons[item.id] { return cached }
+        if let path = customIcons[item.id], let custom = NSImage(contentsOfFile: path) {
+            custom.size = NSSize(width: 128, height: 128)
+            icons[item.id] = custom
+            return custom
+        }
         let image: NSImage
         switch item.kind {
         case .trash:

@@ -64,6 +64,7 @@ final class PaletteController {
 
         let host = NSHostingView(rootView: PaletteView(model: model, onClose: { [weak self] in self?.hide() }))
         host.sizingOptions = []
+        host.roundCorners(28)
         panel.contentView = host
         self.panel = panel
 

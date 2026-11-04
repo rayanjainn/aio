@@ -100,6 +100,7 @@ final class WidgetController {
         panel.animationBehavior = .none
         let host = WidgetHostingView(rootView: WidgetHostView(store: store, bridge: bridge, power: power, id: config.id))
         host.sizingOptions = []
+        host.roundCorners(26)
         panel.contentView = host
         let id = config.id
         NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { [weak self, weak panel] _ in

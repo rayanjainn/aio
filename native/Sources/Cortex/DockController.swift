@@ -48,6 +48,7 @@ final class DockController {
         layout(force: true)
         model.startBadgePolling()
         configureAutohide()
+        updateFullScreen()
     }
 
     func hide() {
@@ -55,6 +56,7 @@ final class DockController {
         model.stopBadgePolling()
         autohideTimer?.invalidate(); autohideTimer = nil
         panel?.orderOut(nil)
+        WindowManager.reserved = nil
     }
 
     private func build() {
@@ -66,7 +68,7 @@ final class DockController {
         )
         panel.isFloatingPanel = true
         panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.dockWindow)) + 1)
-        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]   // never over a full-screen app
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
@@ -105,11 +107,14 @@ final class DockController {
         }.store(in: &cancellables)
         Prefs.shared.$dockAutohide.dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in self?.configureAutohide() }
+            .sink { [weak self] _ in self?.configureAutohide(); self?.publishReserved() }
             .store(in: &cancellables)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.async { self?.layout(force: true) }
         }
+        Prefs.shared.$dockDisplay.dropFirst().receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.layout(force: true) }.store(in: &cancellables)
+        watchFullScreen()
         Log.info("dock created")
     }
 
@@ -130,7 +135,63 @@ final class DockController {
         return model.isVertical ? CGSize(width: across, height: along) : CGSize(width: along, height: across)
     }
 
-    private func screen() -> NSScreen? { NSScreen.screens.first }
+    private func screen() -> NSScreen? {
+        let want = Prefs.shared.dockDisplay
+        if want != "main", let s = NSScreen.screens.first(where: { $0.localizedName == want }) { return s }
+        return NSScreen.screens.first
+    }
+
+    // MARK: full-screen apps
+
+    private var fullScreenHidden = false
+
+    /// A full-screen app covers the whole screen, menu bar included; a maximised one does not.
+    private func frontmostIsFullScreen() -> Bool {
+        guard let scr = screen(), let primary = NSScreen.screens.first,
+              let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return false }
+        let f = scr.frame
+        let cg = CGRect(x: f.minX, y: primary.frame.height - f.maxY, width: f.width, height: f.height)
+        let me = Int(ProcessInfo.processInfo.processIdentifier)
+        for w in list {
+            guard (w[kCGWindowLayer as String] as? Int) == 0,
+                  (w[kCGWindowOwnerPID as String] as? Int) != me,
+                  let dict = w[kCGWindowBounds as String] as? NSDictionary,
+                  let b = CGRect(dictionaryRepresentation: dict as CFDictionary) else { continue }
+            if b.width >= cg.width - 1, b.height >= cg.height - 1, abs(b.minX - cg.minX) < 2, abs(b.minY - cg.minY) < 2 { return true }
+        }
+        return false
+    }
+
+    private func updateFullScreen() {
+        guard panel != nil else { return }
+        let now = frontmostIsFullScreen()
+        guard now != fullScreenHidden else { return }
+        fullScreenHidden = now
+        if now {
+            previews?.hide()
+            panel?.orderOut(nil)
+        } else {
+            layout(force: true)
+        }
+        publishReserved()
+    }
+
+    private func watchFullScreen() {
+        let ws = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.activeSpaceDidChangeNotification, NSWorkspace.didActivateApplicationNotification] {
+            ws.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                // The Space switch animates; check once it settles as well.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { self?.updateFullScreen() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { self?.updateFullScreen() }
+            }
+        }
+    }
+
+    /// Tells window snapping how much room the Dock takes.
+    private func publishReserved() {
+        guard let scr = screen(), panel?.isVisible == true, !Prefs.shared.dockAutohide, !fullScreenHidden else { WindowManager.reserved = nil; return }
+        WindowManager.reserved = (scr.frame, model.edge, model.barAcross + 8)
+    }
 
     private func restFrame(for size: CGSize) -> NSRect {
         guard let area = screen()?.visibleFrame, let full = screen()?.frame else { return .zero }
@@ -174,6 +235,7 @@ final class DockController {
             panel.setFrame(hiddenFrame(for: target), display: true)
             return
         }
+        if fullScreenHidden { return }
         let current = panel.isVisible ? panel.frame.size : .zero
         let grown = CGSize(width: max(current.width, target.width), height: max(current.height, target.height))
         // Keep the screen-edge side fixed while the window grows / shrinks.
@@ -190,9 +252,10 @@ final class DockController {
     }
 
     private func place(_ size: CGSize) {
-        guard let panel, screen() != nil else { return }
+        guard let panel, screen() != nil, !fullScreenHidden else { return }
         panel.setFrame(restFrame(for: size), display: true)
         if !panel.isVisible { panel.orderFrontRegardless() }
+        publishReserved()
     }
 
     // MARK: auto-hide

@@ -10,6 +10,19 @@ enum Theme {
     }
 }
 
+extension NSView {
+    /// Clips the view's layer to a rounded rectangle and clears its background, so a borderless
+    /// panel never shows square corners behind the glass.
+    func roundCorners(_ radius: CGFloat) {
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+        layer?.isOpaque = false
+        layer?.cornerRadius = radius
+        layer?.cornerCurve = .continuous
+        layer?.masksToBounds = true
+    }
+}
+
 extension View {
     /// A thin specular rim, lit from the top-left, like the edge of real glass.
     func glassRim(cornerRadius: CGFloat, strength: Double = 1) -> some View {
