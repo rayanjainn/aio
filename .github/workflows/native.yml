@@ -12,6 +12,9 @@ on:
       tag:
         description: "Pre-release tag to publish, e.g. v0.3.0-native.1 (leave empty to only build)"
         required: false
+      existing_run_id:
+        description: "Skip building: attach the installer of this earlier successful run to `tag` (re-publish)"
+        required: false
 
 permissions:
   contents: write
@@ -19,6 +22,7 @@ permissions:
 jobs:
   # Fast feedback: compiles only the Swift code (~1 min) so errors surface quickly.
   swift-check:
+    if: ${{ inputs.existing_run_id == '' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +45,7 @@ jobs:
           exit $tcode
 
   build:
+    if: ${{ inputs.existing_run_id == '' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +70,7 @@ jobs:
   # Separate so it can be re-run on its own (and the full error body is visible if GitHub refuses).
   publish:
     needs: build
-    if: inputs.tag != ''
+    if: ${{ inputs.tag != '' && inputs.existing_run_id == '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -87,3 +92,30 @@ jobs:
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
           fi
           gh release upload "$TAG" "Cortex-native-$TAG.dmg" --repo "$GITHUB_REPOSITORY" --clobber
+
+  # Re-publish: no build, just attach the installer of an earlier successful run.
+  republish:
+    if: ${{ inputs.existing_run_id != '' && inputs.tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download the built installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run download "${{ inputs.existing_run_id }}" -n Cortex-native -D dl --repo "$GITHUB_REPOSITORY"
+      - name: Create the release if needed, attach the installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -e
+          cp dl/Cortex.dmg "Cortex-native-$TAG.dmg"
+          NOTES="Native (Swift) preview. Not notarized: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or Open Anyway in System Settings → Privacy & Security). Quit any older Cortex first so there aren't two Islands."
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
+          fi
+          gh release upload "$TAG" "Cortex-native-$TAG.dmg" --repo "$GITHUB_REPOSITORY" --clobber
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'
