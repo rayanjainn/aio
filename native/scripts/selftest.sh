@@ -86,6 +86,18 @@ for p in $PID $DPID; do
 done
 
 # ------------------------------------------------------------------------------------------
+if [ -z "$PID" ]; then
+  echo
+  echo "  Cortex is not running, so the CPU, profile and engine checks would be meaningless."
+  echo "  → Open Cortex ($APP), wait ~10 s for the Dock/Island to appear, then run this script again."
+  echo "  (Log below is from the LAST run, not now.)"
+  section "5. Log (last run)"
+  grep -E "starting on" "$CORTEX_HOME/logs/native.log" 2>/dev/null | tail -3 | sed 's/^/  /'
+  grep -E ' (ERROR|WARN) ' "$CORTEX_HOME/logs/native.log" 2>/dev/null | tail -8 | sed 's/^/  /'
+  printf '\n  PASS: %s   WARN: %s   FAIL: %s\n  Report: %s\n' "$PASS" "$WARN" "$FAIL" "$OUT"
+  exit 0
+fi
+
 section "3. Idle CPU (10 s, hands off the mouse)"
 if [ -n "$PID" ]; then
   echo "Sampling… don't touch the mouse for 10 seconds."
@@ -215,11 +227,11 @@ echo "    (a file listed here that is not changing is a leftover — delete it)"
 
 # ------------------------------------------------------------------------------------------
 section "11. Other things that make macOS laggy"
-echo "  Top 8 CPU processes right now:"
+echo "  Top 8 CPU processes right now (if WindowServer/nehelper/another app is high, lag may not be Cortex):"
 ps -Ao pcpu,pmem,comm -r 2>/dev/null | head -9 | awk 'NR==1{print "    "$0;next}{printf "    %5s%% %5s%%  %s\n",$1,$2,$3}'
 echo
 echo "  Other Dock / window-manager style apps running (they fight over the same windows):"
-ps -Ao comm 2>/dev/null | grep -iE "Bartender|Rectangle|Magnet|AltTab|Raycast|Alfred|NotchNook|boring|DockDoor|Hammerspoon|Ice\.app|yabai|Amethyst|uBar|Stats" | sed 's/^/    /' | sort -u
+ps -Ao comm 2>/dev/null | grep -E "/Applications/.*(Bartender|Rectangle|Magnet|AltTab|Raycast|Alfred|NotchNook|boring|DockDoor|Hammerspoon|Ice|yabai|Amethyst|uBar|Stats|Ferrite|OBS|Zoom|Teams)" | sed 's/^/    /' | sort -u
 echo "  Reduce Transparency: $(defaults read com.apple.universalaccess reduceTransparency 2>/dev/null || echo 0)  (1 disables Liquid Glass)"
 echo "  Reduce Motion:       $(defaults read com.apple.universalaccess reduceMotion 2>/dev/null || echo 0)"
 
