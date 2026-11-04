@@ -1,82 +1,42 @@
-# Cortex / AIO — Agent Notes
+# Cortex — Agent Notes
 
 ## Project
-AllInOne (AIO) — codename Cortex. Cross-platform ⌘K launcher + episodic memory engine.
-Tauri 2.0 shell, Rust daemon, React UI.
+Cortex — native macOS launcher + Dock + notch Island + widgets. Swift/SwiftUI/AppKit app, Rust engine.
+No Tauri, no web UI.
 
 ## Key paths
-- `src/` — React frontend (TypeScript strict)
-- `src-tauri/src/` — Rust backend
-- `src-tauri/src/plugins/` — one file per source plugin
-- `src-tauri/src/daemon/` — memory capture + session graph
-- `src-tauri/src/ranker.rs` — hybrid BM25 + temporal + behavioral scorer
-- `src-tauri/src/ipc.rs` — all Tauri commands exposed to frontend
-- `~/.cortex/` — runtime data dir (indices, sessions, captures)
+- `native/Sources/Cortex/` — the app. One file per area:
+  `AppDelegate` (wiring, menu bar), `Palette*` (⌘K), `Island*` (notch), `Dock*` (Dock + previews),
+  `Widget*`, `Settings*`, `Onboarding`, `HotKeys` (Carbon hotkeys + shortcut table), `WindowManager` (snapping),
+  `WindowService` (window listing/raising via Accessibility + ScreenCaptureKit), `WindowSwitcher`,
+  `NowPlaying` (system Now Playing through the vendored mediaremote-adapter), `HUDService`, `CalendarService`,
+  `FocusTimer`, `ShelfStore`, `ActivityServices` (Bluetooth, downloads, mic/camera, lyrics, Shortcuts),
+  `CodingUsage`, `WeatherService`, `EngineClient` (talks to cortexd), `Prefs`, `Updates`, `Glass`, `Log`, `Diagnostics`.
+- `native/Resources/mediaremote/` — mediaremote-adapter (BSD-3): perl + prebuilt framework, loaded by `/usr/bin/perl`.
+- `native/Tests/CortexTests/` — unit tests for pure logic (`swift test`).
+- `cortexd/` — Rust engine (plugins, ranker, daemon/memory, ollama). `cortexd/src/rpc.rs` is the whole API.
+- `~/.cortex/` — runtime data (indices, sessions, `config.json`, `native/*.json`, `logs/`).
 
-## Run
+## Build & test
 ```
-npm install && npm run tauri dev
+native/scripts/bundle.sh <version>   # universal .app + .dmg (needs macOS + Rust targets)
+cd native && swift build && swift test
+cd cortexd && cargo test
 ```
+No Mac? CI is the compiler: push to `native/**`; the `swift-check` job prints only compile errors (~1 min).
 
-## Rust crates — key ones
-- `tantivy` — full-text index (BM25)
-- `rusqlite` — session graph + clipboard DB
-- `notify` — filesystem watcher
-- `fuzzy-matcher` — skim algorithm for filename fuzzy search
-- `git2` — git history indexing
-- `arboard` — clipboard access (cross-platform)
-- `tauri-plugin-global-shortcut` — ⌘K hotkey
-
-## Plugin contract
-Every plugin implements `src-tauri/src/plugin.rs::Plugin` trait.
-3 methods: `sync()`, `search(query)`, `execute(result)`.
-All results go through `Ranker::rank()` before returning to frontend.
-
-## Phase 1 target (weeks 1-6)
-Ship: files + shell + browser + git + clipboard plugins.
-UI: command palette working with NL query + unified ranker.
-No memory daemon yet.
-
-## Phase 2 target (weeks 7-14)
-Memory daemon on, OCR pipeline, session graph wired to search results.
-Temporal queries work: "last Tuesday", "before the incident".
+## Rules that bit us
+- Windows are non-activating `NSPanel`s (`canBecomeKey` false) so a click never spends itself on activation.
+- Window frames hug the visible content and only grow instantly / shrink after the animation (Island, Dock) —
+  a big transparent window blocks clicks on whatever is behind it.
+- Music's AppleScript `current track` fails (-1728) on macOS 26 for streamed tracks; Now Playing comes from MediaRemote via the adapter.
+- Not hardened-runtime: a hardened app without the Apple-Events entitlement is silently denied automation.
+- Glass: use `cortexGlass(in:darken:)` (SwiftUI `glassEffect` on 26+, material before). Glass is for the control layer, not content; never stack glass on glass.
+- Mac without a notch (safeAreaInsets.top == 0): the Island draws a virtual notch.
 
 ## Privacy non-negotiables
-- BLOCKED_APPS in `daemon/memory.rs` — never skip this check
-- Password field detection before OCR
-- ⌘⇧P pause hotkey must always work
-- ~/.cortex encrypted at rest
-
-## Desktop layer (`src-tauri/src/desktop/`)
-- `glass.rs` — native Liquid Glass (NSGlassEffectView, macOS 26+), vibrancy fallback
-- `widgets.rs` — one window per widget, `~/.cortex/widgets.json`; frontend `src/widgets/`
-- `dock.rs` — Cortex Dock (`~/.cortex/dock.json`, frontend `src/dock/`) + macOS Dock editor
-- `providers.rs` — widget data (sysinfo, pmset, Open-Meteo, git2, Docker, …)
-- `island.rs` — Dynamic-Island window above the menu bar (frontend `src/island/`)
-- `coding.rs` — Claude Code / Codex usage from local JSONL logs (incremental reads)
-- `panel.rs` — non-activating NSPanel conversion (tauri-nspanel): first click lands, no focus steal
-- `anim.rs` — window-level fade/slide (alpha+position from Rust); windows are created hidden and revealed by `surface_ready`
-- `automation.rs` / `nowplaying.rs` — Apple Events consent + per-player AppleScript (Music, Spotify)
-- `shortcuts.rs` — all global hotkeys, configurable (`config.json → shortcuts`)
-- `window.rs` — Accessibility-API window snapping (halves, quarters, thirds…)
-- `updater.rs` — auto-update from GitHub Releases (`latest.json`, minisign key)
-- Glass: `glass::Material::{Liquid,Frosted}` (Settings → Appearance). Liquid = NSGlassEffectView kept active
-  via `_setForceMainAppearance:` (guarded); Frosted = NSVisualEffectView pinned `.active`.
-- App needs `Entitlements.plist` (apple-events) and must NOT use hardened runtime, or Music/Spotify control is silently denied.
-
-## Tests
-- `cargo test` (src-tauri) — unit tests incl. parsers, layout math, shortcuts.
-- `npm run test:e2e` — every window in Chromium against `e2e/mock.js`.
-- macOS-only code can be type-checked from Linux with a stubbed C toolchain
-  (`cargo check --target aarch64-apple-darwin`).
-- Windows are routed by hash: `#/widget/<id>`, `#/dock`, otherwise the palette.
-
-## IPC pattern
-Frontend → `invoke("search", { query, sourceFilter, limit })`
-Backend → `ipc.rs::search()` → fan-out to plugins → rank → return `SearchResponse`
+- Screen memory is paused at launch (`CORTEX_CAPTURE_PAUSED`); `BLOCKED_APPS` in `cortexd/src/daemon/memory.rs` is never skipped.
+- Password-field detection before OCR. `⌘⇧P` pauses capture.
 
 ## Aesthetic
-Pure Liquid Glass, fully monochrome: white/grey on glass, no hues anywhere
-(--accent-rgb is neutral). Near-black base (#06060a).
-Fonts: system SF Pro (-apple-system), Inter as web fallback, JetBrains Mono for code.
-All design tokens in `src/styles/globals.css`.
+Monochrome Liquid Glass: white/grey on glass, no hues. System fonts (SF Pro).

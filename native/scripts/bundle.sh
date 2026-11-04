@@ -26,7 +26,7 @@ lipo -create ../cortexd/target/aarch64-apple-darwin/release/cortexd ../cortexd/t
 codesign --force --sign - "$APP/Contents/Helpers/cortexd"
 sed "s/__VERSION__/${VERSION}/g" Info.plist > "$APP/Contents/Info.plist"
 cp -a Resources/mediaremote "$APP/Contents/Resources/mediaremote"
-cp ../src-tauri/icons/icon.icns "$APP/Contents/Resources/icon.icns"
+cp Resources/icon.icns "$APP/Contents/Resources/icon.icns"
 
 # Ad-hoc signed, NOT hardened: a hardened runtime without entitlements makes
 # macOS silently refuse Apple Events.

@@ -1,20 +1,18 @@
-//! cortexd — the Cortex engine as a library. The engine modules are the same
-//! source files the old desktop app used (included by path, so there is one copy);
-//! the few places they reached into the Tauri layer are answered by the small
-//! shims below.
+//! cortexd — the Cortex engine as a library: search plugins, ranking, the session
+//! graph and the memory daemon, served to the native app over a local socket.
 
-#[path = "../../src-tauri/src/auth.rs"]       pub mod auth;
-#[path = "../../src-tauri/src/daemon/mod.rs"] pub mod daemon;
-#[path = "../../src-tauri/src/embed.rs"]      pub mod embed;
-#[path = "../../src-tauri/src/embeddings.rs"] pub mod embeddings;
-#[path = "../../src-tauri/src/executor.rs"]   pub mod executor;
-#[path = "../../src-tauri/src/intent.rs"]     pub mod intent;
-#[path = "../../src-tauri/src/ollama.rs"]     pub mod ollama;
-#[path = "../../src-tauri/src/plugin.rs"]     pub mod plugin;
-#[path = "../../src-tauri/src/plugins/mod.rs"] pub mod plugins;
-#[path = "../../src-tauri/src/ranker.rs"]     pub mod ranker;
-#[path = "../../src-tauri/src/temporal.rs"]   pub mod temporal;
-#[path = "../../src-tauri/src/ws_server.rs"]  pub mod ws_server;
+pub mod auth;
+pub mod daemon;
+pub mod embed;
+pub mod embeddings;
+pub mod executor;
+pub mod intent;
+pub mod ollama;
+pub mod plugin;
+pub mod plugins;
+pub mod ranker;
+pub mod temporal;
+pub mod ws_server;
 
 pub mod config_ipc;
 pub mod exec;

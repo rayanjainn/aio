@@ -1,73 +1,35 @@
-# Push a tag like v0.2.0 — or run this workflow manually with a version — to
-# build Cortex for macOS (Apple Silicon + Intel) and Linux and attach the
-# installers to a GitHub Release (the tag is created if it doesn't exist).
-# The marketing site links to the newest release automatically.
+# Publishes a stable Cortex release (the one the website's Download button points to).
+# Run it from the Actions tab (or the API) with a version such as v0.3.0.
 name: Release
 
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
-        description: "Release tag to create, e.g. v0.1.0"
+        description: "Release tag to create, e.g. v0.3.0"
         required: true
-        default: v0.2.1
 
 permissions:
   contents: write
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: --target aarch64-apple-darwin
-            rust_target: aarch64-apple-darwin
-          - platform: macos-latest
-            args: --target x86_64-apple-darwin
-            rust_target: x86_64-apple-darwin
-          - platform: ubuntu-22.04
-            args: ""
-            rust_target: ""
-    runs-on: ${{ matrix.platform }}
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Linux system libraries
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev libxdo-dev libdbus-1-dev patchelf
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.rust_target }}
-
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri -> target
-
-      - run: npm ci
-
-      - uses: tauri-apps/tauri-action@v0
+          workspaces: cortexd -> target
+      - name: Build universal app + dmg
+        run: native/scripts/bundle.sh "${{ inputs.version }}"
+      - name: Publish release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Signs auto-update packages (latest.json + .app.tar.gz.sig). Without
-          # the secret the release still builds, just without auto-update files.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          tagName: ${{ inputs.version || github.ref_name }}
-          releaseName: Cortex ${{ inputs.version || github.ref_name }}
-          releaseBody: "Download the .dmg for your Mac (Apple Silicon = aarch64, Intel = x64). Not notarized yet — after the first launch attempt, open System Settings → Privacy & Security → Open Anyway. If macOS says the app is damaged, run: xattr -cr /Applications/Cortex.app"
-          releaseDraft: false
-          prerelease: false
-          args: ${{ matrix.args }} ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' && '--config src-tauri/tauri.updater.conf.json' || '' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp native/build/Cortex.dmg "native/build/Cortex-${{ inputs.version }}.dmg"
+          gh release create "${{ inputs.version }}" "native/build/Cortex-${{ inputs.version }}.dmg" \
+            --target "$GITHUB_SHA" --title "Cortex ${{ inputs.version }}" --latest \
+            --notes "Download the .dmg and drag Cortex to Applications. Not notarized yet: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or use Open Anyway in System Settings → Privacy & Security). macOS 14 or later; Liquid Glass needs macOS 26."

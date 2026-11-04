@@ -6,7 +6,7 @@ name: Native
 on:
   push:
     branches: ["native/**"]
-    paths: ["native/**", "cortexd/**", "src-tauri/src/**", ".github/workflows/native.yml", "src-tauri/icons/**"]
+    paths: ["native/**", "cortexd/**", ".github/workflows/native.yml"]
   workflow_dispatch:
     inputs:
       tag:

@@ -1,172 +1,42 @@
-# Cortex — Neural Command Palette + Episodic Memory
+# Cortex
 
-> What were you doing right before the prod incident on Tuesday?
+A native macOS launcher, Dock, notch and desktop-widget suite — one app, real Liquid Glass.
+Swift / SwiftUI / AppKit for everything you see, a Rust engine (`cortexd`) for search and memory.
 
-Cortex reconstructs it — files open, tabs visited, commands run, clipboard contents. No tool on earth can do that.
+| | |
+|---|---|
+| **⌘K palette** | Apps, files, shell history, git, browser tabs, clipboard history, snippets, quicklinks, calculator, unit & currency conversion, emoji, dictionary, system commands, window snapping, search the front app's menus, quit processes, colour picker, AI chat (Ollama) |
+| **Island** | A Dynamic-Island for the notch (or a virtual one on Macs without a notch): Now Playing from any app with synced lyrics, volume & brightness HUD, next meeting with Join, focus timer, file shelf with AirDrop, Bluetooth/AirPods, downloads, mic/camera indicators, camera mirror, Shortcuts |
+| **Dock** | Magnifying glass Dock on any edge, live window previews, folder stacks, drag to reorder, badges, launch bounce, auto-hide, optional replacement of the macOS Dock |
+| **Window switcher** | `⌥⇥` — every window of every app and Space, with previews |
+| **Widgets** | Clock, calendar, system, now playing, notes, to-dos, weather, Claude Code & Codex usage |
+| **Windows** | Halves, thirds, corners, maximize, centre, next display — all rebindable |
 
-## Architecture
+## Install
+
+Download the `.dmg` from the [latest release](https://github.com/rayanjainn/aio/releases/latest), drag Cortex to Applications.
+Cortex isn't notarized yet: if macOS says it is damaged run `xattr -cr /Applications/Cortex.app`.
+Requires macOS 14+; the glass is the real Liquid Glass material on macOS 26+.
+
+## Layout
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  ⌘K  Query surface — Tauri popup, <16ms fuzzy results   │
-├─────────────────────────────────────────────────────────┤
-│  Intent parser — Phi-3 Mini (async, re-ranks on done)   │
-├─────────────────────────────────────────────────────────┤
-│  Plugin registry — 28 sources, identical Rust trait     │
-│  Files · Browser · Shell · Git · Clipboard · Docker…    │
-├─────────────────────────────────────────────────────────┤
-│  Ranker — BM25 + temporal decay + behavioral boost      │
-├─────────────────────────────────────────────────────────┤
-│  Session graph — SQLite episodic store, all events      │
-├─────────────────────────────────────────────────────────┤
-│  Memory daemon — adaptive screen capture + OCR + embed  │
-└─────────────────────────────────────────────────────────┘
+native/    Swift package — the app (UI, Island, Dock, widgets, palette, settings)
+cortexd/   Rust engine — plugins, ranking, memory; JSON-RPC over ~/.cortex/cortexd.sock
+chrome-extension/   Browser tab feed for the engine
+marketing/ Website (GitHub Pages)
 ```
 
-## Stack
-
-| Layer | Tech |
-|-------|------|
-| Shell | Tauri 2.0 (Rust + webview) |
-| UI | React 18 + TypeScript + Framer Motion |
-| IPC | Unix socket / Tauri invoke |
-| Full-text | Tantivy (Rust-native Lucene) |
-| Vector | Qdrant embedded |
-| Sessions | SQLite via rusqlite |
-| OCR | Apple Vision (macOS) / Tesseract (Linux) |
-| Embeddings | nomic-embed-text via Ollama |
-| Intent | Phi-3 Mini 4B via llama.cpp |
-| Screen | CGDisplay (macOS) / x11grab (Linux) |
-
-## Launch sequence
-
-### Prerequisites
+## Build
 
 ```bash
-# Rust toolchain
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Node
-brew install node   # or nvm
-
-# Tauri CLI
-cargo install tauri-cli --version "^2.0"
-
-# macOS: Xcode CLI tools (for CGDisplay + Vision)
-xcode-select --install
+native/scripts/bundle.sh 0.3.0     # universal Cortex.app + Cortex.dmg in native/build/
+cd native && swift test            # unit tests
+cd cortexd && cargo test           # engine tests
 ```
 
-### Run dev
-
-```bash
-cd AIO
-npm install
-npm run tauri dev
-```
-
-### Build
-
-```bash
-npm run tauri build
-# Binary at src-tauri/target/release/aio-cortex
-```
-
-## The Island
-
-A Dynamic Island around the notch (or centred in the menu bar on displays
-without one). Compact, it shows the most important live thing — a toast, your
-focus timer, charging, a meeting about to start, music, or Claude Code / Codex
-working. Hover (or press ⌃⌥Space) to expand it: now playing with controls,
-today's Claude and Codex tokens and the current 5-hour block, a focus timer,
-and what's next. Coding stats come from the local session logs in
-`~/.claude/projects` and `~/.codex/sessions` — nothing is uploaded.
-
-## Window management
-
-Snap the focused window with the keyboard or from ⌘K — halves, quarters,
-thirds, two-thirds, maximize, almost-maximize, center, fullscreen, restore and
-next display. Uses the Accessibility API (grant once in System Settings →
-Privacy & Security → Accessibility).
-
-| Default | Action |
-|---------|--------|
-| ⌃⌥ ← / → / ↑ / ↓ | Left / right / top / bottom half |
-| ⌃⌥ U / I / J / K | Top-left / top-right / bottom-left / bottom-right |
-| ⌃⌥ D / F / G | Left / center / right third |
-| ⌃⌥ E / T | Left / right two thirds |
-| ⌃⌥ ↩ · ⌃⌥⇧ ↩ | Maximize · almost maximize |
-| ⌃⌥ C · ⌃⌥ ⌫ | Center · restore |
-| ⌃⌥⌘ → | Next display |
-
-Every shortcut — including ⌘K — can be changed in **Settings → Shortcuts**.
-
-## Widgets & Dock
-
-Open **Widgets & Dock** from the palette (or the menu-bar icon) to get the Studio.
-
-- **Desktop widgets** — 25 kinds in Small / Medium / Large: clock & world clocks,
-  calendar, weather, now playing, photo frame, search, sticky note, to-dos, focus
-  timer, countdown, app shelf, clipboard, system, battery, git repos, Docker,
-  GitHub. Drag to move; right-click for size, layer (desktop / floating), lock,
-  remove. "Arrange" wiggles them iOS-style.
-- **Cortex Dock** — a Liquid Glass dock on any edge with apps, dividers and live
-  mini widgets (clock, now playing, CPU, battery, weather), magnification and
-  auto-hide. Can auto-hide the macOS Dock while it's on.
-- **macOS Dock** — size, magnification, position, minimize effect, auto-hide
-  timing, recents, pinned-app order, spaces. The original Dock is backed up on the
-  first change and can be restored in one click.
-
-On macOS 26+ every Cortex surface uses the native Liquid Glass material
-(`NSGlassEffectView`); earlier versions fall back to system vibrancy.
-
-| Shortcut | Action |
-|----------|--------|
-| ⌘K | Toggle the palette |
-| ⌘, | Settings |
-| ⌘⇧P | Pause / resume screen capture |
+CI (`.github/workflows/native.yml`) compiles and tests on every push to `native/**`; `release.yml` publishes a release.
 
 ## Privacy
 
-- **Local by default** — no outbound connections unless you opt in: the weather
-  widget calls Open-Meteo for the city you enter, and GitHub / Google sync only
-  run after you connect them
-- **App blocklist** — 1Password, Signal, banking apps never captured
-- **Password fields** — OS accessibility API skips secure inputs
-- **Pause hotkey** — `⌘⇧P` halts all capture instantly
-- **Retention** — 30-day screen captures, 1-year text index (configurable)
-- **Encrypted at rest** — `~/.cortex/` via macOS Keychain / Linux Secret Service
-- **Full export/delete** — one command, no residue
-
-## Phase roadmap
-
-| Phase | Weeks | Milestone |
-|-------|-------|-----------|
-| 1 — Command-K core | 1–6 | Tauri shell, file/shell/browser/git plugins, NL query, ranker — **HN launch #1** |
-| 2 — Memory layer | 7–14 | Screen capture daemon, OCR, session graph, episodic queries — **HN launch #2** |
-| 3 — AI layer | 15+ | Phi-3 intent parsing, Ollama embeddings, execution mode |
-
-## Plugin API
-
-Implement `Plugin` trait to add any source:
-
-```rust
-#[async_trait]
-pub trait Plugin: Send + Sync {
-    fn id(&self)   -> &str;
-    fn name(&self) -> &str;
-    fn icon(&self) -> &str;
-    async fn sync(&self) -> Result<usize>;
-    async fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>>;
-    async fn execute(&self, result: &SearchResult) -> Result<()>;
-}
-```
-
-## Killer queries
-
-```
-what was I doing right before the prod incident on Tuesday?
-that dark-themed Rust async website I had open at 2am last month
-docker compose file where redis was exposed on port 6379
-restart redis with the same config as last Thursday
-open all the tabs I had when I was working on the auth bug
-```
+Everything stays on your Mac. Screen memory is **off** until you turn it on, never captures password fields or blocked apps, and `⌘⇧P` pauses it. Logs: `~/.cortex/logs/`. Data: `~/.cortex/`.

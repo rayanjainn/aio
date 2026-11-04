@@ -389,13 +389,11 @@ footer{text-align:center;padding:40px 24px 150px;font-size:13px;color:var(--t3)}
   <section id="download" class="dl reveal">
     <div class="eyebrow">Download</div>
     <h2>Get Cortex.</h2>
-    <p class="lede" id="dl-lede">Free and open source. macOS 12 or later — Liquid Glass on macOS 26.</p>
+    <p class="lede" id="dl-lede">Free and open source. Native for macOS 14 or later — real Liquid Glass on macOS 26. One download for Apple Silicon and Intel.</p>
     <div class="dl-card glass">
       <div class="dl-grid">
-        <a class="dl-opt glass" id="dl-arm" href="https://github.com/rayanjainn/aio/releases/latest"><strong> Apple Silicon</strong><span id="dl-arm-s">M1 · M2 · M3 · M4 — .dmg</span></a>
-        <a class="dl-opt glass" id="dl-x64" href="https://github.com/rayanjainn/aio/releases/latest"><strong> Intel Mac</strong><span id="dl-x64-s">x86_64 — .dmg</span></a>
+        <a class="dl-opt glass" id="dl-arm" href="https://github.com/rayanjainn/aio/releases/latest" style="grid-column: 1 / -1"><strong> Download for Mac</strong><span id="dl-arm-s">Universal — Apple Silicon &amp; Intel · .dmg</span></a>
       </div>
-      <a class="sub" id="dl-linux" href="https://github.com/rayanjainn/aio/releases/latest" style="text-decoration:underline;text-underline-offset:3px">Linux AppImage / .deb</a>
       <p class="note">Cortex isn't notarized by Apple yet. After dragging it to Applications, open it once, then go to <b>System Settings → Privacy &amp; Security</b> and click <b>Open Anyway</b>. If macOS says the app is “damaged”, run <code>xattr -cr /Applications/Cortex.app</code> in Terminal and open it again.</p>
       <a class="sub" href="https://github.com/rayanjainn/aio/releases" target="_blank" rel="noopener">All releases & changelog →</a>
     </div>
@@ -585,9 +583,7 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`).then(r => r.ok ? r
   if (!rel || !rel.assets) return;
   const find = re => rel.assets.find(a => re.test(a.name));
   const set = (id, a, label) => { if (!a) return; $(id).href = a.browser_download_url; const s = $(id + "-s"); if (s) s.textContent = `${label} · ${(a.size / 1e6).toFixed(0)} MB`; };
-  set("#dl-arm", find(/(aarch64|arm64).*\.dmg$/i), "Apple Silicon .dmg");
-  set("#dl-x64", find(/(x64|x86_64|intel).*\.dmg$/i), "Intel .dmg");
-  const lin = find(/\.AppImage$/i) || find(/\.deb$/i); if (lin) $("#dl-linux").href = lin.browser_download_url;
+  set("#dl-arm", find(/\.dmg$/i), "Universal .dmg");
   $("#hero-ver").textContent = rel.tag_name;
   $("#dl-lede").textContent = `Version ${rel.tag_name.replace(/^v/, "")} · released ${new Date(rel.published_at).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}. Free and open source.`;
 }).catch(() => {});
