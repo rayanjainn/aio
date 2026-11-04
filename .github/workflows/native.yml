@@ -26,7 +26,12 @@ jobs:
         shell: bash
         run: |
           cd native
-          swift build -c debug 2>&1 | tail -150
+          set +e
+          swift build -c debug > /tmp/swift-build.log 2>&1
+          code=$?
+          echo "=== swift build exit code: $code ==="
+          grep -E "error:" -A5 /tmp/swift-build.log | head -150
+          exit $code
 
   build:
     runs-on: macos-26
