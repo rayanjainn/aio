@@ -111,6 +111,7 @@ final class UpdateTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LyricsTests: XCTestCase {
     func testParsesTimedLines() {
         let lines = LyricsService.parse("[00:12.50] Hello\n[01:02.00] World\nnot a lyric\n[00:30.00]")
@@ -122,6 +123,7 @@ final class LyricsTests: XCTestCase {
     }
 }
 
+@MainActor
 final class CalendarLinkTests: XCTestCase {
     func testFindsMeetingLinks() {
         XCTAssertEqual(CalendarService.joinURL(in: [nil, "Join: https://meet.google.com/abc-defg-hij now"])?.host, "meet.google.com")
@@ -139,6 +141,7 @@ final class PrettyModelTests: XCTestCase {
     }
 }
 
+@MainActor
 final class PaletteCurationTests: XCTestCase {
     private func result(_ plugin: String, _ title: String, url: String? = nil) -> EngineResult {
         EngineResult(id: UUID().uuidString, pluginId: plugin, sourceType: "unknown", title: title, subtitle: nil, content: nil,
