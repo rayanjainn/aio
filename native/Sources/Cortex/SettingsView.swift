@@ -339,6 +339,7 @@ struct AboutPane: View {
     @State private var status = "Not checked yet"
     @State private var update: UpdateInfo?
     @State private var checking = false
+    @ObservedObject private var updater = SelfUpdater.shared
 
     var body: some View {
         Form {
@@ -347,10 +348,13 @@ struct AboutPane: View {
                 LabeledContent("macOS", value: ProcessInfo.processInfo.operatingSystemVersionString)
             }
             Section("Updates") {
-                LabeledContent("Status", value: status)
+                LabeledContent("Status", value: updater.message.isEmpty ? status : updater.message)
                 HStack {
                     Button(checking ? "Checking…" : "Check for updates") { Task { await check() } }.disabled(checking)
-                    if let update { Button("Download \(update.tag)") { NSWorkspace.shared.open(update.url) } }
+                    if let update {
+                        Button("Install \(update.tag)") { Task { await SelfUpdater.shared.install(update) } }
+                        Button("Download only") { NSWorkspace.shared.open(update.url) }
+                    }
                 }
             }
             Section("Troubleshooting") {

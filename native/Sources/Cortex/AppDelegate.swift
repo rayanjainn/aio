@@ -18,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settings: SettingsController?
     private var widgets: WidgetController?
     private let switcher = WindowSwitcher()
+    private let onboarding = OnboardingController()
+    private var pendingUpdate: UpdateInfo?
+    private var updateItem: NSMenuItem?
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -71,7 +74,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openDiagnostics: { [weak self] in self?.showDiagnostics() },
             addDockFolder: { [weak self] in self?.addDockFolder() }))
         setUpStatusItem()
-        if !Prefs.shared.onboardingDone { settings?.show(.privacy) }
+        if !Prefs.shared.onboardingDone { onboarding.show() }
+        checkForUpdatesQuietly()
         if !WindowManager.isTrusted { Log.info("Accessibility not granted yet (needed for window snapping)") }
     }
 
@@ -147,6 +151,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         access.target = self
         menu.addItem(access)
         menu.addItem(.separator())
+        let upd = NSMenuItem(title: "Install Update…", action: #selector(installUpdate), keyEquivalent: "")
+        upd.target = self
+        upd.isHidden = true
+        menu.addItem(upd)
+        updateItem = upd
         let diag = NSMenuItem(title: "Diagnostics…", action: #selector(showDiagnostics), keyEquivalent: "")
         diag.target = self
         menu.addItem(diag)
@@ -160,6 +169,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPalette() { palette?.show() }
+
+    /// A quiet check shortly after launch; if there's something newer the ✦ menu offers it.
+    private func checkForUpdatesQuietly() {
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            guard let update = try? await UpdateChecker.check(current: AppInfo.version) else { return }
+            await MainActor.run {
+                guard let self else { return }
+                self.pendingUpdate = update
+                self.updateItem?.title = "Install Update \(update.tag)…"
+                self.updateItem?.isHidden = false
+                Toast.show("arrow.down.circle", "Update \(update.tag) available")
+            }
+        }
+    }
+
+    @objc private func installUpdate() {
+        guard let u = pendingUpdate else { return }
+        Task { await SelfUpdater.shared.install(u) }
+    }
 
     private func addDockFolder() {
         let panel = NSOpenPanel()
