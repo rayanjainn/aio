@@ -307,8 +307,8 @@ struct NowPlayingCard: View {
     let bridge: MediaRemoteBridge
 
     var body: some View {
-        HStack(spacing: 16) {
-            ArtworkView(image: track.artwork, size: 104, radius: 16)
+        HStack(alignment: .top, spacing: 16) {
+            ArtworkView(image: track.artwork, size: 112, radius: 18)
             VStack(alignment: .leading, spacing: 4) {
                 Text(track.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
                 Text(track.artist.isEmpty ? track.appName : track.artist)
