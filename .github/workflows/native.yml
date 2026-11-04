@@ -1,7 +1,3 @@
-          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
-          fi
-          gh release upload "$TAG" "Cortex-native-$TAG.dmg" --repo "$GITHUB_REPOSITORY" --clobber
 # Builds the native (Swift) Cortex app on every push to a native/** branch and,
 # when run manually with a tag, publishes it as a PRE-release (never "latest",
 # so the current stable release and the auto-updater are untouched).
@@ -84,16 +80,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
         run: |
-          set +e
+          set -e
           cp dl/Cortex.dmg "Cortex-native-$TAG.dmg"
           NOTES="Native (Swift) preview. Not notarized: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or Open Anyway in System Settings → Privacy & Security). Quit any older Cortex first so there aren't two Islands."
-          gh release create "$TAG" "Cortex-native-$TAG.dmg" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
-          code=$?
-          if [ $code -ne 0 ]; then
-            echo "=== gh release create failed ($code); asking the API directly for the full error ==="
-            gh api -i -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" -f name="Cortex native $TAG" -F prerelease=true -f body="$NOTES" 2>&1 | head -40
-            echo "=== existing tags / releases ==="
-            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=3" --jq '.[].tag_name' 2>&1 | head
-            gh api "repos/$GITHUB_REPOSITORY/rulesets" 2>&1 | head -30
-            exit $code
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
           fi
+          gh release upload "$TAG" "Cortex-native-$TAG.dmg" --repo "$GITHUB_REPOSITORY" --clobber
