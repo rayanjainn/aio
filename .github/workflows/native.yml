@@ -1,0 +1,43 @@
+# Builds the native (Swift) Cortex app on every push to a native/** branch and,
+# when run manually with a tag, publishes it as a PRE-release (never "latest",
+# so the current stable release and the auto-updater are untouched).
+name: Native
+
+on:
+  push:
+    branches: ["native/**"]
+    paths: ["native/**", ".github/workflows/native.yml", "src-tauri/icons/**"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Pre-release tag to publish, e.g. v0.3.0-native.1 (leave empty to only build)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          sw_vers
+      - name: Build app + dmg
+        run: native/scripts/bundle.sh "${{ inputs.tag || '0.3.0-dev' }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cortex-native
+          path: native/build/Cortex.dmg
+      - name: Publish pre-release
+        if: inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp native/build/Cortex.dmg "native/build/Cortex-native-${{ inputs.tag }}.dmg"
+          gh release create "${{ inputs.tag }}" "native/build/Cortex-native-${{ inputs.tag }}.dmg" \
+            --prerelease --target "$GITHUB_SHA" --title "Cortex native ${{ inputs.tag }}" \
+            --notes "Native (Swift) preview. Not notarized: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or Open Anyway in System Settings → Privacy & Security). Quit the old Cortex first so there aren't two Islands."

@@ -6,3 +6,5 @@ src-tauri/target/
 *.DS_Store
 ~/.cortex/
 e2e/screenshots/
+native/.build
+native/build
