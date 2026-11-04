@@ -7,10 +7,10 @@ Swift / SwiftUI / AppKit for everything you see, a Rust engine (`cortexd`) for s
 |---|---|
 | **⌘K palette** | Apps, files, shell history, git, browser tabs, clipboard history, snippets, quicklinks, calculator, unit & currency conversion, emoji, dictionary, system commands, window snapping, search the front app's menus, quit processes, colour picker, AI chat (Ollama) |
 | **Island** | A Dynamic-Island for the notch (or a virtual one on Macs without a notch): Now Playing from any app with synced lyrics, volume & brightness HUD, next meeting with Join, focus timer, file shelf with AirDrop, Bluetooth/AirPods, downloads, mic/camera indicators, camera mirror, Shortcuts |
-| **Dock** | Magnifying glass Dock on any edge, live window previews, folder stacks, drag to reorder, badges, launch bounce, auto-hide, optional replacement of the macOS Dock |
+| **Dock** | Magnifying glass Dock on any edge, live window previews, folder stacks, **live widget tiles (music, clock, battery, weather, timer, system, next meeting)**, custom icons, presets, drag to reorder, badges, launch bounce, auto-hide, hides under full-screen apps, optional replacement of the macOS Dock |
 | **Window switcher** | `⌥⇥` — every window of every app and Space, with previews |
 | **Widgets** | Clock, calendar, system, now playing, notes, to-dos, weather, Claude Code & Codex usage |
-| **Windows** | Halves, thirds, corners, maximize, centre, next display — all rebindable |
+| **Windows** | Halves, thirds, corners, maximize, centre, next display, saved window layouts — all rebindable |
 
 ## Install
 

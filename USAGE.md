@@ -16,8 +16,19 @@
 | `kill safari` | quit an app (`⌘↩` force quits) |
 | `m export` | search the front app's menu items |
 | `sleep`, `dark`, `mute`, `wifi off`, `pick color` | system commands |
-| `left half`, `max`, `next display` | window snapping |
+| `left half`, `max`, `next display` | window snapping (leaves room for the Dock) |
+| `tab docs` | find an open browser tab (Safari, Chrome, Brave, Arc, Edge) and jump to it |
+| `ai` | AI presets on your clipboard: summarise, fix grammar, explain, translate… |
+| `tr es good morning` | translate to any language code |
+| `layout coding` / `layout` | save the arrangement of all your windows / bring one back |
+| `mem <words>`, *Screen Memory timeline* | search or browse what you saw (needs Screen Memory on) |
+| `⌥↩` on a file | Quick Look |
+| *(nothing typed)* | quick actions, your newest files, your running apps |
 
+Snippets understand `{date}`, `{time}`, `{datetime}`, `{day}`, `{uuid}` and `{clipboard}`.
+
+**Dock widgets** — Settings → Dock, or right-click the Dock → *Add widget*: Now Playing, Clock, Battery, Weather, Focus Timer, System, Next Meeting.
+**Dock** — right-click the bar for size, magnification, position; right-click an icon for *Change Icon…*, *Show All Windows*, Hide, Quit.
 **⌥⇥** — switch between any window. **Notch** — hover it; swipe sideways to change page; drop files on it to park them on the Shelf.
 **Scripts** — put executable files in `~/.cortex/scripts/`; they show up in the palette.
 **Settings** — `⌘,` from the ✦ menu: shortcuts, Island, Dock, appearance, permissions, snippets, quicklinks, updates.
