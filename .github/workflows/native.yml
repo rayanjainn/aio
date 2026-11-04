@@ -23,6 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Compile Swift
+        shell: bash
         run: |
           cd native
           swift build -c debug 2>&1 | tail -150
