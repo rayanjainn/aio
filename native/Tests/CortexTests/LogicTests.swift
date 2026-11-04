@@ -118,7 +118,8 @@ final class LyricsTests: XCTestCase {
         XCTAssertEqual(lines.count, 3)
         XCTAssertEqual(lines[0].time, 12.5, accuracy: 0.001)
         XCTAssertEqual(lines[0].text, "Hello")
-        XCTAssertEqual(lines[2].text, "")
+        XCTAssertEqual(lines[1].text, "")       // [00:30.00] has no words
+        XCTAssertEqual(lines[2].text, "World")
         XCTAssertEqual(lines.map(\.time), lines.map(\.time).sorted())
     }
 }
