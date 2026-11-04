@@ -14,6 +14,7 @@ enum RowKind: Equatable {
     case menu(String)             // press a menu item of the front app
     case kill(Int32)              // quit an app (⌘↩ force quits)
     case script(String)           // run a user script
+    case file(String)             // open a file (⌘↩ reveals, ⌥↩ Quick Look)
 }
 
 struct PaletteRow: Identifiable, Equatable {
@@ -233,6 +234,36 @@ final class PaletteModel: ObservableObject {
         }
     }
 
+    private static var recentCache: (at: Date, rows: [PaletteRow])?
+
+    /// The newest files in Downloads, Desktop and Documents — what you were most likely just working on.
+    private static func recentFileRows() -> [PaletteRow] {
+        if let c = recentCache, Date().timeIntervalSince(c.at) < 15 { return c.rows }
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        var found: [(URL, Date)] = []
+        let cutoff = Date().addingTimeInterval(-14 * 86400)
+        for dir in ["Downloads", "Desktop", "Documents"] {
+            let url = home.appendingPathComponent(dir)
+            guard let items = try? fm.contentsOfDirectory(at: url, includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey],
+                                                          options: [.skipsHiddenFiles]) else { continue }
+            for f in items {
+                guard let v = try? f.resourceValues(forKeys: [.contentModificationDateKey, .isDirectoryKey]),
+                      let m = v.contentModificationDate, m > cutoff else { continue }
+                let n = f.lastPathComponent.lowercased()
+                if n.hasSuffix(".crdownload") || n.hasSuffix(".download") || n.hasSuffix(".part") || n.hasPrefix(".") { continue }
+                found.append((f, m))
+            }
+        }
+        let rows = found.sorted { $0.1 > $1.1 }.prefix(5).map { f, m in
+            PaletteRow(id: "recent:\(f.path)", title: f.lastPathComponent,
+                       subtitle: f.deletingLastPathComponent().path.replacingOccurrences(of: home.path, with: "~"),
+                       symbol: "doc", iconPath: f.path, tag: m.formatted(.relative(presentation: .named)), kind: .file(f.path), section: "Recent files")
+        }
+        recentCache = (Date(), Array(rows))
+        return Array(rows)
+    }
+
     /// What the palette shows before you type: things worth one keystroke, then your running apps.
     private func homeRows() -> [PaletteRow] {
         func cmd(_ id: String, _ title: String, _ sub: String, _ symbol: String) -> PaletteRow {
@@ -259,6 +290,7 @@ final class PaletteModel: ObservableObject {
             sys("sys.darkmode", "Toggle dark mode", "", "circle.lefthalf.filled"),
             cmd("app.settings", "Cortex settings", "Dock, Island, shortcuts, appearance", "gearshape"),
         ]
+        out.append(contentsOf: Self.recentFileRows())
         let front = NSWorkspace.shared.frontmostApplication
         var n = 0
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app != front && app.bundleIdentifier != Bundle.main.bundleIdentifier {
@@ -424,13 +456,22 @@ final class PaletteModel: ObservableObject {
 
     // MARK: engine rows
 
-    static func curate(_ results: [EngineResult], forEmptyQuery empty: Bool) -> [EngineResult] {
-        let cleaned = results.filter { r in
-            if r.pluginId == "browser", (r.url ?? "").hasPrefix("file://") { return false }
-            return !r.title.trimmingCharacters(in: .whitespaces).isEmpty
+    /// Cleans an engine result list: drops blanks, files that no longer exist, and repeats
+    /// (the same file indexed twice, or under a different letter-case of its path).
+    static func curate(_ results: [EngineResult], forEmptyQuery empty: Bool,
+                       fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> [EngineResult] {
+        var seen = Set<String>()
+        var cleaned: [EngineResult] = []
+        for r in results {
+            if r.pluginId == "browser", (r.url ?? "").hasPrefix("file://") { continue }
+            if r.title.trimmingCharacters(in: .whitespaces).isEmpty { continue }
+            if r.pluginId == "files" || r.sourceType == "file", let p = r.path, !fileExists(p) { continue }
+            let identity = (r.path ?? r.url ?? (r.title + "|" + (r.subtitle ?? ""))).lowercased()
+            guard seen.insert(r.pluginId + "|" + identity).inserted else { continue }
+            cleaned.append(r)
         }
         guard empty else { return cleaned }
-        let wanted = ["apps", "commands", "files", "clipboard"]
+        let wanted = ["apps", "commands", "clipboard"]
         let picked = cleaned.filter { wanted.contains($0.pluginId) }
         return Array((picked.isEmpty ? cleaned : picked).prefix(10))
     }
@@ -489,6 +530,7 @@ final class PaletteModel: ObservableObject {
         case .menu: return [("↩", "Choose")]
         case .kill: return [("↩", "Quit"), ("⌘↩", "Force quit")]
         case .script: return [("↩", "Run")]
+        case .file: return [("↩", "Open"), ("⌘↩", "Reveal"), ("⌥↩", "Quick Look")]
         }
     }
 
@@ -526,6 +568,16 @@ final class PaletteModel: ObservableObject {
             return true
         case .kill(let pid):
             if let app = NSRunningApplication(processIdentifier: pid) { if cmd { app.forceTerminate() } else { app.terminate() } }
+            return true
+        case .file(let path):
+            let url = URL(fileURLWithPath: path)
+            if modifiers.contains(.option) {
+                DispatchQueue.global().async { _ = SystemCommands.shell("/usr/bin/qlmanage", ["-p", path]) }
+            } else if cmd {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            } else {
+                NSWorkspace.shared.open(url)
+            }
             return true
         case .script(let path):
             ScriptService.run(ScriptCommand(name: URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent, path: path))

@@ -155,6 +155,16 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertEqual(out.map(\.title), ["Safari", "Sleep"])
     }
 
+    func testCurationDropsDuplicatesAndMissingFiles() {
+        func file(_ path: String) -> EngineResult {
+            EngineResult(id: UUID().uuidString, pluginId: "files", sourceType: "file", title: "browser.rs", subtitle: nil, content: nil,
+                         path: path, url: nil, score: 1, action: "open", metadata: nil)
+        }
+        let input = [file("/Users/a/projects/x/browser.rs"), file("/Users/a/Projects/x/browser.rs"), file("/Users/a/old/browser.rs"), file("/Users/a/gone/browser.rs")]
+        let out = PaletteModel.curate(input, forEmptyQuery: false, fileExists: { $0 != "/Users/a/gone/browser.rs" })
+        XCTAssertEqual(out.map { $0.path ?? "" }, ["/Users/a/projects/x/browser.rs", "/Users/a/old/browser.rs"])
+    }
+
     func testGroupingKeepsFirstAppearanceOrder() {
         let rows = ["Files", "Applications", "Files", "Git"].enumerated().map { i, s in
             PaletteRow(id: "\(i)", title: "t\(i)", subtitle: "", symbol: "doc", iconPath: nil, tag: "", kind: .copy("x"), section: s)
