@@ -113,7 +113,7 @@ struct PaletteView: View {
             }
         }
         .frame(width: Self.width, height: Self.height(forRows: model.rows.count, hasMessage: model.message != nil && model.rows.isEmpty), alignment: .top)
-        .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.42)
         .environment(\.colorScheme, .dark)
     }
 
@@ -162,7 +162,9 @@ struct RowView: View {
     }
 
     @ViewBuilder private var icon: some View {
-        if let path = row.iconPath {
+        if let glyph = row.glyph {
+            Text(glyph).font(.system(size: 22)).frame(width: 30, height: 30)
+        } else if let path = row.iconPath {
             Image(nsImage: IconCache.icon(forPath: path)).resizable().interpolation(.high)
         } else {
             Image(systemName: row.symbol).font(.system(size: 18)).foregroundStyle(.secondary)

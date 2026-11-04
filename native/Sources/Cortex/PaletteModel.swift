@@ -5,6 +5,7 @@ import Combine
 enum RowKind: Equatable {
     case engine(EngineResult)
     case calculator(String)
+    case copy(String)             // copy text (unit conversion, emoji)
     case command(String)          // a built-in command id
 }
 
@@ -16,6 +17,7 @@ struct PaletteRow: Identifiable, Equatable {
     let iconPath: String?         // real file / app icon
     let tag: String               // small source label on the right
     let kind: RowKind
+    var glyph: String? = nil      // emoji shown instead of an icon
 }
 
 /// A command that lives in the app itself (window snapping, toggles…).
@@ -92,7 +94,7 @@ final class PaletteModel: ObservableObject {
                 await MainActor.run {
                     guard let self, self.generation == gen else { return }
                     self.message = nil
-                    self.rows = local + response.results.map(Self.row(from:))
+                    self.rows = local + Self.curate(response.results, forEmptyQuery: q.isEmpty).map(Self.row(from:))
                     self.selection = min(self.selection, max(self.rows.count - 1, 0))
                 }
             } catch {
@@ -108,6 +110,17 @@ final class PaletteModel: ObservableObject {
     private func localRows(for q: String) -> [PaletteRow] {
         guard !q.isEmpty else { return [] }
         var out: [PaletteRow] = []
+        if q.hasPrefix(":") {
+            for e in EmojiSearch.search(String(q.dropFirst()), limit: 8) {
+                out.append(PaletteRow(id: "emoji:" + e.name, title: e.name, subtitle: "\(e.c) — press Return to copy", symbol: "face.smiling",
+                                      iconPath: nil, tag: "Emoji", kind: .copy(e.c), glyph: e.c))
+            }
+            return out
+        }
+        if let c = UnitConverter.convert(q) {
+            out.append(PaletteRow(id: "convert", title: c.value, subtitle: c.label + " — press Return to copy", symbol: "arrow.left.arrow.right.circle",
+                                  iconPath: nil, tag: "Convert", kind: .copy(c.value)))
+        }
         if let value = Calculator.evaluate(q) {
             out.append(PaletteRow(id: "calc", title: value, subtitle: q + " — press Return to copy", symbol: "equal.circle",
                                   iconPath: nil, tag: "Calculator", kind: .calculator(value)))
@@ -123,6 +136,19 @@ final class PaletteModel: ObservableObject {
             if out.count >= 6 { break }
         }
         return out
+    }
+
+    /// Empty query: apps and commands first (like Spotlight / Raycast), no git commits or
+    /// browser noise. Otherwise: everything, but never `file://` browser history entries.
+    static func curate(_ results: [EngineResult], forEmptyQuery empty: Bool) -> [EngineResult] {
+        let cleaned = results.filter { r in
+            if r.pluginId == "browser", (r.url ?? "").hasPrefix("file://") { return false }
+            return !r.title.trimmingCharacters(in: .whitespaces).isEmpty
+        }
+        guard empty else { return cleaned }
+        let wanted = ["apps", "commands", "files", "clipboard"]
+        let picked = cleaned.filter { wanted.contains($0.pluginId) }
+        return Array((picked.isEmpty ? cleaned : picked).prefix(10))
     }
 
     static func row(from r: EngineResult) -> PaletteRow {
@@ -151,7 +177,7 @@ final class PaletteModel: ObservableObject {
         guard rows.indices.contains(selection) else { return false }
         let row = rows[selection]
         switch row.kind {
-        case .calculator(let value):
+        case .calculator(let value), .copy(let value):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(value, forType: .string)
             return true
