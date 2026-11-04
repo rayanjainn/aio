@@ -185,6 +185,7 @@ struct DockIcon: View {
         case .app:
             Button(item.running ? "Show" : "Open") { model.activate(item) }
             if item.running {
+                Button("Show All Windows") { model.exposé(item) }
                 Button("Hide") { model.hide(item) }
                 Button("Quit") { model.quit(item) }
                 Button("Force Quit") { model.forceQuit(item) }

@@ -117,7 +117,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id.hasPrefix("layout.save:") {
+            if let tab = BrowserTabs.parse(id) { BrowserTabs.focus(tab) }
+            else if id.hasPrefix("layout.save:") {
                 let n = String(id.dropFirst("layout.save:".count))
                 let c = WindowLayouts.save(n)
                 Toast.show("rectangle.3.group", c > 0 ? "Saved layout “\(n)” — \(c) windows" : "Grant Accessibility to save layouts")

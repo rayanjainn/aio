@@ -165,6 +165,21 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertEqual(out.map { $0.path ?? "" }, ["/Users/a/projects/x/browser.rs", "/Users/a/old/browser.rs"])
     }
 
+    func testSnippetPlaceholders() {
+        let out = SnippetExpander.expand("Hi {clipboard} on {day}, id {uuid}", clipboard: "Sam")
+        XCTAssertTrue(out.hasPrefix("Hi Sam on "))
+        XCTAssertFalse(out.contains("{"))
+    }
+
+    func testBrowserTabMatchingAndIds() {
+        let tabs = [BrowserTab(bundle: "b", window: 1, index: 2, title: "SwiftUI docs", url: "https://developer.apple.com"),
+                    BrowserTab(bundle: "b", window: 1, index: 3, title: "News", url: "https://example.com")]
+        XCTAssertEqual(BrowserTabs.matching(tabs, "swiftui apple").count, 1)
+        XCTAssertEqual(BrowserTabs.matching(tabs, "").count, 2)
+        XCTAssertEqual(BrowserTabs.parse("tab:com.brave.Browser|2|5")?.index, 5)
+        XCTAssertNil(BrowserTabs.parse("nope"))
+    }
+
     func testGroupingKeepsFirstAppearanceOrder() {
         let rows = ["Files", "Applications", "Files", "Git"].enumerated().map { i, s in
             PaletteRow(id: "\(i)", title: "t\(i)", subtitle: "", symbol: "doc", iconPath: nil, tag: "", kind: .copy("x"), section: s)

@@ -173,6 +173,25 @@ final class PaletteModel: ObservableObject {
                 }
             }
         }
+        let tl = q.lowercased()
+        if tl == "tab" || tl == "tabs" || tl.hasPrefix("tab ") || tl.hasPrefix("tabs ") {
+            let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
+            Task.detached { [weak self] in
+                let found = BrowserTabs.matching(BrowserTabs.list(), text).prefix(30)
+                await MainActor.run {
+                    guard let self, self.generation == gen else { return }
+                    let rows = found.map { t in
+                        PaletteRow(id: "tab:\(t.id)", title: t.title.isEmpty ? t.url : t.title, subtitle: t.url, symbol: "safari",
+                                   iconPath: NSWorkspace.shared.urlForApplication(withBundleIdentifier: t.bundle)?.path, tag: "",
+                                   kind: .command("tab:\(t.bundle)|\(t.window)|\(t.index)"), section: "Browser tabs")
+                    }
+                    self.rows = rows.isEmpty
+                        ? [PaletteRow(id: "tab:none", title: "No open tabs found", subtitle: "Safari, Chrome, Brave, Arc and Edge are supported — allow Automation when asked",
+                                      symbol: "safari", iconPath: nil, tag: "", kind: .copy(""), section: "Browser tabs")]
+                        : Array(rows)
+                }
+            }
+        }
         let ql = q.lowercased()
         if ql == "mem" || ql.hasPrefix("mem ") || ql == "rewind" || ql.hasPrefix("rewind ") {
             let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
@@ -282,6 +301,8 @@ final class PaletteModel: ObservableObject {
                        iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:translate", title: "Translate", subtitle: "Type  tr es good morning  (any 2-letter language code)", symbol: "character.bubble",
                        iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:tabs", title: "Search browser tabs", subtitle: "Type  tab <words>", symbol: "safari", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:ai", title: "AI commands", subtitle: "Type  ai  — summarise, fix grammar, explain… on your clipboard", symbol: "sparkles", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
             sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
             cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),
@@ -355,6 +376,24 @@ final class PaletteModel: ObservableObject {
             if out.isEmpty {
                 out.append(PaletteRow(id: "layout.hint", title: "Type a name to save this arrangement", subtitle: "e.g.  layout coding", symbol: "rectangle.3.group",
                                       iconPath: nil, tag: "", kind: .copy(""), section: "Window layouts"))
+            }
+            return out
+        }
+        if lower == "ai" || lower.hasPrefix("ai ") {
+            let rest = String(q.dropFirst(2)).trimmingCharacters(in: .whitespaces).lowercased()
+            let clip = (NSPasteboard.general.string(forType: .string) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let presets: [(String, String, String)] = [
+                ("Summarize clipboard", "text.alignleft", "Summarize this in a few short bullet points:"),
+                ("Fix grammar", "checkmark.bubble", "Fix the grammar and spelling. Keep the meaning and tone. Return only the corrected text:"),
+                ("Explain simply", "lightbulb", "Explain this in simple terms:"),
+                ("Translate to English", "character.bubble", "Translate this to English:"),
+                ("Reply politely", "arrowshape.turn.up.left", "Write a short, polite reply to this message:"),
+                ("Make it shorter", "scissors", "Rewrite this to be shorter and clearer:"),
+                ("Write a commit message", "point.topleft.down.curvedto.point.bottomright.up", "Write a concise conventional commit message for this change:"),
+            ]
+            for (title, symbol, prompt) in presets where rest.isEmpty || title.lowercased().contains(rest) {
+                out.append(PaletteRow(id: "aipreset:\(title)", title: title, subtitle: clip.isEmpty ? "Copy some text first" : String(clip.prefix(70)), symbol: symbol,
+                                      iconPath: nil, tag: "AI", kind: clip.isEmpty ? .copy("") : .ai(prompt + "\n\n" + clip), section: "AI commands"))
             }
             return out
         }
@@ -559,7 +598,8 @@ final class PaletteModel: ObservableObject {
         case .ai(let prompt):
             startChat(prompt)
             return false
-        case .paste(let text):
+        case .paste(let raw):
+            let text = SnippetExpander.expand(raw)
             PasteService.copy(text)
             PasteService.pasteIntoFront()
             return true

@@ -290,6 +290,11 @@ final class DockModel: ObservableObject {
     func activate(_ item: DockItem) {
         switch item.kind {
         case .app:
+            if item.running, Prefs.shared.dockClickHides,
+               let app = NSRunningApplication.runningApplications(withBundleIdentifier: item.value).first, app.isActive {
+                app.hide()
+                return
+            }
             if !item.running {
                 launching.insert(item.id)
                 let id = item.id
@@ -305,6 +310,18 @@ final class DockModel: ObservableObject {
             NSWorkspace.shared.open(item.url)
         case .widget:
             break
+        }
+    }
+
+    /// Mission Control's "Application Windows" for this app (⌃↓), once it is frontmost.
+    func exposé(_ item: DockItem) {
+        NSRunningApplication.runningApplications(withBundleIdentifier: item.value).first?.activate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            for down in [true, false] {
+                let e = CGEvent(keyboardEventSource: nil, virtualKey: 125, keyDown: down)
+                e?.flags = .maskControl
+                e?.post(tap: .cghidEventTap)
+            }
         }
     }
 

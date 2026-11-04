@@ -231,6 +231,29 @@ struct IslandPane: View {
                 Text("Swipe sideways with two fingers to change page. Drop files on it to park them on the Shelf.")
                     .font(.callout).foregroundStyle(.secondary)
             }
+            Section("Apps in the Island") {
+                ForEach(prefs.islandApps, id: \.self) { bundle in
+                    HStack {
+                        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 20, height: 20)
+                            Text(FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: ""))
+                        } else { Text(bundle) }
+                        Spacer()
+                        Button("Remove") { prefs.islandApps.removeAll { $0 == bundle } }.buttonStyle(.borderless)
+                    }
+                }
+                Button("Add an app…") {
+                    let panel = NSOpenPanel()
+                    panel.allowedContentTypes = [.application]
+                    panel.directoryURL = URL(fileURLWithPath: "/Applications")
+                    panel.allowsMultipleSelection = true
+                    NSApp.activate(ignoringOtherApps: true)
+                    if panel.runModal() == .OK {
+                        for u in panel.urls { if let id = Bundle(url: u)?.bundleIdentifier, !prefs.islandApps.contains(id) { prefs.islandApps.append(id) } }
+                    }
+                }
+                Text("They appear on the Island's Tools page, one tap to open.").font(.callout).foregroundStyle(.secondary)
+            }
             Section("Live activities") {
                 Toggle("Now Playing (any app)", isOn: $prefs.islandMusic)
                 Toggle("Synced lyrics", isOn: $prefs.islandLyrics)
@@ -311,6 +334,7 @@ struct DockPane: View {
                         Text(String(format: "%.0f%%", prefs.dockRoundness * 100)).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
+                Toggle("Click the active app's icon to hide it", isOn: $prefs.dockClickHides)
                 Toggle("Running-app dots", isOn: $prefs.dockIndicators)
                 Toggle("Bounce while an app launches", isOn: $prefs.dockBounce)
                 Toggle("Show running apps that aren't pinned", isOn: $prefs.dockShowRunning)

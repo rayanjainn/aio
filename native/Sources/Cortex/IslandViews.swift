@@ -484,6 +484,7 @@ struct ToolsPage: View {
     @ObservedObject private var timer = FocusTimer.shared
     @State private var shortcuts: [String] = []
     @State private var mirror = false
+    @ObservedObject private var prefs = Prefs.shared
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -521,6 +522,18 @@ struct ToolsPage: View {
 
             // Shortcuts
             VStack(alignment: .leading, spacing: 5) {
+                if !prefs.islandApps.isEmpty {
+                    Text("Apps").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6), count: 6), alignment: .leading, spacing: 6) {
+                        ForEach(prefs.islandApps, id: \.self) { bundle in
+                            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
+                                Button { NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in } } label: {
+                                    Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 30, height: 30)
+                                }.buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
                 Text("Shortcuts").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
                 if shortcuts.isEmpty {
                     Text("None found").font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
