@@ -11,7 +11,8 @@ struct NotchGeometry: Equatable {
     @MainActor
     static func detect() -> NotchGeometry {
         let screens = NSScreen.screens
-        let screen = screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main ?? screens.first
+        // Notch screen if there is one, else the screen that owns the menu bar (always first).
+        let screen = screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? screens.first
         guard let screen else {
             return NotchGeometry(screenFrame: NSRect(x: 0, y: 0, width: 1440, height: 900), hasNotch: false, notchWidth: 0, menuBarHeight: 24)
         }
@@ -38,6 +39,7 @@ final class IslandModel: ObservableObject {
     @Published var charging = false
 
     static let wing: CGFloat = 64
+    static let virtualNotchWidth: CGFloat = 150
     static let expandedSize = CGSize(width: 520, height: 150)
 
     var hasActivity: Bool { flash != nil || track != nil }
@@ -48,8 +50,9 @@ final class IslandModel: ObservableObject {
         if expanded {
             return CGSize(width: Self.expandedSize.width, height: g.menuBarHeight + Self.expandedSize.height)
         }
-        let gap: CGFloat = g.hasNotch ? g.notchWidth : 120
+        let gap: CGFloat = g.hasNotch ? g.notchWidth : Self.virtualNotchWidth
         if hasActivity { return CGSize(width: gap + Self.wing * 2, height: g.menuBarHeight) }
-        return g.hasNotch ? CGSize(width: g.notchWidth + 4, height: g.menuBarHeight) : .zero
+        // No notch: draw a small "virtual notch" so there is always something to hover.
+        return CGSize(width: g.hasNotch ? g.notchWidth + 4 : Self.virtualNotchWidth, height: g.menuBarHeight)
     }
 }

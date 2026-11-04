@@ -83,6 +83,11 @@ struct IslandRootView: View {
                 ExpandedView(model: model, bridge: bridge).transition(.opacity)
             } else if model.hasActivity {
                 CompactView(model: model).transition(.opacity)
+            } else if !model.geometry.hasNotch {
+                // Idle virtual notch: a faint dot says "hover me".
+                Circle().fill(Color.white.opacity(0.28)).frame(width: 4, height: 4)
+                    .frame(height: model.geometry.menuBarHeight)
+                    .transition(.opacity)
             }
         }
         .frame(width: size.width, height: size.height, alignment: .top)
@@ -102,7 +107,7 @@ struct CompactView: View {
         let g = model.geometry
         HStack(spacing: 0) {
             leftWing.frame(width: IslandModel.wing)
-            Color.clear.frame(width: g.hasNotch ? g.notchWidth : 120)
+            Color.clear.frame(width: g.hasNotch ? g.notchWidth : IslandModel.virtualNotchWidth)
             rightWing.frame(width: IslandModel.wing)
         }
         .frame(height: g.menuBarHeight)
