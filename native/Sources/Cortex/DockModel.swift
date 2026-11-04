@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import Combine
 
 struct DockItem: Identifiable, Equatable {
