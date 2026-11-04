@@ -17,6 +17,16 @@ permissions:
   contents: write
 
 jobs:
+  # Fast feedback: compiles only the Swift code (~1 min) so errors surface quickly.
+  swift-check:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Swift
+        run: |
+          cd native
+          swift build -c debug 2>&1 | tail -150
+
   build:
     runs-on: macos-26
     steps:
