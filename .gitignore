@@ -8,3 +8,4 @@ src-tauri/target/
 e2e/screenshots/
 native/.build
 native/build
+cortexd/target

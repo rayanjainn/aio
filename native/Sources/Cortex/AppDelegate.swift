@@ -5,36 +5,85 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let nowPlaying = MediaRemoteBridge()
     private let power = PowerMonitor()
+    private let engineProcess = EngineProcess()
+    private let engine = EngineClient()
     private var island: IslandController?
     private var dock: DockController?
+    private var palette: PaletteController?
+    private var statusItem: NSStatusItem?
     private var dockItem: NSMenuItem?
     private var systemDockItem: NSMenuItem?
-    private var statusItem: NSStatusItem?
     private var diagnosticsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.info("Cortex native \(AppInfo.version) starting on \(ProcessInfo.processInfo.operatingSystemVersionString)")
+
+        // Search engine (separate process) + its client.
+        engineProcess.start()
+        engine.onConnectionChange = { [weak self] connected in
+            DispatchQueue.main.async { self?.palette?.model.setEngine(ready: connected) }
+        }
+        engine.start()
+
         nowPlaying.start()
         power.start()
+
         let island = IslandController(bridge: nowPlaying, power: power)
         island.show()
         self.island = island
+
         let dock = DockController()
         dock.show()
         self.dock = dock
+
+        let palette = PaletteController()
+        palette.attach(client: engine, runBuiltin: { [weak self] id in self?.runBuiltin(id) })
+        self.palette = palette
+
+        HotKeyCenter.shared.onAction = { [weak self] action in self?.runBuiltin(action) }
+        HotKeyCenter.shared.registerAll()
+
         setUpStatusItem()
+        if !WindowManager.isTrusted { Log.info("Accessibility not granted yet (needed for window snapping)") }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         nowPlaying.stop()
+        engineProcess.stop()
         SystemDock.setHidden(false)   // never leave the user without a Dock
     }
+
+    // MARK: actions (menu, palette commands and hotkeys all land here)
+
+    private func runBuiltin(_ id: String) {
+        switch id {
+        case "palette": palette?.toggle()
+        case "app.diagnostics": showDiagnostics()
+        case "app.toggleDock": toggleDock()
+        case "app.toggleSystemDock": toggleSystemDock()
+        case "app.island", "island": island?.toggleExpanded()
+        case "app.quit": NSApp.terminate(nil)
+        case "app.reindex":
+            Task { _ = try? await engine.call("sync") }
+        case "app.pause", "pause":
+            Task { _ = try? await engine.call("recording_toggle") }
+        default:
+            if id.hasPrefix("window.") { WindowManager.perform(String(id.dropFirst("window.".count))) }
+            else { Log.warn("unknown action \(id)") }
+        }
+    }
+
+    // MARK: menu bar
 
     private func setUpStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "sparkle", accessibilityDescription: "Cortex")
         let menu = NSMenu()
         menu.addItem(withTitle: "Cortex \(AppInfo.version)", action: nil, keyEquivalent: "")
+        menu.addItem(.separator())
+        let open = NSMenuItem(title: "Open Cortex", action: #selector(openPalette), keyEquivalent: "")
+        open.target = self
+        menu.addItem(open)
         menu.addItem(.separator())
         let dockToggle = NSMenuItem(title: "Show Cortex Dock", action: #selector(toggleDock), keyEquivalent: "")
         dockToggle.target = self
@@ -46,6 +95,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sysDock.state = SystemDock.hiddenByUs ? .on : .off
         menu.addItem(sysDock)
         systemDockItem = sysDock
+        let access = NSMenuItem(title: "Grant Window-Snapping Access…", action: #selector(grantAccessibility), keyEquivalent: "")
+        access.target = self
+        menu.addItem(access)
         menu.addItem(.separator())
         let diag = NSMenuItem(title: "Diagnostics…", action: #selector(showDiagnostics), keyEquivalent: "")
         diag.target = self
@@ -54,11 +106,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         log.target = self
         menu.addItem(log)
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit Cortex", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        menu.addItem(quit)
+        menu.addItem(NSMenuItem(title: "Quit Cortex", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         item.menu = menu
         statusItem = item
     }
+
+    @objc private func openPalette() { palette?.show() }
+    @objc private func grantAccessibility() { WindowManager.requestAccess() }
 
     @objc private func toggleDock() {
         guard let dock else { return }
@@ -76,21 +130,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showDiagnostics() {
-        let text = Diagnostics.report(island: island, dock: dock, bridge: nowPlaying)
+        let provider: () -> String = { [weak self] in
+            guard let self else { return "" }
+            return Diagnostics.report(island: self.island, dock: self.dock, bridge: self.nowPlaying,
+                                      engineProcess: self.engineProcess.describe, engineConnected: self.engine.isConnected)
+        }
+        let view = NSHostingView(rootView: DiagnosticsView(text: provider(), refresh: provider))
         if let w = diagnosticsWindow {
-            w.contentView = NSHostingView(rootView: DiagnosticsView(text: text, refresh: { [weak self] in
-                guard let self else { return "" }
-                return Diagnostics.report(island: self.island, dock: self.dock, bridge: self.nowPlaying)
-            }))
+            w.contentView = view
             w.makeKeyAndOrderFront(nil)
         } else {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 460), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
             w.title = "Cortex Diagnostics"
             w.isReleasedWhenClosed = false
-            w.contentView = NSHostingView(rootView: DiagnosticsView(text: text, refresh: { [weak self] in
-                guard let self else { return "" }
-                return Diagnostics.report(island: self.island, dock: self.dock, bridge: self.nowPlaying)
-            }))
+            w.contentView = view
             w.center()
             diagnosticsWindow = w
             w.makeKeyAndOrderFront(nil)

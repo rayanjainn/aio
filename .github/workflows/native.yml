@@ -6,7 +6,7 @@ name: Native
 on:
   push:
     branches: ["native/**"]
-    paths: ["native/**", ".github/workflows/native.yml", "src-tauri/icons/**"]
+    paths: ["native/**", "cortexd/**", "src-tauri/src/**", ".github/workflows/native.yml", "src-tauri/icons/**"]
   workflow_dispatch:
     inputs:
       tag:
@@ -21,6 +21,12 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: cortexd -> target
       - name: Toolchain
         run: |
           xcodebuild -version

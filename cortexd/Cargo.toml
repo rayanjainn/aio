@@ -1,0 +1,67 @@
+[package]
+name = "cortexd"
+version = "0.3.0"
+description = "Cortex engine — headless search, memory and plugin daemon for the native app"
+edition = "2021"
+
+[lib]
+name = "cortexd_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cortexd"
+path = "src/main.rs"
+
+[dependencies]
+serde       = { version = "1.0", features = ["derive"] }
+serde_json  = "1.0"
+tokio       = { version = "1",   features = ["full"] }
+anyhow      = "1.0"
+thiserror   = "1.0"
+tracing     = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rusqlite    = { version = "0.31", features = ["bundled"] }
+uuid        = { version = "1.0",  features = ["v4", "v5"] }
+chrono      = { version = "0.4",  features = ["serde"] }
+tantivy     = "0.22"
+fuzzy-matcher = "0.3"
+rayon       = "1.8"
+async-trait = "0.1"
+futures     = "0.3"
+notify      = "6.0"
+walkdir     = "2"
+ignore      = "0.4"
+sha2        = "0.10"
+hex         = "0.4"
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+futures-util      = "0.3"
+git2        = { version = "0.19", default-features = false }
+arboard     = "3.4"
+screenshots = "0.8"
+image       = { version = "0.25", features = ["jpeg"] }
+zstd        = "0.13"
+opener      = "0.7"
+webbrowser  = "1.0"
+dirs        = "5.0"
+regex       = "1.10"
+reqwest     = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+oauth2      = "4.4"
+url         = "2.5"
+base64      = "0.22"
+keyring     = "3.3"
+icalendar   = "0.16"
+mailparse   = "0.14"
+rusty-leveldb = "3.0"
+bollard     = "0.17"
+leptess     = { version = "0.14", optional = true }
+libc        = "0.2"
+
+[features]
+ocr = ["dep:leptess"]
+
+[profile.release]
+panic   = "abort"
+codegen-units = 1
+lto     = true
+opt-level = 3
+strip   = true

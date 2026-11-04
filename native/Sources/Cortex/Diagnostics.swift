@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 enum Diagnostics {
-    static func report(island: IslandController?, dock: DockController?, bridge: MediaRemoteBridge) -> String {
+    static func report(island: IslandController?, dock: DockController?, bridge: MediaRemoteBridge, engineProcess: String, engineConnected: Bool) -> String {
         var out: [String] = []
         let os = ProcessInfo.processInfo
         out.append("Cortex native \(AppInfo.version)")
@@ -18,6 +18,11 @@ enum Diagnostics {
         out.append("== Island ==")
         out.append(island?.describeGeometry() ?? "not created")
         out.append(island?.describePanel() ?? "")
+        out.append("")
+        out.append("== Engine ==")
+        out.append("cortexd: \(engineProcess)  connected=\(engineConnected)")
+        out.append("Accessibility (window snapping): \(WindowManager.isTrusted ? "granted" : "not granted")")
+        out.append("hotkey errors: \(HotKeyCenter.shared.errors.isEmpty ? "none" : HotKeyCenter.shared.errors.map { "\($0.key): \($0.value)" }.joined(separator: "; "))")
         out.append("")
         out.append("== Dock ==")
         out.append(dock?.describe() ?? "not created")

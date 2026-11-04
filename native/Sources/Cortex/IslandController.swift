@@ -138,6 +138,11 @@ final class IslandController {
         if !panel.isVisible { panel.orderFrontRegardless() }
     }
 
+    func toggleExpanded() {
+        hoverWork?.cancel()
+        model.expanded.toggle()
+    }
+
     // MARK: diagnostics
 
     func describeGeometry() -> String {
