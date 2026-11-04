@@ -39,6 +39,8 @@ final class MediaRemoteBridge: ObservableObject {
     @Published private(set) var status: String = "not started"
     private(set) var lastLineAt: Date?
     private(set) var lines = 0
+    /// Last payload without the (huge) artwork, for Diagnostics.
+    private(set) var lastPayloadSummary = "none"
 
     private var process: Process?
     private var buffer = Data()
@@ -143,6 +145,14 @@ final class MediaRemoteBridge: ObservableObject {
             return
         }
         let payload = obj["payload"] as? [String: Any]
+        if let payload {
+            let summary = payload.filter { $0.key != "artworkData" }
+                .sorted { $0.key < $1.key }
+                .map { "\($0.key)=\($0.value)" }.joined(separator: " ")
+            lastPayloadSummary = summary
+        } else {
+            lastPayloadSummary = "payload: null"
+        }
         let parsed = payload.flatMap { parse(payload: $0) }
         DispatchQueue.main.async {
             if self.info?.title != parsed?.title || self.info?.playing != parsed?.playing {

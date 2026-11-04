@@ -30,6 +30,7 @@ enum Diagnostics {
         } else {
             out.append("nothing reported")
         }
+        out.append("raw: \(bridge.lastPayloadSummary)")
         let res = Bundle.main.resourceURL?.appendingPathComponent("mediaremote")
         out.append("bundle adapter dir: \(res?.path ?? "nil") exists=\(res.map { FileManager.default.fileExists(atPath: $0.path) } ?? false)")
         return out.joined(separator: "\n")
