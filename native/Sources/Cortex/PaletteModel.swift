@@ -65,6 +65,13 @@ final class PaletteModel: ObservableObject {
         list += [
             BuiltinCommand(id: "app.settings", title: "Cortex Settings", subtitle: "Shortcuts, Island, Dock, permissions", symbol: "gearshape", keywords: ["preferences", "options", "shortcuts", "permissions"]),
             BuiltinCommand(id: "app.switcher", title: "Switch Windows", subtitle: "Every window of every app, with previews", symbol: "rectangle.on.rectangle", keywords: ["window", "alt tab", "switcher", "windows"]),
+            BuiltinCommand(id: "timer.25", title: "Start Focus Timer (25 min)", subtitle: "Shown live in the Island", symbol: "timer", keywords: ["focus", "pomodoro", "timer", "work"]),
+            BuiltinCommand(id: "timer.50", title: "Start Focus Timer (50 min)", subtitle: "", symbol: "timer", keywords: ["focus", "pomodoro", "timer", "deep"]),
+            BuiltinCommand(id: "timer.5", title: "Start Break (5 min)", subtitle: "", symbol: "cup.and.saucer", keywords: ["break", "timer", "rest"]),
+            BuiltinCommand(id: "timer.stop", title: "Stop Focus Timer", subtitle: "", symbol: "stop.circle", keywords: ["timer", "stop", "cancel"]),
+            BuiltinCommand(id: "island.calendar", title: "Island: Calendar", subtitle: "Your next meetings with Join", symbol: "calendar", keywords: ["island", "meeting", "join", "calendar"]),
+            BuiltinCommand(id: "island.shelf", title: "Island: Shelf", subtitle: "Files you parked on the notch", symbol: "tray.full", keywords: ["island", "shelf", "files", "airdrop"]),
+            BuiltinCommand(id: "island.tools", title: "Island: Tools", subtitle: "Timer, mirror, Shortcuts", symbol: "slider.horizontal.3", keywords: ["island", "mirror", "camera", "shortcuts"]),
             BuiltinCommand(id: "app.addWidget", title: "Add a Widget", subtitle: "Clock, calendar, system, now playing, notes, to-dos", symbol: "square.grid.2x2", keywords: ["widgets", "desktop", "clock", "notes"]),
             BuiltinCommand(id: "app.toggleWidgets", title: "Show / hide widgets", subtitle: "", symbol: "eye", keywords: ["widgets", "desktop"]),
             BuiltinCommand(id: "app.diagnostics", title: "Cortex Diagnostics", subtitle: "Screens, engine, Now Playing", symbol: "stethoscope", keywords: ["debug", "log", "info"]),

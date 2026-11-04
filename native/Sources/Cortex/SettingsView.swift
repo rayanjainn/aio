@@ -179,10 +179,22 @@ struct IslandPane: View {
             Section {
                 Toggle("Show the Island", isOn: $prefs.islandEnabled)
                 Toggle("Expand when the pointer touches it", isOn: $prefs.islandHoverExpand)
+                Text("Swipe sideways with two fingers to change page. Drop files on it to park them on the Shelf.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
             Section("Live activities") {
                 Toggle("Now Playing (any app)", isOn: $prefs.islandMusic)
+                Toggle("Synced lyrics", isOn: $prefs.islandLyrics)
+                Toggle("Volume and brightness HUD (replaces the macOS overlay)", isOn: $prefs.islandHUD)
+                Toggle("Next meeting, with a Join button", isOn: $prefs.islandCalendar)
                 Toggle("Charging when you plug in", isOn: $prefs.islandCharging)
+                Toggle("AirPods and Bluetooth devices connecting", isOn: $prefs.islandBluetooth)
+                Toggle("Downloads in progress", isOn: $prefs.islandDownloads)
+                Toggle("Microphone / camera in use", isOn: $prefs.islandPrivacy)
+            }
+            Section {
+                Text("The HUD needs Accessibility access to take over the volume and brightness keys. Calendar and Bluetooth ask for their own permission the first time they're used.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
         }
     }

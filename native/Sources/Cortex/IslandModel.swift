@@ -26,23 +26,93 @@ struct NotchGeometry: Equatable {
     }
 }
 
+enum IslandPage: String, CaseIterable, Identifiable {
+    case player, calendar, shelf, tools
+    var id: String { rawValue }
+    var symbol: String {
+        switch self {
+        case .player: "music.note"
+        case .calendar: "calendar"
+        case .shelf: "tray.full"
+        case .tools: "slider.horizontal.3"
+        }
+    }
+    var title: String {
+        switch self {
+        case .player: "Player"
+        case .calendar: "Calendar"
+        case .shelf: "Shelf"
+        case .tools: "Tools"
+        }
+    }
+}
+
+/// What the compact pill is showing, highest priority first.
+enum IslandActivity {
+    case hud(HUDEvent)
+    case flash(IslandModel.Flash)
+    case meeting(MeetingEvent)
+    case timer
+    case download([String])
+    case music
+    case privacy
+    case idle
+}
+
 /// Everything the Island view draws from.
 @MainActor
 final class IslandModel: ObservableObject {
-    enum Flash: Equatable { case charging(Int) }
+    enum Flash: Equatable {
+        case charging(Int)
+        case bluetooth(String, String?)
+        case message(String, String)      // symbol, text
+    }
 
     @Published var geometry = NotchGeometry.detect()
     @Published var expanded = false
+    @Published var page: IslandPage = .player
     @Published var flash: Flash?
+    @Published var hud: HUDEvent?
     @Published var track: NowPlayingInfo?
     @Published var battery: Int?
     @Published var charging = false
+    @Published var timerRunning = false
+    @Published var meeting: MeetingEvent?
+    @Published var downloads: [String] = []
+    @Published var micInUse = false
+    @Published var cameraInUse = false
+    @Published var dragTargeted = false
+    @Published var lyric: String?
 
     static let wing: CGFloat = 64
-    static let virtualNotchWidth: CGFloat = 150
-    static let expandedSize = CGSize(width: 520, height: 150)
+    static let wideWing: CGFloat = 122
+    static let expandedSize = CGSize(width: 580, height: 238)
 
-    var hasActivity: Bool { flash != nil || track != nil }
+    var activity: IslandActivity {
+        if let hud { return .hud(hud) }
+        if let flash { return .flash(flash) }
+        if let meeting { return .meeting(meeting) }
+        if timerRunning { return .timer }
+        if !downloads.isEmpty { return .download(downloads) }
+        if track != nil { return .music }
+        if micInUse || cameraInUse { return .privacy }
+        return .idle
+    }
+
+    var hasActivity: Bool { if case .idle = activity { return false } else { return true } }
+
+    /// Width of one wing for the current activity.
+    var wingWidth: CGFloat {
+        switch activity {
+        case .hud, .meeting, .download: Self.wideWing
+        case .flash(let f):
+            if case .charging = f { return Self.wing }
+            return Self.wideWing
+        default: Self.wing
+        }
+    }
+
+    static let virtualNotchWidth: CGFloat = 150
 
     /// Size of the black pill for the current state. `.zero` = nothing to show.
     func pillSize() -> CGSize {
@@ -51,7 +121,7 @@ final class IslandModel: ObservableObject {
             return CGSize(width: Self.expandedSize.width, height: g.menuBarHeight + Self.expandedSize.height)
         }
         let gap: CGFloat = g.hasNotch ? g.notchWidth : Self.virtualNotchWidth
-        if hasActivity { return CGSize(width: gap + Self.wing * 2, height: g.menuBarHeight) }
+        if hasActivity { return CGSize(width: gap + wingWidth * 2, height: g.menuBarHeight) }
         // No notch: draw a small "virtual notch" so there is always something to hover.
         return CGSize(width: g.hasNotch ? g.notchWidth + 4 : Self.virtualNotchWidth, height: g.menuBarHeight)
     }

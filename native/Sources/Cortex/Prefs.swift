@@ -17,6 +17,12 @@ final class Prefs: ObservableObject {
     @Published var dockPreviews = true { didSet { save() } }
     @Published var islandEnabled = true { didSet { save() } }
     @Published var islandMusic = true { didSet { save() } }
+    @Published var islandHUD = true { didSet { save() } }
+    @Published var islandCalendar = true { didSet { save() } }
+    @Published var islandBluetooth = true { didSet { save() } }
+    @Published var islandDownloads = true { didSet { save() } }
+    @Published var islandPrivacy = true { didSet { save() } }
+    @Published var islandLyrics = true { didSet { save() } }
     @Published var islandCharging = true { didSet { save() } }
     @Published var islandHoverExpand = true { didSet { save() } }
     @Published var paletteDarken = 0.42 { didSet { save() } }
@@ -28,6 +34,7 @@ final class Prefs: ObservableObject {
         var dockEnabled: Bool?, dockIconSize: Double?, dockMagnify: Bool?
         var dockEdge: String?, dockAutohide: Bool?, dockDarken: Double?, dockShowTrash: Bool?, dockPreviews: Bool?
         var islandEnabled: Bool?, islandMusic: Bool?, islandCharging: Bool?, islandHoverExpand: Bool?
+        var islandHUD: Bool?, islandCalendar: Bool?, islandBluetooth: Bool?, islandDownloads: Bool?, islandPrivacy: Bool?, islandLyrics: Bool?
         var paletteDarken: Double?, onboardingDone: Bool?
     }
 
@@ -47,6 +54,12 @@ final class Prefs: ObservableObject {
             dockPreviews = s.dockPreviews ?? true
             islandEnabled = s.islandEnabled ?? true
             islandMusic = s.islandMusic ?? true
+            islandHUD = s.islandHUD ?? true
+            islandCalendar = s.islandCalendar ?? true
+            islandBluetooth = s.islandBluetooth ?? true
+            islandDownloads = s.islandDownloads ?? true
+            islandPrivacy = s.islandPrivacy ?? true
+            islandLyrics = s.islandLyrics ?? true
             islandCharging = s.islandCharging ?? true
             islandHoverExpand = s.islandHoverExpand ?? true
             paletteDarken = s.paletteDarken ?? 0.42
@@ -60,7 +73,9 @@ final class Prefs: ObservableObject {
         let s = Stored(dockEnabled: dockEnabled, dockIconSize: dockIconSize, dockMagnify: dockMagnify,
                        dockEdge: dockEdge, dockAutohide: dockAutohide, dockDarken: dockDarken, dockShowTrash: dockShowTrash, dockPreviews: dockPreviews,
                        islandEnabled: islandEnabled, islandMusic: islandMusic, islandCharging: islandCharging,
-                       islandHoverExpand: islandHoverExpand, paletteDarken: paletteDarken, onboardingDone: onboardingDone)
+                       islandHoverExpand: islandHoverExpand,
+                       islandHUD: islandHUD, islandCalendar: islandCalendar, islandBluetooth: islandBluetooth, islandDownloads: islandDownloads,
+                       islandPrivacy: islandPrivacy, islandLyrics: islandLyrics, paletteDarken: paletteDarken, onboardingDone: onboardingDone)
         let url = Self.url
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let data = try? JSONEncoder().encode(s) { try? data.write(to: url, options: .atomic) }
