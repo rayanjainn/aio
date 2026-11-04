@@ -185,10 +185,12 @@ fi
 section "7. Now Playing (MediaRemote adapter run by hand)"
 AD="$APP/Contents/Resources/mediaremote"
 if [ -f "$AD/mediaremote-adapter.pl" ]; then
-  OUTJ="$(/usr/bin/perl "$AD/mediaremote-adapter.pl" "$AD/MediaRemoteAdapter.framework" get --micros 2>&1 | head -c 1500)"
-  if echo "$OUTJ" | grep -q '"title"'; then ok "adapter returns the current track"; info "${OUTJ:0:500}"
+  OUTJ="$(/usr/bin/perl "$AD/mediaremote-adapter.pl" "$AD/MediaRemoteAdapter.framework" get --micros 2>&1)"
+  SHORT="$(printf '%s' "$OUTJ" | sed 's/"artworkData":"[^"]*"/"artworkData":"…"/' | head -c 600)"
+  if echo "$OUTJ" | grep -q '"title"'; then ok "adapter returns the current track"; info "$SHORT"
   elif [ "$OUTJ" = "null" ] || [ -z "$OUTJ" ]; then warn "adapter works but nothing is playing/paused right now (start a song and re-run)"
-  else bad "adapter output unexpected: ${OUTJ:0:400}"; fi
+  elif echo "$OUTJ" | grep -q '"bundleIdentifier"'; then ok "adapter returns an app with no title (browser tab?)"; info "$SHORT"
+  else bad "adapter output unexpected: $SHORT"; fi
 else warn "adapter not found, skipped"; fi
 
 # ------------------------------------------------------------------------------------------

@@ -222,8 +222,39 @@ final class PaletteModel: ObservableObject {
         }
     }
 
+    /// What the palette shows before you type: things worth one keystroke, then your running apps.
+    private func homeRows() -> [PaletteRow] {
+        func cmd(_ id: String, _ title: String, _ sub: String, _ symbol: String) -> PaletteRow {
+            PaletteRow(id: "home:\(id)", title: title, subtitle: sub, symbol: symbol, iconPath: nil, tag: "", kind: .command(id), section: "Quick actions")
+        }
+        func sys(_ id: String, _ title: String, _ sub: String, _ symbol: String) -> PaletteRow {
+            PaletteRow(id: "home:\(id)", title: title, subtitle: sub, symbol: symbol, iconPath: nil, tag: "", kind: .system(id), section: "Quick actions")
+        }
+        var out: [PaletteRow] = [
+            cmd("timer.25", "Start a 25-minute focus timer", "Shows in the Island", "timer"),
+            cmd("window.left", "Snap window to the left half", "Also ⌃⌥←", "rectangle.lefthalf.filled"),
+            cmd("window.right", "Snap window to the right half", "Also ⌃⌥→", "rectangle.righthalf.filled"),
+            cmd("window.max", "Maximise window", "Also ⌃⌥↩", "rectangle.inset.filled"),
+            cmd("app.switcher", "Switch window", "Also ⌥⇥", "macwindow.on.rectangle"),
+            cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),
+            sys("sys.screenshot", "Screenshot selection", "Copies to the clipboard", "camera.viewfinder"),
+            sys("sys.pickColor", "Pick a colour", "Copies the hex value", "eyedropper"),
+            sys("sys.darkmode", "Toggle dark mode", "", "circle.lefthalf.filled"),
+            cmd("app.settings", "Cortex settings", "Dock, Island, shortcuts, appearance", "gearshape"),
+        ]
+        let front = NSWorkspace.shared.frontmostApplication
+        var n = 0
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app != front && app.bundleIdentifier != Bundle.main.bundleIdentifier {
+            guard let bid = app.bundleIdentifier, n < 5 else { continue }
+            out.append(PaletteRow(id: "home:app:\(bid)", title: app.localizedName ?? bid, subtitle: "Running", symbol: "app", iconPath: app.bundleURL?.path,
+                                  tag: "", kind: .command("app:\(bid)"), section: "Running apps"))
+            n += 1
+        }
+        return out
+    }
+
     private func localRows(for q: String) -> [PaletteRow] {
-        guard !q.isEmpty else { return [] }
+        guard !q.isEmpty else { return homeRows() }
         var out: [PaletteRow] = []
 
         let lower = q.lowercased()

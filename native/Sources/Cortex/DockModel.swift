@@ -60,8 +60,8 @@ final class DockModel: ObservableObject {
     @Published var previewHovering = false
     @Published var draggingID: String?
 
-    static let maxScale: CGFloat = 1.55
-    static let gap: CGFloat = 7
+    static var maxScale: CGFloat { CGFloat(Prefs.shared.dockMagnification) }
+    static var gap: CGFloat { CGFloat(Prefs.shared.dockSpacing) }
     static let padding: CGFloat = 9
     static let sideMargin: CGFloat = 30
     static let dividerLength: CGFloat = 12
@@ -94,6 +94,12 @@ final class DockModel: ObservableObject {
         p.$dockEdge.dropFirst().sink { [weak self] in self?.edge = $0 }.store(in: &cancellables)
         p.$dockDarken.dropFirst().sink { [weak self] in self?.darken = $0 }.store(in: &cancellables)
         p.$dockShowTrash.dropFirst().sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
+        p.$dockShowRunning.dropFirst().sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
+        // Layout-affecting options: the @Published values change just after the sink fires, so hop a turn.
+        p.$dockMagnification.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
+        p.$dockSpacing.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
+        p.$dockRoundness.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
+        p.$dockIndicators.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
         refresh()
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
@@ -166,7 +172,7 @@ final class DockModel: ObservableObject {
         for item in extra { launching.remove(item.id) }
 
         var list: [DockSlot] = pinned.map { .item(applyBadge($0)) }
-        if !extra.isEmpty { list.append(.divider(1)); list += extra.map { .item(applyBadge($0)) } }
+        if Prefs.shared.dockShowRunning, !extra.isEmpty { list.append(.divider(1)); list += extra.map { .item(applyBadge($0)) } }
         if Prefs.shared.dockShowTrash {
             list.append(.divider(2))
             list.append(.item(DockItem(id: "trash", kind: .trash, value: "", name: "Trash",

@@ -267,6 +267,33 @@ struct DockPane: View {
                     }
                 }
             }
+            Section("Feel") {
+                LabeledContent("Magnification") {
+                    HStack {
+                        Slider(value: $prefs.dockMagnification, in: 1.1...2.2).frame(width: 220)
+                        Text(String(format: "%.0f%%", (prefs.dockMagnification - 1) * 100)).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }.disabled(!prefs.dockMagnify)
+                LabeledContent("Spacing") {
+                    HStack {
+                        Slider(value: $prefs.dockSpacing, in: 0...20, step: 1).frame(width: 220)
+                        Text("\(Int(prefs.dockSpacing)) pt").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent("Corner roundness") {
+                    HStack {
+                        Slider(value: $prefs.dockRoundness, in: 0.1...0.7).frame(width: 220)
+                        Text(String(format: "%.0f%%", prefs.dockRoundness * 100)).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                Toggle("Running-app dots", isOn: $prefs.dockIndicators)
+                Toggle("Bounce while an app launches", isOn: $prefs.dockBounce)
+                Toggle("Show running apps that aren't pinned", isOn: $prefs.dockShowRunning)
+                Button("Reset Dock look to defaults") {
+                    prefs.dockIconSize = 44; prefs.dockMagnification = 1.55; prefs.dockSpacing = 7; prefs.dockRoundness = 0.42
+                    prefs.dockDarken = 0; prefs.dockIndicators = true; prefs.dockBounce = true; prefs.dockShowRunning = true
+                }
+            }
             Section("Look") {
                 HStack {
                     Button("Clear") { prefs.dockDarken = 0 }

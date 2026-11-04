@@ -37,8 +37,8 @@ struct DockRootView: View {
             }
         }
         .padding(DockModel.padding)
-        .cortexGlass(in: RoundedRectangle(cornerRadius: model.iconSize * 0.42, style: .continuous), darken: model.darken)
-        .glassRim(cornerRadius: model.iconSize * 0.42, strength: 0.8)
+        .cortexGlass(in: RoundedRectangle(cornerRadius: model.iconSize * CGFloat(Prefs.shared.dockRoundness), style: .continuous), darken: model.darken)
+        .glassRim(cornerRadius: model.iconSize * CGFloat(Prefs.shared.dockRoundness), strength: 0.8)
         .contextMenu { barMenu }
     }
 
@@ -106,7 +106,7 @@ struct DockIcon: View {
     }
 
     @ViewBuilder private func stack(size: CGFloat, launching: Bool) -> some View {
-        let dot = Circle().fill(Color.white.opacity(item.running ? 0.85 : 0)).frame(width: 4, height: 4)
+        let dot = Circle().fill(Color.white.opacity(item.running && Prefs.shared.dockIndicators ? 0.85 : 0)).frame(width: 4, height: 4)
         switch model.edge {
         case "left": HStack(spacing: 3) { dot; icon(size, launching) }
         case "right": HStack(spacing: 3) { icon(size, launching); dot }
@@ -117,7 +117,7 @@ struct DockIcon: View {
     private func icon(_ size: CGFloat, _ launching: Bool) -> some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !launching)) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
-            let bounce = launching ? -abs(sin(t * 5.5)) * size * 0.32 : 0
+            let bounce = launching && Prefs.shared.dockBounce ? -abs(sin(t * 5.5)) * size * 0.32 : 0
             Image(nsImage: model.icon(for: item))
                 .resizable().interpolation(.high)
                 .frame(width: size, height: size)

@@ -297,6 +297,7 @@ final class EngineProcess {
         }
         let p = Process()
         p.executableURL = exe
+        p.qualityOfService = .utility   // the indexer must never compete with the UI for CPU
         var env = ProcessInfo.processInfo.environment
         env["CORTEX_CAPTURE_PAUSED"] = "1"   // screen memory stays off until enabled in Settings
         p.environment = env
