@@ -164,7 +164,10 @@ final class HotKeyCenter {
         install()
         for (_, ref) in refs { UnregisterEventHotKey(ref) }
         refs.removeAll(); actions.removeAll(); errors.removeAll()
-        for entry in ShortcutTable.effective() {
+        var entries = ShortcutTable.effective()
+        // "Open this app" shortcuts the user added in Settings (stored as "app:<bundle id>").
+        for (id, accel) in ConfigFile.shortcuts() where id.hasPrefix("app:") { entries.append((id: id, accel: accel)) }
+        for entry in entries {
             guard !entry.accel.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
             guard let parsed = Accelerator.parse(entry.accel) else {
                 errors[entry.id] = "“\(entry.accel)” isn't a valid shortcut"

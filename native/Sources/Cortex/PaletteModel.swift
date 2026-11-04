@@ -70,6 +70,7 @@ final class PaletteModel: ObservableObject {
         }
         list += [
             BuiltinCommand(id: "app.settings", title: "Cortex Settings", subtitle: "Shortcuts, Island, Dock, permissions", symbol: "gearshape", keywords: ["preferences", "options", "shortcuts", "permissions"]),
+            BuiltinCommand(id: "app.memory", title: "Search Screen Memory", subtitle: "What was on your screen — type mem, then your words", symbol: "clock.arrow.circlepath", keywords: ["memory", "rewind", "screen", "history", "remember"]),
             BuiltinCommand(id: "app.switcher", title: "Switch Windows", subtitle: "Every window of every app, with previews", symbol: "rectangle.on.rectangle", keywords: ["window", "alt tab", "switcher", "windows"]),
             BuiltinCommand(id: "timer.25", title: "Start Focus Timer (25 min)", subtitle: "Shown live in the Island", symbol: "timer", keywords: ["focus", "pomodoro", "timer", "work"]),
             BuiltinCommand(id: "timer.50", title: "Start Focus Timer (50 min)", subtitle: "", symbol: "timer", keywords: ["focus", "pomodoro", "timer", "deep"]),
@@ -159,6 +160,32 @@ final class PaletteModel: ObservableObject {
                     if !self.rows.contains(where: { $0.id == "currency" }) { self.rows.insert(row, at: 0) }
                 }
             }
+        }
+        let ql = q.lowercased()
+        if ql == "mem" || ql.hasPrefix("mem ") || ql == "rewind" || ql.hasPrefix("rewind ") {
+            let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
+            if let client {
+                searchTask = Task { [weak self] in
+                    do {
+                        let hits = text.isEmpty ? try await client.timeline(hours: 6) : try await client.searchMemory(text)
+                        if Task.isCancelled { return }
+                        await MainActor.run {
+                            guard let self, self.generation == gen else { return }
+                            self.message = nil
+                            self.rows = hits.prefix(30).map { h in
+                                let when = Date(timeIntervalSince1970: TimeInterval(h.timestamp)).formatted(date: .abbreviated, time: .shortened)
+                                return PaletteRow(id: "mem:\(h.id)", title: h.windowTitle.isEmpty ? h.appName : "\(h.appName) — \(h.windowTitle)",
+                                                  subtitle: h.snippet, symbol: "clock.arrow.circlepath", iconPath: nil, tag: when,
+                                                  kind: h.url.map { .web($0) } ?? .copy(h.snippet), section: "Screen memory")
+                            }
+                            if self.rows.isEmpty { self.message = "Nothing remembered yet — turn on screen memory in Settings." }
+                        }
+                    } catch {
+                        await MainActor.run { self?.message = "Search engine isn't ready" }
+                    }
+                }
+            }
+            return
         }
         let special = q.hasPrefix(":") || q.hasPrefix(">") || q.hasPrefix("?") || q.lowercased().hasPrefix("ask ")
         guard let client, !special else { message = nil; return }
@@ -411,6 +438,7 @@ final class PaletteModel: ObservableObject {
             return true
         case .command(let id):
             if id == "app.clipboard" { query = "clip "; return false }
+            if id == "app.memory" { query = "mem "; return false }
             runBuiltin?(id)
             return true
         case .system(let id):

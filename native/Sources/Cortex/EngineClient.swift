@@ -58,6 +58,15 @@ struct EngineStatus: Codable {
     let pluginCounts: [String: Int]
 }
 
+struct FrameHit: Codable, Identifiable {
+    let timestamp: Int
+    let appName: String
+    let windowTitle: String
+    let url: String?
+    let snippet: String
+    var id: String { "\(timestamp)-\(appName)" }
+}
+
 struct EngineError: LocalizedError {
     let message: String
     var errorDescription: String? { message }
@@ -238,6 +247,14 @@ final class EngineClient: @unchecked Sendable {
 
     func execute(_ id: String) async throws {
         _ = try await call("execute", ["id": id])
+    }
+
+    func searchMemory(_ query: String) async throws -> [FrameHit] {
+        try await decode([FrameHit].self, "search_memory", ["query": query])
+    }
+
+    func timeline(hours: Int = 6) async throws -> [FrameHit] {
+        try await decode([FrameHit].self, "memory_timeline", ["hours": hours])
     }
 
     func status() async throws -> EngineStatus {

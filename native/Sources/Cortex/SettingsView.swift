@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 /// Hooks the Settings window needs from the app.
 struct SettingsActions {
@@ -11,15 +12,17 @@ struct SettingsActions {
     var toggleScreenMemory: () -> Void
     var openDiagnostics: () -> Void
     var addDockFolder: () -> Void
+    var engine: EngineClient
 }
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, shortcuts, snippets, quicklinks, island, dock, appearance, privacy, about
+    case general, shortcuts, snippets, quicklinks, island, dock, appearance, memory, privacy, about
     var id: String { rawValue }
     var title: String {
         switch self {
         case .general: "General"
         case .shortcuts: "Shortcuts"
+        case .memory: "Screen Memory"
         case .snippets: "Snippets"
         case .quicklinks: "Quicklinks"
         case .island: "Island"
@@ -33,6 +36,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape"
         case .shortcuts: "keyboard"
+        case .memory: "clock.arrow.circlepath"
         case .snippets: "text.quote"
         case .quicklinks: "link"
         case .island: "capsule.portrait"
@@ -60,6 +64,7 @@ struct SettingsView: View {
                 switch section {
                 case .general: GeneralPane(prefs: prefs, actions: actions)
                 case .shortcuts: ShortcutsPane(actions: actions)
+                case .memory: MemoryPane(actions: actions)
                 case .snippets: SnippetsPane()
                 case .quicklinks: QuicklinksPane()
                 case .island: IslandPane(prefs: prefs)
@@ -157,6 +162,7 @@ struct ShortcutRecorder: View {
 struct ShortcutsPane: View {
     let actions: SettingsActions
     @State private var tick = 0
+    @State private var appIDs: [String] = ConfigFile.shortcuts().keys.filter { $0.hasPrefix("app:") }.sorted()
 
     var body: some View {
         Form {
@@ -173,8 +179,39 @@ struct ShortcutsPane: View {
                     }
                 }
             }
+            Section("Open an app") {
+                ForEach(appIDs, id: \.self) { id in
+                    LabeledContent(appName(id)) {
+                        HStack {
+                            ShortcutRecorder(id: id, accel: ConfigFile.shortcuts()[id] ?? "") { actions.reregisterHotkeys() }
+                            Button(role: .destructive) {
+                                ConfigFile.setShortcut(id, nil)
+                                appIDs.removeAll { $0 == id }
+                                actions.reregisterHotkeys()
+                            } label: { Image(systemName: "trash") }.buttonStyle(.borderless)
+                        }
+                    }
+                }
+                Button("Add an app…") { addApp() }
+            }
             Section { Text("Click a shortcut, then press the new combination. Delete turns one off. Window shortcuts need Accessibility access (Privacy & Permissions).").font(.callout).foregroundStyle(.secondary) }
         }
+    }
+
+    private func appName(_ id: String) -> String {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: String(id.dropFirst(4))) else { return String(id.dropFirst(4)) }
+        return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+    }
+
+    private func addApp() {
+        let panel = NSOpenPanel()
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url, let bid = Bundle(url: url)?.bundleIdentifier else { return }
+        let id = "app:" + bid
+        if ConfigFile.shortcuts()[id] == nil { ConfigFile.setShortcut(id, "") }
+        if !appIDs.contains(id) { appIDs.append(id) }
     }
 }
 
@@ -475,5 +512,66 @@ struct QuicklinksPane: View {
                 Button("Restore defaults") { store.items = QuicklinkStore.defaults; store.save() }
             }
         }
+    }
+}
+
+
+struct MemoryPane: View {
+    let actions: SettingsActions
+    @State private var recording = false
+    @State private var retention = 30
+    @State private var blocked = ""
+    @State private var raw = false
+    @State private var status = "Checking…"
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Remember what's on my screen", isOn: Binding(get: { recording }, set: { want in
+                    if want != recording { Task { await toggle() } }
+                }))
+                Text("Cortex reads the text on your screen (on this Mac only) so you can search it later: type  mem  in the palette. It never captures password fields or blocked apps. Needs Screen Recording access. ⌘⇧P pauses it.")
+                    .font(.callout).foregroundStyle(.secondary)
+                LabeledContent("Engine", value: status)
+            }
+            Section("Retention & privacy") {
+                Stepper("Keep \(retention) days", value: $retention, in: 1...365).onChange(of: retention) { _, _ in Task { await save() } }
+                Toggle("Keep screenshots (uses much more disk)", isOn: $raw).onChange(of: raw) { _, _ in Task { await save() } }
+                TextField("Never capture these apps (comma-separated)", text: $blocked).onSubmit { Task { await save() } }
+                Button("Save") { Task { await save() } }
+            }
+        }
+        .task { await load() }
+    }
+
+    private func config() async -> [String: Any] {
+        guard let data = try? await actions.engine.call("config_get"),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return [:] }
+        return obj
+    }
+
+    private func load() async {
+        let cfg = await config()
+        retention = (cfg["retentionDays"] as? NSNumber)?.intValue ?? 30
+        raw = (cfg["rawStorage"] as? Bool) ?? false
+        blocked = ((cfg["blockedApps"] as? [String]) ?? []).joined(separator: ", ")
+        if let d = try? await actions.engine.call("recording_get"), let v = (try? JSONSerialization.jsonObject(with: d, options: [.fragmentsAllowed])) as? Bool {
+            recording = v
+            status = v ? "Remembering" : "Paused"
+        } else { status = "Engine not running" }
+    }
+
+    private func toggle() async {
+        if !CGPreflightScreenCaptureAccess() { _ = CGRequestScreenCaptureAccess() }
+        _ = try? await actions.engine.call("recording_toggle")
+        await load()
+    }
+
+    private func save() async {
+        var cfg = await config()
+        cfg["retentionDays"] = retention
+        cfg["rawStorage"] = raw
+        cfg["blockedApps"] = blocked.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        _ = try? await actions.engine.call("config_set", cfg)
     }
 }

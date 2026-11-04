@@ -72,7 +72,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             reindex: { [weak self] in Task { _ = try? await self?.engine.call("sync") } },
             toggleScreenMemory: { [weak self] in Task { _ = try? await self?.engine.call("recording_toggle") } },
             openDiagnostics: { [weak self] in self?.showDiagnostics() },
-            addDockFolder: { [weak self] in self?.addDockFolder() }))
+            addDockFolder: { [weak self] in self?.addDockFolder() },
+            engine: engine))
         setUpStatusItem()
         if !Prefs.shared.onboardingDone { onboarding.show() }
         checkForUpdatesQuietly()
@@ -112,6 +113,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { _ = try? await engine.call("recording_toggle") }
         default:
             if id.hasPrefix("window.") { WindowManager.perform(String(id.dropFirst("window.".count))) }
+            else if id.hasPrefix("app:") {
+                let bundle = String(id.dropFirst(4))
+                if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
+                    NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
+                }
+            }
             else { Log.warn("unknown action \(id)") }
         }
     }
