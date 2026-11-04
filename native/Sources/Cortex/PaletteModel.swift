@@ -10,6 +10,10 @@ enum RowKind: Equatable {
     case web(String)              // open a URL
     case shell(String)            // run in Terminal
     case ai(String)               // ask the model
+    case paste(String)            // copy and paste into the front app (snippets)
+    case menu(String)             // press a menu item of the front app
+    case kill(Int32)              // quit an app (⌘↩ force quits)
+    case script(String)           // run a user script
 }
 
 struct PaletteRow: Identifiable, Equatable {
@@ -49,6 +53,8 @@ final class PaletteModel: ObservableObject {
     @Published private(set) var chat: ChatState?
     @Published var focusToken = 0
 
+    var frontPID: pid_t?
+    private var menuCache: [String: MenuEntry] = [:]
     var client: EngineClient?
     var runBuiltin: ((String) -> Void)?
     private var searchTask: Task<Void, Never>?
@@ -142,6 +148,18 @@ final class PaletteModel: ObservableObject {
         rows = local + tail
         selection = 0
 
+        if let c = CurrencyService.parse(q) {
+            Task { [weak self] in
+                guard let value = await CurrencyService.convert(c.amount, from: c.from, to: c.to) else { return }
+                await MainActor.run {
+                    guard let self, self.generation == gen else { return }
+                    let text = String(format: "%.2f %@", value, c.to)
+                    let row = PaletteRow(id: "currency", title: text, subtitle: "\(Calculator.format(c.amount)) \(c.from) → \(c.to) · ECB rates", symbol: "dollarsign.circle",
+                                         iconPath: nil, tag: "Currency", kind: .copy(text), section: "Calculator")
+                    if !self.rows.contains(where: { $0.id == "currency" }) { self.rows.insert(row, at: 0) }
+                }
+            }
+        }
         let special = q.hasPrefix(":") || q.hasPrefix(">") || q.hasPrefix("?") || q.lowercased().hasPrefix("ask ")
         guard let client, !special else { message = nil; return }
 
@@ -180,6 +198,56 @@ final class PaletteModel: ObservableObject {
     private func localRows(for q: String) -> [PaletteRow] {
         guard !q.isEmpty else { return [] }
         var out: [PaletteRow] = []
+
+        let lower = q.lowercased()
+        if lower == "snip" || lower.hasPrefix("snip ") {
+            let rest = String(q.dropFirst(4)).trimmingCharacters(in: .whitespaces)
+            for s in SnippetStore.shared.matching(rest) {
+                out.append(PaletteRow(id: "snip:\(s.id)", title: s.name, subtitle: String(s.text.split(separator: "\n").first ?? "").prefix(90).description,
+                                      symbol: "text.quote", iconPath: nil, tag: s.keyword, kind: .paste(s.text), section: "Snippets"))
+            }
+            return out
+        }
+        if lower.hasPrefix("kill ") || lower.hasPrefix("quit ") {
+            let rest = String(q.dropFirst(5)).lowercased().trimmingCharacters(in: .whitespaces)
+            for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+                let name = app.localizedName ?? ""
+                guard rest.isEmpty || name.lowercased().contains(rest) else { continue }
+                out.append(PaletteRow(id: "kill:\(app.processIdentifier)", title: "Quit \(name)", subtitle: "⌘↩ to force quit", symbol: "xmark.circle",
+                                      iconPath: app.bundleURL?.path, tag: "", kind: .kill(app.processIdentifier), section: "Quit"))
+            }
+            return Array(out.prefix(8))
+        }
+        if lower == "m" || lower.hasPrefix("m ") || lower == "menu" || lower.hasPrefix("menu ") {
+            let rest = String(q.drop(while: { $0 != " " })).lowercased().trimmingCharacters(in: .whitespaces)
+            if let pid = frontPID {
+                let all = MenuItemService.entries(forPID: pid)
+                menuCache = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+                let words = rest.split(separator: " ").map(String.init)
+                for e in all {
+                    let hay = (e.path + " " + e.title).lowercased()
+                    guard words.allSatisfy({ hay.contains($0) }) else { continue }
+                    out.append(PaletteRow(id: e.id, title: e.title, subtitle: e.path, symbol: "filemenu.and.selection", iconPath: nil, tag: "",
+                                          kind: .menu(e.id), section: "Menu Items"))
+                    if out.count >= 30 { break }
+                }
+            }
+            if out.isEmpty { out.append(PaletteRow(id: "menu:none", title: WindowManager.isTrusted ? "No matching menu items" : "Grant Accessibility to search menus", subtitle: "", symbol: "filemenu.and.selection", iconPath: nil, tag: "", kind: .command("app.settings"), section: "Menu Items")) }
+            return out
+        }
+        if lower.hasPrefix("define ") || lower.hasPrefix("def ") {
+            let word = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
+            if let d = DictionaryLookup.define(word) {
+                out.append(PaletteRow(id: "define", title: word, subtitle: String(d.prefix(140)), symbol: "character.book.closed", iconPath: nil, tag: "",
+                                      kind: .copy(d), section: "Dictionary"))
+            }
+            return out
+        }
+        if let (link, url) = QuicklinkStore.shared.resolve(q) {
+            let rest = q.split(separator: " ", maxSplits: 1).dropFirst().first.map(String.init) ?? ""
+            out.append(PaletteRow(id: "quicklink", title: rest.isEmpty ? "Open \(link.name)" : "Search \(link.name) for “\(rest)”", subtitle: url, symbol: "link",
+                                  iconPath: nil, tag: link.keyword, kind: .web(url), section: "Quicklinks"))
+        }
 
         if q.hasPrefix(":") {
             for e in EmojiSearch.search(String(q.dropFirst()), limit: 8) {
@@ -231,7 +299,11 @@ final class PaletteModel: ObservableObject {
                                            iconPath: nil, tag: "", kind: .system(c.id), section: "Commands"))
             }
         }
-        out += commands.prefix(5)
+        for s in ScriptService.list() where words.allSatisfy({ s.name.lowercased().contains($0) }) {
+            commands.append(PaletteRow(id: "script:" + s.path, title: s.name, subtitle: "Script", symbol: "scroll", iconPath: nil, tag: "",
+                                       kind: .script(s.path), section: "Commands"))
+        }
+        out += commands.prefix(6)
         return out
     }
 
@@ -312,7 +384,8 @@ final class PaletteModel: ObservableObject {
         guard let row = selectedRow else { return [] }
         switch row.kind {
         case .engine(let r):
-            var h: [(String, String)] = [("↩", r.pluginId == "apps" ? "Open" : (r.sourceType == "clipboard_text" ? "Copy" : "Open"))]
+            var h: [(String, String)] = [("↩", r.pluginId == "apps" ? "Open" : (r.sourceType == "clipboard_text" ? "Paste" : "Open"))]
+            if r.sourceType == "clipboard_text" { h.append(("⌘↩", "Copy")) }
             if r.path != nil { h.append(("⌘↩", "Reveal")); h.append(("⌘⇧↩", "Copy path")) }
             else if r.url != nil { h.append(("⌘⇧↩", "Copy link")) }
             return h
@@ -321,6 +394,10 @@ final class PaletteModel: ObservableObject {
         case .web: return [("↩", "Open")]
         case .shell: return [("↩", "Run in Terminal")]
         case .ai: return [("↩", "Ask")]
+        case .paste: return [("↩", "Paste")]
+        case .menu: return [("↩", "Choose")]
+        case .kill: return [("↩", "Quit"), ("⌘↩", "Force quit")]
+        case .script: return [("↩", "Run")]
         }
     }
 
@@ -348,6 +425,19 @@ final class PaletteModel: ObservableObject {
         case .ai(let prompt):
             startChat(prompt)
             return false
+        case .paste(let text):
+            PasteService.copy(text)
+            PasteService.pasteIntoFront()
+            return true
+        case .menu(let id):
+            if let e = menuCache[id] { MenuItemService.press(e) }
+            return true
+        case .kill(let pid):
+            if let app = NSRunningApplication(processIdentifier: pid) { if cmd { app.forceTerminate() } else { app.terminate() } }
+            return true
+        case .script(let path):
+            ScriptService.run(ScriptCommand(name: URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent, path: path))
+            return true
         case .engine(let result):
             if cmd && shift { copy(result.path ?? result.url ?? result.title); return true }
             if cmd, let path = result.path {
@@ -355,9 +445,12 @@ final class PaletteModel: ObservableObject {
                 return true
             }
             guard let client else { return false }
+            let isClip = result.sourceType == "clipboard_text" && !cmd
             Task {
-                do { try await client.execute(result.id) }
-                catch { Log.warn("execute failed: \(error.localizedDescription)") }
+                do {
+                    try await client.execute(result.id)
+                    if isClip { await MainActor.run { PasteService.pasteIntoFront(after: 0.05) } }
+                } catch { Log.warn("execute failed: \(error.localizedDescription)") }
             }
             return true
         }

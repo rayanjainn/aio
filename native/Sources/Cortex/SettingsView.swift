@@ -14,12 +14,14 @@ struct SettingsActions {
 }
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, shortcuts, island, dock, appearance, privacy, about
+    case general, shortcuts, snippets, quicklinks, island, dock, appearance, privacy, about
     var id: String { rawValue }
     var title: String {
         switch self {
         case .general: "General"
         case .shortcuts: "Shortcuts"
+        case .snippets: "Snippets"
+        case .quicklinks: "Quicklinks"
         case .island: "Island"
         case .dock: "Dock"
         case .appearance: "Appearance"
@@ -31,6 +33,8 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape"
         case .shortcuts: "keyboard"
+        case .snippets: "text.quote"
+        case .quicklinks: "link"
         case .island: "capsule.portrait"
         case .dock: "dock.rectangle"
         case .appearance: "paintbrush"
@@ -56,6 +60,8 @@ struct SettingsView: View {
                 switch section {
                 case .general: GeneralPane(prefs: prefs, actions: actions)
                 case .shortcuts: ShortcutsPane(actions: actions)
+                case .snippets: SnippetsPane()
+                case .quicklinks: QuicklinksPane()
                 case .island: IslandPane(prefs: prefs)
                 case .dock: DockPane(prefs: prefs, actions: actions)
                 case .appearance: AppearancePane(prefs: prefs)
@@ -396,5 +402,74 @@ final class SettingsController {
         }
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+
+struct SnippetsPane: View {
+    @ObservedObject private var store = SnippetStore.shared
+    @State private var name = ""
+    @State private var text = ""
+
+    var body: some View {
+        Form {
+            Section("New snippet") {
+                TextField("Name", text: $name)
+                TextEditor(text: $text).frame(height: 90).font(.system(size: 12))
+                Button("Add snippet") {
+                    guard !text.isEmpty else { return }
+                    store.add(name: name.isEmpty ? String(text.prefix(40)) : name, text: text)
+                    name = ""; text = ""
+                }
+            }
+            Section("Your snippets") {
+                if store.items.isEmpty { Text("None yet. In the palette, type  snip  to paste one into any app.").foregroundStyle(.secondary) }
+                ForEach($store.items) { $item in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            TextField("Name", text: $item.name).textFieldStyle(.roundedBorder)
+                            TextField("Keyword", text: $item.keyword).textFieldStyle(.roundedBorder).frame(width: 110)
+                            Button(role: .destructive) { store.remove(item) } label: { Image(systemName: "trash") }.buttonStyle(.borderless)
+                        }
+                        Text(item.text).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    }
+                    .onChange(of: item) { _, _ in store.save() }
+                }
+            }
+        }
+    }
+}
+
+struct QuicklinksPane: View {
+    @ObservedObject private var store = QuicklinkStore.shared
+    @State private var name = ""
+    @State private var keyword = ""
+    @State private var url = ""
+
+    var body: some View {
+        Form {
+            Section("New quicklink") {
+                TextField("Name", text: $name)
+                TextField("Keyword (type it in the palette)", text: $keyword)
+                TextField("URL — use {query} for the text you type", text: $url)
+                Button("Add quicklink") {
+                    guard !name.isEmpty, !keyword.isEmpty, !url.isEmpty else { return }
+                    store.items.append(Quicklink(name: name, keyword: keyword, url: url)); store.save()
+                    name = ""; keyword = ""; url = ""
+                }
+            }
+            Section("Your quicklinks") {
+                ForEach($store.items) { $item in
+                    HStack {
+                        TextField("Name", text: $item.name).textFieldStyle(.roundedBorder).frame(width: 150)
+                        TextField("Keyword", text: $item.keyword).textFieldStyle(.roundedBorder).frame(width: 80)
+                        TextField("URL", text: $item.url).textFieldStyle(.roundedBorder)
+                        Button(role: .destructive) { store.items.removeAll { $0.id == item.id }; store.save() } label: { Image(systemName: "trash") }.buttonStyle(.borderless)
+                    }
+                    .onChange(of: item) { _, _ in store.save() }
+                }
+                Button("Restore defaults") { store.items = QuicklinkStore.defaults; store.save() }
+            }
+        }
     }
 }

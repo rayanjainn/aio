@@ -27,6 +27,8 @@ final class PaletteController {
 
     func show() {
         let panel = self.panel ?? build()
+        let front = NSWorkspace.shared.frontmostApplication
+        model.frontPID = (front?.processIdentifier == ProcessInfo.processInfo.processIdentifier) ? nil : front?.processIdentifier
         model.reset()
         place(panel)
         panel.alphaValue = 0

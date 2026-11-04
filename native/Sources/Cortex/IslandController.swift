@@ -121,6 +121,12 @@ final class IslandController {
             DispatchQueue.main.async { if Prefs.shared.islandCharging { self?.flash(.charging(percent)) } }
         }
 
+        NotificationCenter.default.addObserver(forName: Toast.name, object: nil, queue: .main) { [weak self] note in
+            let symbol = note.userInfo?["symbol"] as? String ?? "checkmark.circle"
+            let text = note.userInfo?["text"] as? String ?? ""
+            DispatchQueue.main.async { self?.flash(.message(symbol, text), seconds: 3) }
+        }
+
         // Focus timer
         FocusTimer.shared.$endsAt.receive(on: DispatchQueue.main)
             .sink { [weak self] end in self?.model.timerRunning = end != nil }.store(in: &cancellables)

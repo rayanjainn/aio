@@ -57,6 +57,27 @@ enum SystemCommands {
                       keywords: ["cpu", "memory", "processes", "kill"]) {
             NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app"))
         },
+        SystemCommand(id: "sys.pickColor", title: "Pick Color", subtitle: "Sample any pixel and copy its hex", symbol: "eyedropper",
+                      keywords: ["color", "colour", "picker", "hex", "eyedropper"]) { Task { @MainActor in ColorPicker.pick() } },
+        SystemCommand(id: "sys.wifiOn", title: "Wi-Fi On", subtitle: "", symbol: "wifi", keywords: ["wifi", "wi-fi", "network", "internet"]) { Radios.wifi(true) },
+        SystemCommand(id: "sys.wifiOff", title: "Wi-Fi Off", subtitle: "", symbol: "wifi.slash", keywords: ["wifi", "wi-fi", "network", "internet"]) { Radios.wifi(false) },
+        SystemCommand(id: "sys.btOn", title: "Bluetooth On", subtitle: "", symbol: "dot.radiowaves.left.and.right", keywords: ["bluetooth", "airpods"]) { Radios.bluetooth(true) },
+        SystemCommand(id: "sys.btOff", title: "Bluetooth Off", subtitle: "", symbol: "wifi.slash", keywords: ["bluetooth", "airpods"]) { Radios.bluetooth(false) },
+        SystemCommand(id: "sys.joinMeeting", title: "Join Next Meeting", subtitle: "Opens the video-call link of your next event", symbol: "video",
+                      keywords: ["join", "meeting", "zoom", "meet", "teams", "call"]) {
+            Task { @MainActor in
+                if let url = CalendarService.shared.next?.joinURL { NSWorkspace.shared.open(url) } else { Toast.show("calendar", "No meeting link found") }
+            }
+        },
+        SystemCommand(id: "sys.snippetFromClipboard", title: "Create Snippet from Clipboard", subtitle: "Save what you copied for pasting later", symbol: "text.badge.plus",
+                      keywords: ["snippet", "save", "clipboard", "text"]) {
+            Task { @MainActor in
+                if let t = NSPasteboard.general.string(forType: .string), !t.isEmpty {
+                    SnippetStore.shared.add(name: String(t.prefix(40)).replacingOccurrences(of: "\n", with: " "), text: t)
+                    Toast.show("text.badge.plus", "Snippet saved")
+                }
+            }
+        },
         SystemCommand(id: "sys.hideOthers", title: "Hide All Other Apps", subtitle: "Clear the screen of everything but the front app", symbol: "eye.slash",
                       keywords: ["hide", "focus", "declutter"]) {
             let front = NSWorkspace.shared.frontmostApplication
