@@ -60,6 +60,7 @@ struct SearchField: NSViewRepresentable {
 
 struct PaletteView: View {
     @ObservedObject var model: PaletteModel
+    @ObservedObject private var prefs = Prefs.shared
     let onClose: () -> Void
 
     static let width: CGFloat = 720
@@ -113,7 +114,7 @@ struct PaletteView: View {
             }
         }
         .frame(width: Self.width, height: Self.height(forRows: model.rows.count, hasMessage: model.message != nil && model.rows.isEmpty), alignment: .top)
-        .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.42)
+        .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: prefs.paletteDarken)
         .environment(\.colorScheme, .dark)
     }
 

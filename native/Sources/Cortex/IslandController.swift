@@ -70,11 +70,18 @@ final class IslandController {
         panel.contentView = host
         self.panel = panel
 
-        bridge.$info.receive(on: DispatchQueue.main).sink { [weak self] in self?.model.track = $0 }.store(in: &cancellables)
+        bridge.$info.combineLatest(Prefs.shared.$islandMusic)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] info, show in self?.model.track = show ? info : nil }
+            .store(in: &cancellables)
+        Prefs.shared.$islandEnabled.dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.layout(force: true) }
+            .store(in: &cancellables)
         power.$percent.receive(on: DispatchQueue.main).sink { [weak self] in self?.model.battery = $0 }.store(in: &cancellables)
         power.$charging.receive(on: DispatchQueue.main).sink { [weak self] in self?.model.charging = $0 }.store(in: &cancellables)
         power.onPlugIn = { [weak self] percent in
-            DispatchQueue.main.async { self?.flash(.charging(percent)) }
+            DispatchQueue.main.async { if Prefs.shared.islandCharging { self?.flash(.charging(percent)) } }
         }
         model.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.layout() }
@@ -94,6 +101,7 @@ final class IslandController {
     // MARK: behaviour
 
     private func hoverChanged(_ inside: Bool) {
+        if inside && !Prefs.shared.islandHoverExpand { return }   // hotkey-only mode
         hoverWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.model.expanded = inside }
         hoverWork = work
@@ -114,6 +122,7 @@ final class IslandController {
     /// notch). It grows instantly and shrinks only once the pill's animation is done.
     private func layout(force: Bool = false) {
         guard let panel else { return }
+        guard Prefs.shared.islandEnabled else { panel.orderOut(nil); return }
         let target = model.pillSize()
         if target == .zero { panel.orderOut(nil); return }
         let current = panel.isVisible ? panel.frame.size : .zero

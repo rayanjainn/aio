@@ -1,0 +1,106 @@
+import Foundation
+import Combine
+import ServiceManagement
+
+/// App settings, saved to ~/.cortex/native/prefs.json. Windows observe the published values,
+/// so changing one in Settings applies live.
+final class Prefs: ObservableObject {
+    static let shared = Prefs()
+
+    @Published var dockEnabled = true { didSet { save() } }
+    @Published var dockIconSize = 54.0 { didSet { save() } }
+    @Published var dockMagnify = true { didSet { save() } }
+    @Published var islandEnabled = true { didSet { save() } }
+    @Published var islandMusic = true { didSet { save() } }
+    @Published var islandCharging = true { didSet { save() } }
+    @Published var islandHoverExpand = true { didSet { save() } }
+    @Published var paletteDarken = 0.42 { didSet { save() } }
+    @Published var onboardingDone = false { didSet { save() } }
+
+    private var loading = true
+
+    private struct Stored: Codable {
+        var dockEnabled: Bool?, dockIconSize: Double?, dockMagnify: Bool?
+        var islandEnabled: Bool?, islandMusic: Bool?, islandCharging: Bool?, islandHoverExpand: Bool?
+        var paletteDarken: Double?, onboardingDone: Bool?
+    }
+
+    private static var url: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/prefs.json")
+    }
+
+    init() {
+        if let data = try? Data(contentsOf: Self.url), let s = try? JSONDecoder().decode(Stored.self, from: data) {
+            dockEnabled = s.dockEnabled ?? true
+            dockIconSize = s.dockIconSize ?? 54
+            dockMagnify = s.dockMagnify ?? true
+            islandEnabled = s.islandEnabled ?? true
+            islandMusic = s.islandMusic ?? true
+            islandCharging = s.islandCharging ?? true
+            islandHoverExpand = s.islandHoverExpand ?? true
+            paletteDarken = s.paletteDarken ?? 0.42
+            onboardingDone = s.onboardingDone ?? false
+        }
+        loading = false
+    }
+
+    private func save() {
+        guard !loading else { return }
+        let s = Stored(dockEnabled: dockEnabled, dockIconSize: dockIconSize, dockMagnify: dockMagnify,
+                       islandEnabled: islandEnabled, islandMusic: islandMusic, islandCharging: islandCharging,
+                       islandHoverExpand: islandHoverExpand, paletteDarken: paletteDarken, onboardingDone: onboardingDone)
+        let url = Self.url
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(s) { try? data.write(to: url, options: .atomic) }
+    }
+
+    // MARK: launch at login
+
+    var launchAtLogin: Bool {
+        get { SMAppService.mainApp.status == .enabled }
+        set {
+            do {
+                if newValue { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+            } catch {
+                Log.warn("launch at login: \(error.localizedDescription)")
+            }
+            objectWillChange.send()
+        }
+    }
+}
+
+/// Reads and writes `~/.cortex/config.json` while keeping every key we don't know about
+/// (the engine and the old app share this file).
+enum ConfigFile {
+    static var url: URL { FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/config.json") }
+
+    static func load() -> [String: Any] {
+        guard let data = try? Data(contentsOf: url),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return [:] }
+        return obj
+    }
+
+    static func save(_ obj: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) else { return }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let tmp = url.appendingPathExtension("tmp")
+        do {
+            try data.write(to: tmp, options: .atomic)
+            _ = try FileManager.default.replaceItemAt(url, withItemAt: tmp)
+        } catch {
+            Log.warn("could not save config.json: \(error.localizedDescription)")
+        }
+    }
+
+    static func shortcuts() -> [String: String] {
+        (load()["shortcuts"] as? [String: String]) ?? [:]
+    }
+
+    static func setShortcut(_ id: String, _ accel: String?) {
+        var cfg = load()
+        var map = (cfg["shortcuts"] as? [String: String]) ?? [:]
+        if let accel { map[id] = accel } else { map.removeValue(forKey: id) }
+        cfg["shortcuts"] = map
+        save(cfg)
+    }
+}

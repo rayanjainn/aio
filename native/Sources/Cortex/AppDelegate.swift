@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Combine
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -14,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var dockItem: NSMenuItem?
     private var systemDockItem: NSMenuItem?
     private var diagnosticsWindow: NSWindow?
+    private var settings: SettingsController?
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.info("Cortex native \(AppInfo.version) starting on \(ProcessInfo.processInfo.operatingSystemVersionString)")
@@ -33,8 +36,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.island = island
 
         let dock = DockController()
-        dock.show()
         self.dock = dock
+        Prefs.shared.$dockEnabled
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] enabled in
+                if enabled { self?.dock?.show() } else { self?.dock?.hide() }
+                self?.dockItem?.state = enabled ? .on : .off
+            }
+            .store(in: &cancellables)
 
         let palette = PaletteController()
         palette.attach(client: engine, runBuiltin: { [weak self] id in self?.runBuiltin(id) })
@@ -43,7 +52,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         HotKeyCenter.shared.onAction = { [weak self] action in self?.runBuiltin(action) }
         HotKeyCenter.shared.registerAll()
 
+        settings = SettingsController(actions: SettingsActions(
+            reregisterHotkeys: { HotKeyCenter.shared.registerAll() },
+            systemDockHidden: { SystemDock.hiddenByUs },
+            setSystemDockHidden: { [weak self] hide in SystemDock.setHidden(hide); self?.systemDockItem?.state = hide ? .on : .off },
+            engineSummary: { [weak self] in
+                guard let self else { return "" }
+                return "\(self.engineProcess.describe), \(self.engine.isConnected ? "connected" : "not connected")"
+            },
+            reindex: { [weak self] in Task { _ = try? await self?.engine.call("sync") } },
+            toggleScreenMemory: { [weak self] in Task { _ = try? await self?.engine.call("recording_toggle") } },
+            openDiagnostics: { [weak self] in self?.showDiagnostics() }))
         setUpStatusItem()
+        if !Prefs.shared.onboardingDone { settings?.show(.privacy) }
         if !WindowManager.isTrusted { Log.info("Accessibility not granted yet (needed for window snapping)") }
     }
 
@@ -59,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch id {
         case "palette": palette?.toggle()
         case "app.diagnostics": showDiagnostics()
+        case "app.settings": settings?.show()
         case "app.toggleDock": toggleDock()
         case "app.toggleSystemDock": toggleSystemDock()
         case "app.island", "island": island?.toggleExpanded()
@@ -84,6 +106,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let open = NSMenuItem(title: "Open Cortex", action: #selector(openPalette), keyEquivalent: "")
         open.target = self
         menu.addItem(open)
+        let prefsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        prefsItem.target = self
+        menu.addItem(prefsItem)
         menu.addItem(.separator())
         let dockToggle = NSMenuItem(title: "Show Cortex Dock", action: #selector(toggleDock), keyEquivalent: "")
         dockToggle.target = self
@@ -112,11 +137,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPalette() { palette?.show() }
+    @objc private func openSettings() { settings?.show() }
     @objc private func grantAccessibility() { WindowManager.requestAccess() }
 
     @objc private func toggleDock() {
-        guard let dock else { return }
-        if dock.isVisible { dock.hide(); dockItem?.state = .off } else { dock.show(); dockItem?.state = .on }
+        Prefs.shared.dockEnabled.toggle()   // the sink above shows / hides the Dock and updates the menu
     }
 
     @objc private func toggleSystemDock() {

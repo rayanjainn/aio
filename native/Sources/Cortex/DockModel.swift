@@ -15,6 +15,8 @@ final class DockModel: ObservableObject {
     @Published private(set) var items: [DockItem] = []
     @Published var iconSize: CGFloat = 54
     @Published var hovering = false
+    @Published var magnify = true
+    private var cancellables = Set<AnyCancellable>()
 
     static let maxScale: CGFloat = 1.55
     static let gap: CGFloat = 10
@@ -42,6 +44,10 @@ final class DockModel: ObservableObject {
         } else {
             pinned = Self.defaults
         }
+        iconSize = CGFloat(Prefs.shared.dockIconSize)
+        magnify = Prefs.shared.dockMagnify
+        Prefs.shared.$dockIconSize.dropFirst().sink { [weak self] in self?.iconSize = CGFloat($0) }.store(in: &cancellables)
+        Prefs.shared.$dockMagnify.dropFirst().sink { [weak self] in self?.magnify = $0 }.store(in: &cancellables)
         refresh()
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {

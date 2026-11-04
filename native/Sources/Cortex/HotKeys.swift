@@ -33,13 +33,7 @@ enum ShortcutTable {
 
     /// Accelerator per action: user override from config.json, else the default ("" = off).
     static func effective() -> [(id: String, accel: String)] {
-        var overrides: [String: String] = [:]
-        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/config.json")
-        if let data = try? Data(contentsOf: url),
-           let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-           let map = obj["shortcuts"] as? [String: String] {
-            overrides = map
-        }
+        let overrides = ConfigFile.shortcuts()
         return all.map { (id: $0.id, accel: overrides[$0.id] ?? $0.accel) }
     }
 }
@@ -84,6 +78,49 @@ enum Accelerator {
         "enter": kVK_Return, "return": kVK_Return, "space": kVK_Space, "backspace": kVK_Delete,
         "tab": kVK_Tab, "escape": kVK_Escape, "esc": kVK_Escape,
     ]
+
+    /// The accelerator text for a key press ("Control+Alt+KeyU"), for the shortcut recorder.
+    static func format(keyCode: UInt16, flags: NSEvent.ModifierFlags) -> String? {
+        var parts: [String] = []
+        if flags.contains(.command) { parts.append("Command") }
+        if flags.contains(.control) { parts.append("Control") }
+        if flags.contains(.option) { parts.append("Alt") }
+        if flags.contains(.shift) { parts.append("Shift") }
+        guard !parts.isEmpty else { return nil }   // a global shortcut needs at least one modifier
+        let code = Int(keyCode)
+        if let l = letters.first(where: { $0.value == code }) { parts.append("Key\(l.key)") }
+        else if let d = digits.first(where: { $0.value == code }) { parts.append(String(d.key)) }
+        else if let f = functionKeys.first(where: { $0.value == code }) { parts.append(f.key) }
+        else {
+            let special: [Int: String] = [kVK_LeftArrow: "ArrowLeft", kVK_RightArrow: "ArrowRight", kVK_UpArrow: "ArrowUp",
+                                          kVK_DownArrow: "ArrowDown", kVK_Return: "Enter", kVK_Space: "Space",
+                                          kVK_Delete: "Backspace", kVK_Tab: "Tab"]
+            guard let name = special[code] else { return nil }
+            parts.append(name)
+        }
+        return parts.joined(separator: "+")
+    }
+
+    /// Human-readable form: "⌃⌥K".
+    static func display(_ accel: String) -> String {
+        guard !accel.isEmpty else { return "Not set" }
+        return accel.split(separator: "+").map { part -> String in
+            switch part.lowercased() {
+            case "command", "cmd", "commandorcontrol", "cmdorctrl", "super", "meta": return "⌘"
+            case "control", "ctrl": return "⌃"
+            case "alt", "option": return "⌥"
+            case "shift": return "⇧"
+            case "arrowleft": return "←"
+            case "arrowright": return "→"
+            case "arrowup": return "↑"
+            case "arrowdown": return "↓"
+            case "enter", "return": return "↩"
+            case "backspace": return "⌫"
+            case "space": return "Space"
+            default: return String(part).hasPrefix("Key") ? String(part.dropFirst(3)) : String(part)
+            }
+        }.joined()
+    }
 
     private static func keyCode(_ name: String) -> UInt32? {
         let lower = name.lowercased()

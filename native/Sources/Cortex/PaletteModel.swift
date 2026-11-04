@@ -49,6 +49,7 @@ final class PaletteModel: ObservableObject {
                            keywords: ["window", "snap", "resize"] + $0.label.lowercased().split(separator: " ").map(String.init))
         }
         list += [
+            BuiltinCommand(id: "app.settings", title: "Cortex Settings", subtitle: "Shortcuts, Island, Dock, permissions", symbol: "gearshape", keywords: ["preferences", "options", "shortcuts", "permissions"]),
             BuiltinCommand(id: "app.diagnostics", title: "Cortex Diagnostics", subtitle: "Screens, engine, Now Playing", symbol: "stethoscope", keywords: ["debug", "log", "info"]),
             BuiltinCommand(id: "app.toggleDock", title: "Toggle Cortex Dock", subtitle: "Show or hide the Dock", symbol: "dock.rectangle", keywords: ["dock"]),
             BuiltinCommand(id: "app.toggleSystemDock", title: "Hide / show macOS Dock", subtitle: "Replace the system Dock with Cortex's", symbol: "dock.arrow.down.rectangle", keywords: ["dock", "system"]),

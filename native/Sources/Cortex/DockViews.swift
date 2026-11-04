@@ -26,7 +26,7 @@ struct DockRootView: View {
 
     /// Smooth bell curve around the pointer, measured against each icon's resting centre.
     private func scale(at index: Int) -> CGFloat {
-        guard let x = mouseX else { return 1 }
+        guard model.magnify, let x = mouseX else { return 1 }
         let size = model.iconSize
         let centre = CGFloat(index) * (size + DockModel.gap) + size / 2
         let d = (x - centre) / (size * 1.15)
