@@ -10,6 +10,7 @@ struct SettingsActions {
     var reindex: () -> Void
     var toggleScreenMemory: () -> Void
     var openDiagnostics: () -> Void
+    var addDockFolder: () -> Void
 }
 
 enum SettingsSection: String, CaseIterable, Identifiable {
@@ -196,6 +197,13 @@ struct DockPane: View {
         Form {
             Section {
                 Toggle("Show the Cortex Dock", isOn: $prefs.dockEnabled)
+                Picker("Position", selection: $prefs.dockEdge) {
+                    Text("Bottom").tag("bottom")
+                    Text("Left").tag("left")
+                    Text("Right").tag("right")
+                }
+                .pickerStyle(.segmented)
+                Toggle("Hide automatically (reveal at the screen edge)", isOn: $prefs.dockAutohide)
                 Toggle("Magnify icons under the pointer", isOn: $prefs.dockMagnify)
                 LabeledContent("Icon size") {
                     HStack {
@@ -203,6 +211,26 @@ struct DockPane: View {
                         Text("\(Int(prefs.dockIconSize)) pt").monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
+            }
+            Section("Look") {
+                HStack {
+                    Button("Clear") { prefs.dockDarken = 0 }
+                    Button("Smoky") { prefs.dockDarken = 0.3 }
+                    Button("Midnight") { prefs.dockDarken = 0.6 }
+                }
+                LabeledContent("Glass darkness") {
+                    HStack {
+                        Slider(value: $prefs.dockDarken, in: 0...0.8).frame(width: 220)
+                        Text("\(Int(prefs.dockDarken * 100))%").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Section("Items") {
+                Toggle("Window previews when hovering an app", isOn: $prefs.dockPreviews)
+                Toggle("Show the Trash", isOn: $prefs.dockShowTrash)
+                Button("Add a folder…") { actions.addDockFolder() }
+                Text("Drag icons to reorder, drag one away to remove it, drop files on an app to open them with it, right-click for more. Previews need Screen Recording access.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
             Section("macOS Dock") {
                 Toggle("Hide the macOS Dock while Cortex runs", isOn: Binding(get: { hidden }, set: { hidden = $0; actions.setSystemDockHidden($0) }))

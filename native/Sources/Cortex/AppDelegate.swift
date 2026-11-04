@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var diagnosticsWindow: NSWindow?
     private var settings: SettingsController?
     private var widgets: WidgetController?
+    private let switcher = WindowSwitcher()
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -67,7 +68,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             reindex: { [weak self] in Task { _ = try? await self?.engine.call("sync") } },
             toggleScreenMemory: { [weak self] in Task { _ = try? await self?.engine.call("recording_toggle") } },
-            openDiagnostics: { [weak self] in self?.showDiagnostics() }))
+            openDiagnostics: { [weak self] in self?.showDiagnostics() },
+            addDockFolder: { [weak self] in self?.addDockFolder() }))
         setUpStatusItem()
         if !Prefs.shared.onboardingDone { settings?.show(.privacy) }
         if !WindowManager.isTrusted { Log.info("Accessibility not granted yet (needed for window snapping)") }
@@ -86,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "palette": palette?.toggle()
         case "app.diagnostics": showDiagnostics()
         case "app.settings": settings?.show()
+        case "switcher", "app.switcher": switcher.showOrAdvance()
         case "app.addWidget": widgets?.showGallery()
         case "app.toggleWidgets": widgets?.toggleVisible()
         case "app.toggleDock": toggleDock()
@@ -150,6 +153,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPalette() { palette?.show() }
+
+    private func addDockFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = true
+        panel.prompt = "Add to Dock"
+        NSApp.activate(ignoringOtherApps: true)
+        if panel.runModal() == .OK { for url in panel.urls { dock?.model.addFolder(url) } }
+    }
     @objc private func openSettings() { settings?.show() }
     @objc private func openWidgetGallery() { widgets?.showGallery() }
     @objc private func toggleWidgets() { widgets?.toggleVisible() }

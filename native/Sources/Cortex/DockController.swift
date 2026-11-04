@@ -30,18 +30,27 @@ final class DockHostingView<Content: View>: NSHostingView<Content> {
 final class DockController {
     let model = DockModel()
     private var panel: DockPanel?
+    private var previews: DockPreviewController?
     private var cancellables = Set<AnyCancellable>()
     private var hoverWork: DispatchWorkItem?
     private var shrinkWork: DispatchWorkItem?
+    private var autohideTimer: Timer?
+    private var hiddenByAutohide = false
+    private var hideCountdown: Date?
 
     var isVisible: Bool { panel?.isVisible ?? false }
 
     func show() {
         if panel == nil { build() }
         layout(force: true)
+        model.startBadgePolling()
+        configureAutohide()
     }
 
     func hide() {
+        previews?.hide()
+        model.stopBadgePolling()
+        autohideTimer?.invalidate(); autohideTimer = nil
         panel?.orderOut(nil)
     }
 
@@ -53,7 +62,6 @@ final class DockController {
             defer: false
         )
         panel.isFloatingPanel = true
-        // Just above the system Dock's own level, below the menu bar.
         panel.level = NSWindow.Level(rawValue: NSWindow.Level.dock.rawValue + 1)
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
         panel.isOpaque = false
@@ -70,9 +78,17 @@ final class DockController {
         panel.contentView = host
         self.panel = panel
 
+        let previews = DockPreviewController(dock: model)
+        previews.anchorProvider = { [weak self] index in self?.anchor(forSlot: index) }
+        self.previews = previews
+
         model.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.layout() }
         }.store(in: &cancellables)
+        Prefs.shared.$dockAutohide.dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.configureAutohide() }
+            .store(in: &cancellables)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.async { self?.layout(force: true) }
         }
@@ -86,13 +102,63 @@ final class DockController {
         DispatchQueue.main.asyncAfter(deadline: .now() + (inside ? 0.0 : 0.25), execute: work)
     }
 
-    /// The window is only as tall as the bar, plus headroom for magnified icons while
-    /// the pointer is on it — so it never blocks clicks on the windows behind it.
+    // MARK: geometry
+
+    /// The window is only as thick as the bar, plus headroom for magnified icons while the pointer
+    /// is on it — so it never blocks clicks on the windows behind it.
+    private func targetSize() -> CGSize {
+        let along = model.barAlong + DockModel.sideMargin * 2
+        let across = model.barAcross + 8 + (model.hovering ? model.headroom : 0)
+        return model.isVertical ? CGSize(width: across, height: along) : CGSize(width: along, height: across)
+    }
+
+    private func screen() -> NSScreen? { NSScreen.screens.first }
+
+    private func restFrame(for size: CGSize) -> NSRect {
+        guard let area = screen()?.visibleFrame, let full = screen()?.frame else { return .zero }
+        switch model.edge {
+        case "left": return NSRect(x: area.minX + 4, y: area.midY - size.height / 2, width: size.width, height: size.height)
+        case "right": return NSRect(x: area.maxX - size.width - 4, y: area.midY - size.height / 2, width: size.width, height: size.height)
+        default: return NSRect(x: full.midX - size.width / 2, y: area.minY + 4, width: size.width, height: size.height)
+        }
+    }
+
+    private func hiddenFrame(for size: CGSize) -> NSRect {
+        var r = restFrame(for: size)
+        switch model.edge {
+        case "left": r.origin.x -= size.width + 10
+        case "right": r.origin.x += size.width + 10
+        default: r.origin.y -= size.height + 10
+        }
+        return r
+    }
+
+    private func anchor(forSlot index: Int) -> NSPoint? {
+        guard let panel else { return nil }
+        let f = panel.frame
+        let c = DockModel.sideMargin + DockModel.padding + model.centre(ofSlot: index)
+        let bar = model.barAcross
+        switch model.edge {
+        case "left":
+            // Slots run top → bottom.
+            return NSPoint(x: f.minX + bar + 2, y: f.maxY - c)
+        case "right":
+            return NSPoint(x: f.maxX - bar - 2, y: f.maxY - c)
+        default:
+            return NSPoint(x: f.minX + c, y: f.minY + bar + 8 - 2)
+        }
+    }
+
     private func layout(force: Bool = false) {
         guard let panel else { return }
         let target = targetSize()
+        if hiddenByAutohide, Prefs.shared.dockAutohide {
+            panel.setFrame(hiddenFrame(for: target), display: true)
+            return
+        }
         let current = panel.isVisible ? panel.frame.size : .zero
         let grown = CGSize(width: max(current.width, target.width), height: max(current.height, target.height))
+        // Keep the screen-edge side fixed while the window grows / shrinks.
         if grown != current || force { place(grown) }
         shrinkWork?.cancel()
         if grown != target {
@@ -105,24 +171,90 @@ final class DockController {
         }
     }
 
-    private func targetSize() -> CGSize {
-        CGSize(
-            width: model.barWidth + DockModel.sideMargin * 2,
-            height: model.barHeight + 8 + (model.hovering ? model.headroom : 0)
-        )
+    private func place(_ size: CGSize) {
+        guard let panel, screen() != nil else { return }
+        panel.setFrame(restFrame(for: size), display: true)
+        if !panel.isVisible { panel.orderFrontRegardless() }
     }
 
-    private func place(_ size: CGSize) {
-        guard let panel, let screen = NSScreen.screens.first else { return }
-        let area = screen.visibleFrame
-        let rect = NSRect(x: screen.frame.midX - size.width / 2, y: area.minY + 4, width: size.width, height: size.height)
-        panel.setFrame(rect, display: true)
-        if !panel.isVisible { panel.orderFrontRegardless() }
+    // MARK: auto-hide
+
+    private func configureAutohide() {
+        autohideTimer?.invalidate(); autohideTimer = nil
+        guard let panel else { return }
+        if !Prefs.shared.dockAutohide {
+            if hiddenByAutohide { reveal() }
+            return
+        }
+        if !hiddenByAutohide { concealSoon(immediately: true) }
+        autohideTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.autohideTick() }
+        }
+        _ = panel
+    }
+
+    private func autohideTick() {
+        guard let panel, Prefs.shared.dockAutohide, let scr = screen() else { return }
+        let loc = NSEvent.mouseLocation
+        let rest = restFrame(for: targetSize())
+        let f = scr.frame
+        let atEdge: Bool
+        switch model.edge {
+        case "left": atEdge = loc.x <= f.minX + 2 && loc.y >= rest.minY && loc.y <= rest.maxY
+        case "right": atEdge = loc.x >= f.maxX - 2 && loc.y >= rest.minY && loc.y <= rest.maxY
+        default: atEdge = loc.y <= f.minY + 2 && loc.x >= rest.minX && loc.x <= rest.maxX
+        }
+        if hiddenByAutohide {
+            if atEdge { reveal() }
+        } else {
+            let keepOpen = rest.insetBy(dx: -24, dy: -24).contains(loc) || model.previewHovering || model.hoveredID != nil || model.draggingID != nil
+            if keepOpen { hideCountdown = nil }
+            else if let t = hideCountdown { if Date().timeIntervalSince(t) > 0.55 { concealSoon(immediately: false) } }
+            else { hideCountdown = Date() }
+        }
+        _ = panel
+    }
+
+    private func reveal() {
+        guard let panel else { return }
+        hiddenByAutohide = false
+        hideCountdown = nil
+        panel.ignoresMouseEvents = false
+        let size = targetSize()
+        panel.setFrame(hiddenFrame(for: size), display: true)
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.28
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().setFrame(restFrame(for: size), display: true)
+            panel.animator().alphaValue = 1
+        }
+    }
+
+    private func concealSoon(immediately: Bool) {
+        guard let panel else { return }
+        hiddenByAutohide = true
+        hideCountdown = nil
+        previews?.hide()
+        let size = targetSize()
+        if immediately {
+            panel.setFrame(hiddenFrame(for: size), display: true)
+            panel.alphaValue = 0
+            panel.ignoresMouseEvents = true
+            return
+        }
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.24
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().setFrame(hiddenFrame(for: size), display: true)
+            panel.animator().alphaValue = 0
+        }, completionHandler: { panel.ignoresMouseEvents = true })
     }
 
     func describe() -> String {
         guard let panel else { return "not created" }
-        return "visible=\(panel.isVisible) frame=\(NSStringFromRect(panel.frame)) level=\(panel.level.rawValue) items=\(model.items.count) hovering=\(model.hovering)"
+        return "visible=\(panel.isVisible) frame=\(NSStringFromRect(panel.frame)) level=\(panel.level.rawValue) items=\(model.items.count) edge=\(model.edge) autohide=\(Prefs.shared.dockAutohide) hidden=\(hiddenByAutohide) screenRecording=\(WindowService.canCapture)"
     }
 }
 

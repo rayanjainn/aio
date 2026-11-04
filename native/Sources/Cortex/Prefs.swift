@@ -10,6 +10,11 @@ final class Prefs: ObservableObject {
     @Published var dockEnabled = true { didSet { save() } }
     @Published var dockIconSize = 54.0 { didSet { save() } }
     @Published var dockMagnify = true { didSet { save() } }
+    @Published var dockEdge = "bottom" { didSet { save() } }
+    @Published var dockAutohide = false { didSet { save() } }
+    @Published var dockDarken = 0.0 { didSet { save() } }
+    @Published var dockShowTrash = true { didSet { save() } }
+    @Published var dockPreviews = true { didSet { save() } }
     @Published var islandEnabled = true { didSet { save() } }
     @Published var islandMusic = true { didSet { save() } }
     @Published var islandCharging = true { didSet { save() } }
@@ -21,6 +26,7 @@ final class Prefs: ObservableObject {
 
     private struct Stored: Codable {
         var dockEnabled: Bool?, dockIconSize: Double?, dockMagnify: Bool?
+        var dockEdge: String?, dockAutohide: Bool?, dockDarken: Double?, dockShowTrash: Bool?, dockPreviews: Bool?
         var islandEnabled: Bool?, islandMusic: Bool?, islandCharging: Bool?, islandHoverExpand: Bool?
         var paletteDarken: Double?, onboardingDone: Bool?
     }
@@ -34,6 +40,11 @@ final class Prefs: ObservableObject {
             dockEnabled = s.dockEnabled ?? true
             dockIconSize = s.dockIconSize ?? 54
             dockMagnify = s.dockMagnify ?? true
+            dockEdge = s.dockEdge ?? "bottom"
+            dockAutohide = s.dockAutohide ?? false
+            dockDarken = s.dockDarken ?? 0
+            dockShowTrash = s.dockShowTrash ?? true
+            dockPreviews = s.dockPreviews ?? true
             islandEnabled = s.islandEnabled ?? true
             islandMusic = s.islandMusic ?? true
             islandCharging = s.islandCharging ?? true
@@ -47,6 +58,7 @@ final class Prefs: ObservableObject {
     private func save() {
         guard !loading else { return }
         let s = Stored(dockEnabled: dockEnabled, dockIconSize: dockIconSize, dockMagnify: dockMagnify,
+                       dockEdge: dockEdge, dockAutohide: dockAutohide, dockDarken: dockDarken, dockShowTrash: dockShowTrash, dockPreviews: dockPreviews,
                        islandEnabled: islandEnabled, islandMusic: islandMusic, islandCharging: islandCharging,
                        islandHoverExpand: islandHoverExpand, paletteDarken: paletteDarken, onboardingDone: onboardingDone)
         let url = Self.url

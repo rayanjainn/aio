@@ -64,6 +64,7 @@ final class PaletteModel: ObservableObject {
         }
         list += [
             BuiltinCommand(id: "app.settings", title: "Cortex Settings", subtitle: "Shortcuts, Island, Dock, permissions", symbol: "gearshape", keywords: ["preferences", "options", "shortcuts", "permissions"]),
+            BuiltinCommand(id: "app.switcher", title: "Switch Windows", subtitle: "Every window of every app, with previews", symbol: "rectangle.on.rectangle", keywords: ["window", "alt tab", "switcher", "windows"]),
             BuiltinCommand(id: "app.addWidget", title: "Add a Widget", subtitle: "Clock, calendar, system, now playing, notes, to-dos", symbol: "square.grid.2x2", keywords: ["widgets", "desktop", "clock", "notes"]),
             BuiltinCommand(id: "app.toggleWidgets", title: "Show / hide widgets", subtitle: "", symbol: "eye", keywords: ["widgets", "desktop"]),
             BuiltinCommand(id: "app.diagnostics", title: "Cortex Diagnostics", subtitle: "Screens, engine, Now Playing", symbol: "stethoscope", keywords: ["debug", "log", "info"]),

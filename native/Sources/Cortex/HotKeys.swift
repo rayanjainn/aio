@@ -10,6 +10,7 @@ enum ShortcutTable {
         Entry(id: "palette", label: "Open Cortex", group: "General", accel: "CommandOrControl+K"),
         Entry(id: "pause", label: "Pause / resume screen memory", group: "General", accel: "CommandOrControl+Shift+P"),
         Entry(id: "island", label: "Expand the Island", group: "General", accel: "Control+Alt+Space"),
+        Entry(id: "switcher", label: "Switch windows (all apps and Spaces)", group: "General", accel: "Alt+Tab"),
         Entry(id: "window.left", label: "Left Half", group: "Windows", accel: "Control+Alt+ArrowLeft"),
         Entry(id: "window.right", label: "Right Half", group: "Windows", accel: "Control+Alt+ArrowRight"),
         Entry(id: "window.top", label: "Top Half", group: "Windows", accel: "Control+Alt+ArrowUp"),
