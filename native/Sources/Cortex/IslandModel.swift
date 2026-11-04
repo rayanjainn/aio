@@ -104,11 +104,13 @@ final class IslandModel: ObservableObject {
     /// Width of one wing for the current activity.
     var wingWidth: CGFloat {
         switch activity {
-        case .hud, .meeting, .download: Self.wideWing
+        case .hud, .meeting, .download:
+            return Self.wideWing
         case .flash(let f):
             if case .charging = f { return Self.wing }
             return Self.wideWing
-        default: Self.wing
+        default:
+            return Self.wing
         }
     }
 
