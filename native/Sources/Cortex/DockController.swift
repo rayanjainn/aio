@@ -10,6 +10,7 @@ final class DockPanel: NSPanel {
 
 final class DockHostingView<Content: View>: NSHostingView<Content> {
     var onHover: ((Bool) -> Void)?
+    var onMove: ((NSPoint?) -> Void)?
     private var tracking: NSTrackingArea?
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -17,13 +18,14 @@ final class DockHostingView<Content: View>: NSHostingView<Content> {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if let tracking { removeTrackingArea(tracking) }
-        let area = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
+        let area = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
         addTrackingArea(area)
         tracking = area
     }
 
-    override func mouseEntered(with event: NSEvent) { onHover?(true) }
-    override func mouseExited(with event: NSEvent) { onHover?(false) }
+    override func mouseEntered(with event: NSEvent) { onHover?(true); onMove?(convert(event.locationInWindow, from: nil)) }
+    override func mouseExited(with event: NSEvent) { onHover?(false); onMove?(nil) }
+    override func mouseMoved(with event: NSEvent) { onMove?(convert(event.locationInWindow, from: nil)) }
 }
 
 @MainActor
@@ -37,6 +39,7 @@ final class DockController {
     private var autohideTimer: Timer?
     private var hiddenByAutohide = false
     private var hideCountdown: Date?
+    private var lastTarget: CGSize = .zero
 
     var isVisible: Bool { panel?.isVisible ?? false }
 
@@ -75,6 +78,17 @@ final class DockController {
         let host = DockHostingView(rootView: DockRootView(model: model))
         host.sizingOptions = []
         host.onHover = { [weak self] inside in self?.hoverChanged(inside) }
+        host.onMove = { [weak self, weak host] p in
+            guard let self, let host else { return }
+            guard let p else { self.model.pointerMoved(along: nil, across: 0); return }
+            let b = host.bounds
+            let lead = DockModel.sideMargin + DockModel.padding
+            switch self.model.edge {
+            case "left": self.model.pointerMoved(along: (b.height - p.y) - lead, across: p.x)
+            case "right": self.model.pointerMoved(along: (b.height - p.y) - lead, across: b.width - p.x)
+            default: self.model.pointerMoved(along: p.x - lead, across: p.y)
+            }
+        }
         panel.contentView = host
         self.panel = panel
 
@@ -83,7 +97,11 @@ final class DockController {
         self.previews = previews
 
         model.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.layout() }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let t = self.targetSize()
+                if t != self.lastTarget { self.lastTarget = t; self.layout() }
+            }
         }.store(in: &cancellables)
         Prefs.shared.$dockAutohide.dropFirst()
             .receive(on: DispatchQueue.main)

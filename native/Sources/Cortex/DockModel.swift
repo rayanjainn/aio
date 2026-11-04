@@ -29,19 +29,40 @@ enum DockSlot: Identifiable, Equatable {
 @MainActor
 final class DockModel: ObservableObject {
     @Published private(set) var slots: [DockSlot] = []
-    @Published var iconSize: CGFloat = 54
+    @Published var iconSize: CGFloat = 44
     @Published var hovering = false
     @Published var magnify = true
     @Published var edge = "bottom"
     @Published var darken = 0.0
     @Published private(set) var launching: Set<String> = []
     @Published var hoveredID: String?
+    @Published var pointer: CGFloat?          // along the bar's axis, from the start of the content
+
+    /// Pointer from the window's own tracking area: `along` is measured from the content start,
+    /// `across` is the distance from the screen edge the Dock sits on.
+    func pointerMoved(along: CGFloat?, across: CGFloat) {
+        guard let along, across <= barAcross + 6, draggingID == nil else {
+            if pointer != nil { pointer = nil }
+            if hoveredID != nil { hoveredID = nil }
+            return
+        }
+        pointer = along
+        var found: String?
+        for (i, s) in slots.enumerated() {
+            guard case .item(let item) = s else { continue }
+            if abs(along - centre(ofSlot: i)) <= iconSize / 2 + Self.gap / 2 { found = item.id; break }
+        }
+        if found != hoveredID {
+            hoveredID = found
+            if found != nil { NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now) }
+        }
+    }
     @Published var previewHovering = false
     @Published var draggingID: String?
 
     static let maxScale: CGFloat = 1.55
-    static let gap: CGFloat = 10
-    static let padding: CGFloat = 12
+    static let gap: CGFloat = 7
+    static let padding: CGFloat = 9
     static let sideMargin: CGFloat = 30
     static let dividerLength: CGFloat = 12
     static let dotArea: CGFloat = 9

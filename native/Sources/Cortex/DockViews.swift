@@ -2,7 +2,6 @@ import SwiftUI
 
 struct DockRootView: View {
     @ObservedObject var model: DockModel
-    @State private var pointer: CGFloat?   // pointer position along the bar's axis
 
     var body: some View {
         let bar = barView
@@ -37,20 +36,32 @@ struct DockRootView: View {
                 }
             }
         }
-        .onContinuousHover { phase in
-            switch phase {
-            case .active(let point): pointer = vertical ? point.y : point.x
-            case .ended: pointer = nil
-            }
-        }
         .padding(DockModel.padding)
         .cortexGlass(in: RoundedRectangle(cornerRadius: model.iconSize * 0.42, style: .continuous), darken: model.darken)
         .glassRim(cornerRadius: model.iconSize * 0.42, strength: 0.8)
+        .contextMenu { barMenu }
+    }
+
+    @ViewBuilder private var barMenu: some View {
+        Toggle("Magnify icons", isOn: Binding(get: { Prefs.shared.dockMagnify }, set: { Prefs.shared.dockMagnify = $0 }))
+        Toggle("Hide automatically", isOn: Binding(get: { Prefs.shared.dockAutohide }, set: { Prefs.shared.dockAutohide = $0 }))
+        Menu("Size") {
+            ForEach([32, 38, 44, 52, 60, 72], id: \.self) { s in
+                Button("\(s) pt") { Prefs.shared.dockIconSize = Double(s) }
+            }
+        }
+        Menu("Position") {
+            ForEach(["bottom", "left", "right"], id: \.self) { e in
+                Button(e.capitalized) { Prefs.shared.dockEdge = e }
+            }
+        }
+        Divider()
+        Button("Dock Settings…") { NSApp.sendAction(Selector(("openSettings")), to: NSApp.delegate, from: nil) }
     }
 
     /// Smooth bell curve around the pointer, measured against each slot's resting centre.
     private func scale(at index: Int) -> CGFloat {
-        guard model.magnify, model.draggingID == nil, let p = pointer else { return 1 }
+        guard model.magnify, model.draggingID == nil, let p = model.pointer else { return 1 }
         let size = model.iconSize
         let d = (p - model.centre(ofSlot: index)) / (size * 1.15)
         return 1 + (DockModel.maxScale - 1) * CGFloat(exp(-Double(d * d)))
@@ -81,12 +92,11 @@ struct DockIcon: View {
             .zIndex(drag == .zero ? 0 : 10)
             .opacity(dropTargeted ? 0.7 : 1)
             .contentShape(Rectangle())
-            .onTapGesture { model.activate(item) }
-            .gesture(dragGesture, including: item.kind == .trash ? .subviews : .all)
-            .onHover { inside in
-                if inside { model.hoveredID = item.id }
-                else if model.hoveredID == item.id { model.hoveredID = nil }
+            .onTapGesture {
+                NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+                model.activate(item)
             }
+            .gesture(dragGesture, including: item.kind == .trash ? .subviews : .all)
             .contextMenu { menu }
             .dropDestination(for: URL.self) { urls, _ in
                 guard item.kind == .app else { return false }

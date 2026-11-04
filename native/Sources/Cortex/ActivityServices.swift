@@ -109,7 +109,13 @@ final class DownloadWatcher: ObservableObject {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self else { return }
             let names = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
-            let busy = names.filter { n in self.suffixes.contains(where: { n.hasSuffix($0) }) }
+            let busy = names.filter { n in
+                guard self.suffixes.contains(where: { n.hasSuffix($0) }) else { return false }
+                // Only files that are still growing: a leftover partial download is not an activity.
+                let path = dir.appendingPathComponent(n).path
+                guard let m = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date else { return false }
+                return Date().timeIntervalSince(m) < 15
+            }
                 .map { n -> String in
                     var base = n
                     for s in self.suffixes where base.hasSuffix(s) { base = String(base.dropLast(s.count)) }

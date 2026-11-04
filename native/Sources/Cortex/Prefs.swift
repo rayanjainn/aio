@@ -8,7 +8,7 @@ final class Prefs: ObservableObject {
     static let shared = Prefs()
 
     @Published var dockEnabled = true { didSet { save() } }
-    @Published var dockIconSize = 54.0 { didSet { save() } }
+    @Published var dockIconSize = 44.0 { didSet { save() } }
     @Published var dockMagnify = true { didSet { save() } }
     @Published var dockEdge = "bottom" { didSet { save() } }
     @Published var dockAutohide = false { didSet { save() } }
@@ -45,7 +45,7 @@ final class Prefs: ObservableObject {
     init() {
         if let data = try? Data(contentsOf: Self.url), let s = try? JSONDecoder().decode(Stored.self, from: data) {
             dockEnabled = s.dockEnabled ?? true
-            dockIconSize = s.dockIconSize ?? 54
+            dockIconSize = (s.dockIconSize == 54 ? 44 : s.dockIconSize) ?? 44
             dockMagnify = s.dockMagnify ?? true
             dockEdge = s.dockEdge ?? "bottom"
             dockAutohide = s.dockAutohide ?? false
