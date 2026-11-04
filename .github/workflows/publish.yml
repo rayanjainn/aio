@@ -1,0 +1,46 @@
+# Attaches an already-built installer to a release, without rebuilding.
+# Use it when a build succeeded but publishing failed:  run_id = the build run, tag = the release.
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run id of a successful Native build (its Cortex-native artifact is used)"
+        required: true
+      tag:
+        description: "Release tag, e.g. v0.3.0-native.6"
+        required: true
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        default: "true"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the built installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run download "${{ inputs.run_id }}" -n Cortex-native -D dl --repo "$GITHUB_REPOSITORY"
+      - name: Create the release if needed, attach the installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          PRE: ${{ inputs.prerelease }}
+        run: |
+          set -e
+          cp dl/Cortex.dmg "Cortex-native-$TAG.dmg"
+          NOTES="Native Cortex. Not notarized: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or Open Anyway in System Settings → Privacy & Security). Quit any older Cortex first so there aren't two Islands. macOS 14+; Liquid Glass needs macOS 26."
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            flag=""; [ "$PRE" = "true" ] && flag="--prerelease"
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Cortex $TAG" --notes "$NOTES" $flag
+          fi
+          gh release upload "$TAG" "Cortex-native-$TAG.dmg" --repo "$GITHUB_REPOSITORY" --clobber
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'

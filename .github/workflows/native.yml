@@ -1,3 +1,7 @@
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
+          fi
+          gh release upload "$TAG" "Cortex-native-$TAG.dmg" --repo "$GITHUB_REPOSITORY" --clobber
 # Builds the native (Swift) Cortex app on every push to a native/** branch and,
 # when run manually with a tag, publishes it as a PRE-release (never "latest",
 # so the current stable release and the auto-updater are untouched).
