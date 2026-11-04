@@ -27,7 +27,7 @@ jobs:
         run: |
           cd native
           set +e
-          swift build -c debug > /tmp/swift-build.log 2>&1
+          swift build -c debug -Xswiftc -warnings-as-errors > /tmp/swift-build.log 2>&1
           code=$?
           echo "=== swift build exit code: $code ==="
           grep -E "error:" -A5 /tmp/swift-build.log | head -150
@@ -61,12 +61,35 @@ jobs:
         with:
           name: Cortex-native
           path: native/build/Cortex.dmg
+
+  # Separate so it can be re-run on its own (and the full error body is visible if GitHub refuses).
+  publish:
+    needs: build
+    if: inputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Cortex-native
+          path: dl
       - name: Publish pre-release
-        if: inputs.tag != ''
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
         run: |
-          cp native/build/Cortex.dmg "native/build/Cortex-native-${{ inputs.tag }}.dmg"
-          gh release create "${{ inputs.tag }}" "native/build/Cortex-native-${{ inputs.tag }}.dmg" \
-            --prerelease --target "$GITHUB_SHA" --title "Cortex native ${{ inputs.tag }}" \
-            --notes "Native (Swift) preview. Not notarized: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or Open Anyway in System Settings → Privacy & Security). Quit the old Cortex first so there aren't two Islands."
+          set +e
+          cp dl/Cortex.dmg "Cortex-native-$TAG.dmg"
+          NOTES="Native (Swift) preview. Not notarized: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or Open Anyway in System Settings → Privacy & Security). Quit any older Cortex first so there aren't two Islands."
+          gh release create "$TAG" "Cortex-native-$TAG.dmg" --prerelease --target "$GITHUB_SHA" --title "Cortex native $TAG" --notes "$NOTES"
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "=== gh release create failed ($code); asking the API directly for the full error ==="
+            gh api -i -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" -f name="Cortex native $TAG" -F prerelease=true -f body="$NOTES" 2>&1 | head -40
+            echo "=== existing tags / releases ==="
+            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=3" --jq '.[].tag_name' 2>&1 | head
+            gh api "repos/$GITHUB_REPOSITORY/rulesets" 2>&1 | head -30
+            exit $code
+          fi
