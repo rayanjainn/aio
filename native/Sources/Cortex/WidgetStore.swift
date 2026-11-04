@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 enum WidgetKind: String, CaseIterable, Codable, Identifiable {
-    case clock, calendar, system, nowPlaying, notes, todos
+    case clock, calendar, system, nowPlaying, notes, todos, weather, claude, codex
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -12,6 +12,9 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .nowPlaying: "Now Playing"
         case .notes: "Sticky Note"
         case .todos: "To-Do"
+        case .weather: "Weather"
+        case .claude: "Claude Code Usage"
+        case .codex: "Codex Usage"
         }
     }
     var detail: String {
@@ -22,6 +25,9 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .nowPlaying: "Whatever is playing, from any app"
         case .notes: "A note that stays on your desktop"
         case .todos: "A small checklist"
+        case .weather: "Right now and today's range"
+        case .claude: "Tokens today, the 5-hour block, last 7 days"
+        case .codex: "Tokens today and the last 7 days"
         }
     }
     var symbol: String {
@@ -32,6 +38,9 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .nowPlaying: "music.note"
         case .notes: "note.text"
         case .todos: "checklist"
+        case .weather: "cloud.sun"
+        case .claude: "sparkles"
+        case .codex: "chevron.left.forwardslash.chevron.right"
         }
     }
 }
@@ -84,7 +93,7 @@ final class WidgetStore: ObservableObject {
 
     func add(_ kind: WidgetKind) {
         var config = WidgetConfig(kind: kind)
-        config.size = kind == .system || kind == .nowPlaying ? .medium : (kind == .calendar || kind == .notes || kind == .todos ? .small : .small)
+        config.size = (kind == .system || kind == .nowPlaying || kind == .claude || kind == .codex) ? .medium : .small
         items.append(config)
         save()
     }

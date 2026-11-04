@@ -34,6 +34,9 @@ struct WidgetHostView: View {
         case .nowPlaying: NowPlayingWidget(size: config.size, bridge: bridge)
         case .notes: NotesWidget(config: config, store: store)
         case .todos: TodosWidget(config: config, store: store)
+        case .weather: WeatherWidget(size: config.size)
+        case .claude: CodingWidget(name: "Claude Code", symbol: "sparkles", size: config.size, claude: true)
+        case .codex: CodingWidget(name: "Codex", symbol: "chevron.left.forwardslash.chevron.right", size: config.size, claude: false)
         }
     }
 }
@@ -231,6 +234,95 @@ struct TodosWidget: View {
                     draft = ""
                 }
         }
+    }
+}
+
+// MARK: weather
+
+struct WeatherWidget: View {
+    let size: WidgetSize
+    @ObservedObject private var service = WeatherService.shared
+
+    var body: some View {
+        Group {
+            if let w = service.weather {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(w.place.isEmpty ? "Weather" : w.place).font(.system(size: 12, weight: .semibold))
+                        Spacer()
+                        Image(systemName: w.symbol).font(.system(size: 18)).symbolRenderingMode(.hierarchical)
+                    }
+                    Text("\(Int(w.temperature.rounded()))°").font(.system(size: size == .small ? 44 : 54, weight: .thin, design: .rounded))
+                    Spacer(minLength: 0)
+                    Text(w.summary).font(.system(size: 12, weight: .medium))
+                    Text("H \(Int(w.high.rounded()))°  L \(Int(w.low.rounded()))°").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "cloud.sun").font(.system(size: 28)).foregroundStyle(.secondary)
+                    Text(service.status).font(.system(size: 11)).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .onAppear { service.watch() }
+        .onDisappear { service.unwatch() }
+    }
+}
+
+// MARK: coding usage
+
+struct CodingWidget: View {
+    let name: String
+    let symbol: String
+    let size: WidgetSize
+    let claude: Bool
+    @ObservedObject private var usage = CodingUsageService.shared
+
+    var body: some View {
+        let u = claude ? usage.claude : usage.codex
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 12))
+                Text(name).font(.system(size: 12, weight: .semibold))
+                Spacer()
+                if u.active { Circle().fill(Color.white).frame(width: 6, height: 6) }
+            }
+            if !u.installed {
+                Text("No sessions found").font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            } else {
+                Text(tokenString(u.todayTokens)).font(.system(size: size == .small ? 34 : 40, weight: .thin, design: .rounded))
+                Text("tokens today · \(u.todayMessages) messages").font(.system(size: 10.5)).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                sparkline(u.week)
+                if size != .small {
+                    HStack {
+                        if !u.model.isEmpty { Text(u.model).font(.system(size: 10.5)).foregroundStyle(.secondary) }
+                        Spacer()
+                        if let end = u.blockEndsAt {
+                            TimelineView(.periodic(from: .now, by: 30)) { ctx in
+                                let left = max(0, end.timeIntervalSince(ctx.date))
+                                Text("5h block · \(tokenString(u.blockTokens)) · \(Int(left / 3600))h \(Int(left.truncatingRemainder(dividingBy: 3600) / 60))m left")
+                                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear { usage.watch() }
+        .onDisappear { usage.unwatch() }
+    }
+
+    private func sparkline(_ week: [Int]) -> some View {
+        let peak = max(week.max() ?? 1, 1)
+        return HStack(alignment: .bottom, spacing: 4) {
+            ForEach(Array(week.enumerated()), id: \.offset) { i, v in
+                Capsule().fill(Color.white.opacity(i == week.count - 1 ? 0.95 : 0.4))
+                    .frame(maxWidth: .infinity).frame(height: max(3, 28 * CGFloat(v) / CGFloat(peak)))
+            }
+        }
+        .frame(height: 30, alignment: .bottom)
     }
 }
 

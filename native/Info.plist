@@ -23,6 +23,8 @@
   <string>Cortex can show a mirror in the Island so you can check yourself before a call.</string>
   <key>NSBluetoothAlwaysUsageDescription</key>
   <string>Cortex shows when AirPods and other devices connect, with their battery level.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Cortex shows the weather where you are.</string>
   <key>NSAppleEventsUsageDescription</key>
   <string>Cortex controls Spotify and Music and arranges windows when you ask it to.</string>
 </dict>
