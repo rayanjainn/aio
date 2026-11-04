@@ -14,6 +14,7 @@ enum RowKind: Equatable {
     case menu(String)             // press a menu item of the front app
     case kill(Int32)              // quit an app (⌘↩ force quits)
     case script(String)           // run a user script
+    case pin(Int, String)         // pasted text (⌘↩ unpins)
     case file(String)             // open a file (⌘↩ reveals, ⌥↩ Quick Look)
 }
 
@@ -303,6 +304,7 @@ final class PaletteModel: ObservableObject {
                        iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:tabs", title: "Search browser tabs", subtitle: "Type  tab <words>", symbol: "safari", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:ai", title: "AI commands", subtitle: "Type  ai  — summarise, fix grammar, explain… on your clipboard", symbol: "sparkles", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:pins", title: "Pinned text", subtitle: "Type  pin  — keep snippets of the clipboard one command away", symbol: "pin", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
             sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
             cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),
@@ -376,6 +378,16 @@ final class PaletteModel: ObservableObject {
             if out.isEmpty {
                 out.append(PaletteRow(id: "layout.hint", title: "Type a name to save this arrangement", subtitle: "e.g.  layout coding", symbol: "rectangle.3.group",
                                       iconPath: nil, tag: "", kind: .copy(""), section: "Window layouts"))
+            }
+            return out
+        }
+        if lower == "pin" || lower == "pins" || lower.hasPrefix("pin ") || lower.hasPrefix("pins ") {
+            let rest = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces).lowercased()
+            out.append(PaletteRow(id: "pin.add", title: "Pin the current clipboard", subtitle: String((NSPasteboard.general.string(forType: .string) ?? "Clipboard is empty").prefix(70)),
+                                  symbol: "pin", iconPath: nil, tag: "", kind: .command("pin.add"), section: "Pinned text"))
+            for (i, text) in PinStore.all().enumerated() where rest.isEmpty || text.lowercased().contains(rest) {
+                out.append(PaletteRow(id: "pin:\(i)", title: String(text.split(separator: "\n").first ?? "").prefix(80).description,
+                                      subtitle: "↩ paste  ·  ⌘↩ unpin", symbol: "pin.fill", iconPath: nil, tag: "", kind: .pin(i, text), section: "Pinned text"))
             }
             return out
         }
@@ -570,6 +582,7 @@ final class PaletteModel: ObservableObject {
         case .kill: return [("↩", "Quit"), ("⌘↩", "Force quit")]
         case .script: return [("↩", "Run")]
         case .file: return [("↩", "Open"), ("⌘↩", "Reveal"), ("⌥↩", "Quick Look")]
+        case .pin: return [("↩", "Paste"), ("⌘↩", "Unpin")]
         }
     }
 
@@ -608,6 +621,11 @@ final class PaletteModel: ObservableObject {
             return true
         case .kill(let pid):
             if let app = NSRunningApplication(processIdentifier: pid) { if cmd { app.forceTerminate() } else { app.terminate() } }
+            return true
+        case .pin(let index, let text):
+            if cmd { PinStore.remove(at: index); queryChanged(); return false }
+            PasteService.copy(text)
+            PasteService.pasteIntoFront()
             return true
         case .file(let path):
             let url = URL(fileURLWithPath: path)

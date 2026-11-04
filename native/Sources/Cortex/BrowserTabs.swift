@@ -120,3 +120,36 @@ enum SnippetExpander {
         return out
     }
 }
+
+/// Text you keep close: pinned from the clipboard, pasted with one command.
+enum PinStore {
+    private static var url: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/pins.json")
+    }
+
+    static func all() -> [String] {
+        guard let d = try? Data(contentsOf: url), let a = try? JSONDecoder().decode([String].self, from: d) else { return [] }
+        return a
+    }
+
+    private static func write(_ pins: [String]) {
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let d = try? JSONEncoder().encode(pins) { try? d.write(to: url, options: .atomic) }
+    }
+
+    @discardableResult
+    static func addClipboard() -> Bool {
+        guard let t = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return false }
+        var pins = all().filter { $0 != t }
+        pins.insert(t, at: 0)
+        write(Array(pins.prefix(50)))
+        return true
+    }
+
+    static func remove(at index: Int) {
+        var pins = all()
+        guard pins.indices.contains(index) else { return }
+        pins.remove(at: index)
+        write(pins)
+    }
+}

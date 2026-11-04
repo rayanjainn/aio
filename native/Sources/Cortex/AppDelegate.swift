@@ -117,7 +117,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if let tab = BrowserTabs.parse(id) { BrowserTabs.focus(tab) }
+            if id == "pin.add" { Toast.show("pin.fill", PinStore.addClipboard() ? "Pinned" : "Clipboard is empty") }
+            else if let tab = BrowserTabs.parse(id) { BrowserTabs.focus(tab) }
             else if id.hasPrefix("layout.save:") {
                 let n = String(id.dropFirst("layout.save:".count))
                 let c = WindowLayouts.save(n)
