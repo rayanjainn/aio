@@ -6,6 +6,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let nowPlaying = MediaRemoteBridge()
     private let power = PowerMonitor()
     private var island: IslandController?
+    private var dock: DockController?
+    private var dockItem: NSMenuItem?
+    private var systemDockItem: NSMenuItem?
     private var statusItem: NSStatusItem?
     private var diagnosticsWindow: NSWindow?
 
@@ -16,11 +19,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let island = IslandController(bridge: nowPlaying, power: power)
         island.show()
         self.island = island
+        let dock = DockController()
+        dock.show()
+        self.dock = dock
         setUpStatusItem()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         nowPlaying.stop()
+        SystemDock.setHidden(false)   // never leave the user without a Dock
     }
 
     private func setUpStatusItem() {
@@ -28,6 +35,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.image = NSImage(systemSymbolName: "sparkle", accessibilityDescription: "Cortex")
         let menu = NSMenu()
         menu.addItem(withTitle: "Cortex \(AppInfo.version)", action: nil, keyEquivalent: "")
+        menu.addItem(.separator())
+        let dockToggle = NSMenuItem(title: "Show Cortex Dock", action: #selector(toggleDock), keyEquivalent: "")
+        dockToggle.target = self
+        dockToggle.state = .on
+        menu.addItem(dockToggle)
+        dockItem = dockToggle
+        let sysDock = NSMenuItem(title: "Hide macOS Dock", action: #selector(toggleSystemDock), keyEquivalent: "")
+        sysDock.target = self
+        sysDock.state = SystemDock.hiddenByUs ? .on : .off
+        menu.addItem(sysDock)
+        systemDockItem = sysDock
         menu.addItem(.separator())
         let diag = NSMenuItem(title: "Diagnostics…", action: #selector(showDiagnostics), keyEquivalent: "")
         diag.target = self
@@ -42,16 +60,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = item
     }
 
+    @objc private func toggleDock() {
+        guard let dock else { return }
+        if dock.isVisible { dock.hide(); dockItem?.state = .off } else { dock.show(); dockItem?.state = .on }
+    }
+
+    @objc private func toggleSystemDock() {
+        let hide = !SystemDock.hiddenByUs
+        SystemDock.setHidden(hide)
+        systemDockItem?.state = hide ? .on : .off
+    }
+
     @objc private func revealLog() {
         NSWorkspace.shared.activateFileViewerSelecting([Log.fileURL])
     }
 
     @objc private func showDiagnostics() {
-        let text = Diagnostics.report(island: island, bridge: nowPlaying)
+        let text = Diagnostics.report(island: island, dock: dock, bridge: nowPlaying)
         if let w = diagnosticsWindow {
             w.contentView = NSHostingView(rootView: DiagnosticsView(text: text, refresh: { [weak self] in
                 guard let self else { return "" }
-                return Diagnostics.report(island: self.island, bridge: self.nowPlaying)
+                return Diagnostics.report(island: self.island, dock: self.dock, bridge: self.nowPlaying)
             }))
             w.makeKeyAndOrderFront(nil)
         } else {
@@ -60,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: DiagnosticsView(text: text, refresh: { [weak self] in
                 guard let self else { return "" }
-                return Diagnostics.report(island: self.island, bridge: self.nowPlaying)
+                return Diagnostics.report(island: self.island, dock: self.dock, bridge: self.nowPlaying)
             }))
             w.center()
             diagnosticsWindow = w

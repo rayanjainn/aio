@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 enum Diagnostics {
-    static func report(island: IslandController?, bridge: MediaRemoteBridge) -> String {
+    static func report(island: IslandController?, dock: DockController?, bridge: MediaRemoteBridge) -> String {
         var out: [String] = []
         let os = ProcessInfo.processInfo
         out.append("Cortex native \(AppInfo.version)")
@@ -18,6 +18,10 @@ enum Diagnostics {
         out.append("== Island ==")
         out.append(island?.describeGeometry() ?? "not created")
         out.append(island?.describePanel() ?? "")
+        out.append("")
+        out.append("== Dock ==")
+        out.append(dock?.describe() ?? "not created")
+        out.append("macOS Dock hidden by Cortex: \(SystemDock.hiddenByUs)")
         out.append("")
         out.append("== Now Playing (system) ==")
         out.append("adapter: \(bridge.status)  lines=\(bridge.lines)  last=\(bridge.lastLineAt.map { "\(Int(Date().timeIntervalSince($0)))s ago" } ?? "never")")
