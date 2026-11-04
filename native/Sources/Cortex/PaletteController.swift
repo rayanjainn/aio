@@ -47,7 +47,7 @@ final class PaletteController {
 
     private func build() -> PalettePanel {
         let panel = PalettePanel(
-            contentRect: NSRect(x: 0, y: 0, width: PaletteView.width, height: PaletteView.searchHeight),
+            contentRect: NSRect(x: 0, y: 0, width: PaletteView.width, height: PaletteModel.searchHeight),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered, defer: false)
         panel.isFloatingPanel = true
@@ -70,16 +70,14 @@ final class PaletteController {
             DispatchQueue.main.async { self?.hide() }
         }
         // Grow / shrink with the number of results, keeping the top edge fixed.
-        model.$rows.combineLatest(model.$message)
+        model.$rows.combineLatest(model.$message, model.$chat)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _, _ in self?.resize() }
+            .sink { [weak self] _, _, _ in self?.resize() }
             .store(in: &cancellables)
         return panel
     }
 
-    private func currentHeight() -> CGFloat {
-        PaletteView.height(forRows: model.rows.count, hasMessage: model.message != nil && model.rows.isEmpty)
-    }
+    private func currentHeight() -> CGFloat { model.totalHeight }
 
     private func resize() {
         guard let panel, panel.isVisible else { return }

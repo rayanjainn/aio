@@ -226,8 +226,10 @@ final class EngineClient: @unchecked Sendable {
         return try JSONDecoder().decode(T.self, from: data)
     }
 
-    func search(_ query: String, limit: Int = 30) async throws -> EngineSearchResponse {
-        try await decode(EngineSearchResponse.self, "search", ["query": query, "limit": limit])
+    func search(_ query: String, limit: Int = 30, sources: [String]? = nil) async throws -> EngineSearchResponse {
+        var params: [String: Any] = ["query": query, "limit": limit]
+        if let sources { params["sourceFilter"] = sources }
+        return try await decode(EngineSearchResponse.self, "search", params)
     }
 
     func suggestions() async throws -> EngineSearchResponse {

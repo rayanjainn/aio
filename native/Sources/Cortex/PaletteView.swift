@@ -1,13 +1,14 @@
 import SwiftUI
 import AppKit
 
-/// A single-line text field that hands arrow keys, Return and Escape to the palette
-/// (SwiftUI's TextField can't intercept them reliably).
+/// A single-line text field that hands arrow keys, Return (with modifiers) and Escape to the
+/// palette — SwiftUI's TextField can't intercept them reliably.
 struct SearchField: NSViewRepresentable {
     @Binding var text: String
     let focusToken: Int
+    let placeholder: String
     let onMove: (Int) -> Void
-    let onSubmit: () -> Void
+    let onSubmit: (NSEvent.ModifierFlags) -> Void
     let onCancel: () -> Void
 
     func makeNSView(context: Context) -> NSTextField {
@@ -15,15 +16,17 @@ struct SearchField: NSViewRepresentable {
         field.isBordered = false
         field.drawsBackground = false
         field.focusRingType = .none
-        field.font = .systemFont(ofSize: 22, weight: .regular)
-        field.placeholderString = "Search apps, files, commands…"
+        field.font = .systemFont(ofSize: 21, weight: .regular)
+        field.placeholderString = placeholder
         field.delegate = context.coordinator
         field.cell?.usesSingleLineMode = true
+        field.lineBreakMode = .byTruncatingTail
         return field
     }
 
     func updateNSView(_ field: NSTextField, context: Context) {
         if field.stringValue != text { field.stringValue = text }
+        if field.placeholderString != placeholder { field.placeholderString = placeholder }
         context.coordinator.parent = self
         if context.coordinator.lastFocusToken != focusToken {
             context.coordinator.lastFocusToken = focusToken
@@ -49,9 +52,13 @@ struct SearchField: NSViewRepresentable {
             switch selector {
             case #selector(NSResponder.moveDown(_:)): parent.onMove(1); return true
             case #selector(NSResponder.moveUp(_:)): parent.onMove(-1); return true
-            case #selector(NSResponder.insertNewline(_:)): parent.onSubmit(); return true
+            case #selector(NSResponder.insertNewline(_:)), #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)):
+                let flags = NSApp.currentEvent?.modifierFlags.intersection(.deviceIndependentFlagsMask) ?? []
+                parent.onSubmit(flags)
+                return true
             case #selector(NSResponder.cancelOperation(_:)): parent.onCancel(); return true
             case #selector(NSResponder.insertTab(_:)): parent.onMove(1); return true
+            case #selector(NSResponder.insertBacktab(_:)): parent.onMove(-1); return true
             default: return false
             }
         }
@@ -62,80 +69,150 @@ struct PaletteView: View {
     @ObservedObject var model: PaletteModel
     @ObservedObject private var prefs = Prefs.shared
     let onClose: () -> Void
+    @State private var appeared = false
 
-    static let width: CGFloat = 720
-    static let rowHeight: CGFloat = 50
-    static let searchHeight: CGFloat = 64
-    static let footerHeight: CGFloat = 34
+    static let width: CGFloat = 740
 
-    static func height(forRows count: Int, hasMessage: Bool) -> CGFloat {
-        let body = count == 0 ? (hasMessage ? 44 : 0) : CGFloat(min(count, 8)) * rowHeight + 8
-        return searchHeight + body + (count == 0 && !hasMessage ? 0 : footerHeight)
+    private var placeholder: String {
+        model.chat != nil ? "Ask a follow-up…" : "Search apps, files, commands…   (try 12*4, 10km to mi, :heart, > ls, ? why)"
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass").font(.system(size: 18)).foregroundStyle(.secondary)
-                SearchField(text: $model.query, focusToken: model.focusToken,
-                            onMove: { model.moveSelection($0) },
-                            onSubmit: { if model.activateSelection() { onClose() } },
-                            onCancel: onClose)
-                    .frame(height: 30)
-            }
-            .padding(.horizontal, 20)
-            .frame(height: Self.searchHeight)
-
-            if !model.rows.isEmpty {
-                Divider().opacity(0.4)
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(model.rows.enumerated()), id: \.element.id) { index, row in
-                                RowView(row: row, selected: index == model.selection)
-                                    .id(row.id)
-                                    .onTapGesture {
-                                        model.selection = index
-                                        if model.activateSelection() { onClose() }
-                                    }
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .onChange(of: model.selection) { _, new in
-                        if model.rows.indices.contains(new) { proxy.scrollTo(model.rows[new].id) }
-                    }
-                }
+            searchBar
+            if model.chat != nil {
+                Divider().opacity(0.35)
+                ChatPane(model: model)
                 footer
-            } else if let message = model.message {
-                Divider().opacity(0.4)
-                Text(message).font(.system(size: 13)).foregroundStyle(.secondary).frame(height: 44)
+            } else if !model.rows.isEmpty {
+                Divider().opacity(0.35)
+                results
+                footer
+            } else if let text = emptyText {
+                Divider().opacity(0.35)
+                Text(text).font(.system(size: 13)).foregroundStyle(.secondary).frame(height: 56)
                 footer
             }
         }
-        .frame(width: Self.width, height: Self.height(forRows: model.rows.count, hasMessage: model.message != nil && model.rows.isEmpty), alignment: .top)
-        .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: prefs.paletteDarken)
+        .frame(width: Self.width, height: model.totalHeight, alignment: .top)
+        .cortexGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), darken: prefs.paletteDarken)
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.28), Color.white.opacity(0.04), Color.white.opacity(0.12)],
+                                             startPoint: .top, endPoint: .bottom), lineWidth: 0.8)
+                .allowsHitTesting(false)
+        )
         .environment(\.colorScheme, .dark)
+        .scaleEffect(appeared ? 1 : 0.965, anchor: .top)
+        .opacity(appeared ? 1 : 0.4)
+        .onChange(of: model.focusToken) { _, _ in
+            appeared = false
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { appeared = true }
+        }
+        .onAppear { withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { appeared = true } }
+    }
+
+    private var emptyText: String? {
+        if let m = model.message { return m }
+        return model.query.isEmpty ? nil : "No results"
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: model.chat != nil ? "sparkles" : "magnifyingglass")
+                .font(.system(size: 18, weight: .medium)).foregroundStyle(.secondary)
+                .frame(width: 22)
+            SearchField(text: $model.query, focusToken: model.focusToken, placeholder: placeholder,
+                        onMove: { model.moveSelection($0) },
+                        onSubmit: { flags in
+                            if model.chat != nil { return }
+                            if model.activateSelection(modifiers: flags) { onClose() }
+                        },
+                        onCancel: { if model.handleCancel() { onClose() } })
+                .frame(height: 30)
+        }
+        .padding(.horizontal, 22)
+        .frame(height: PaletteModel.searchHeight)
+    }
+
+    private var results: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(model.rows.enumerated()), id: \.element.id) { index, row in
+                        if index == 0 || model.rows[index - 1].section != row.section, !row.section.isEmpty {
+                            Text(row.section.uppercased())
+                                .font(.system(size: 10.5, weight: .semibold)).tracking(0.7)
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 22)
+                                .frame(height: PaletteModel.headerHeight, alignment: .bottom)
+                                .padding(.bottom, 4)
+                        }
+                        RowView(row: row, selected: index == model.selection)
+                            .id(row.id)
+                            .onTapGesture {
+                                model.selection = index
+                                if model.activateSelection() { onClose() }
+                            }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .scrollIndicators(.hidden)
+            .onChange(of: model.selection) { _, new in
+                if model.rows.indices.contains(new) { proxy.scrollTo(model.rows[new].id) }
+            }
+        }
     }
 
     private var footer: some View {
         HStack(spacing: 14) {
-            hint("↑↓", "navigate")
-            hint("↩", "open")
-            hint("esc", "close")
+            if model.chat != nil {
+                hint("esc", "back")
+            } else {
+                hint("↑↓", "navigate")
+                ForEach(Array(model.hints.enumerated()), id: \.offset) { _, h in hint(h.key, h.label) }
+                hint("esc", model.query.isEmpty ? "close" : "clear")
+            }
             Spacer()
             Text(model.engineReady ? "Cortex" : "Starting engine…").font(.system(size: 11)).foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 20)
-        .frame(height: Self.footerHeight)
+        .padding(.horizontal, 22)
+        .frame(height: PaletteModel.footerHeight)
     }
 
     private func hint(_ key: String, _ text: String) -> some View {
         HStack(spacing: 5) {
             Text(key).font(.system(size: 10.5, weight: .semibold)).padding(.horizontal, 5).padding(.vertical, 1.5)
-                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             Text(text).font(.system(size: 11)).foregroundStyle(.secondary)
         }
+    }
+}
+
+struct ChatPane: View {
+    @ObservedObject var model: PaletteModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                if let chat = model.chat {
+                    Text(chat.question).font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    if let error = chat.error {
+                        Text(error).font(.system(size: 13)).foregroundStyle(.orange)
+                    } else if chat.answer.isEmpty {
+                        HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Thinking…").foregroundStyle(.secondary) }
+                    } else {
+                        Text((try? AttributedString(markdown: chat.answer, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(chat.answer))
+                            .font(.system(size: 14)).lineSpacing(3).textSelection(.enabled)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 22).padding(.vertical, 14)
+        }
+        .frame(height: PaletteModel.chatBody)
     }
 }
 
@@ -145,7 +222,7 @@ struct RowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            icon.frame(width: 30, height: 30)
+            icon.frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.title).font(.system(size: 14, weight: .medium)).lineLimit(1)
                 if !row.subtitle.isEmpty {
@@ -153,24 +230,30 @@ struct RowView: View {
                 }
             }
             Spacer(minLength: 8)
-            Text(row.tag).font(.system(size: 11)).foregroundStyle(.tertiary)
+            if !row.tag.isEmpty { Text(row.tag).font(.system(size: 11)).foregroundStyle(.tertiary) }
+            if selected { Image(systemName: "return").font(.system(size: 11, weight: .medium)).foregroundStyle(.tertiary) }
         }
         .padding(.horizontal, 12)
-        .frame(height: PaletteView.rowHeight)
-        .background(selected ? Color.white.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.horizontal, 8)
+        .frame(height: PaletteModel.rowHeight)
+        .background {
+            if selected {
+                RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color.white.opacity(0.14))
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
+            }
+        }
+        .padding(.horizontal, 10)
         .contentShape(Rectangle())
     }
 
     @ViewBuilder private var icon: some View {
         if let glyph = row.glyph {
-            Text(glyph).font(.system(size: 22)).frame(width: 30, height: 30)
+            Text(glyph).font(.system(size: 24)).frame(width: 32, height: 32)
         } else if let path = row.iconPath {
             Image(nsImage: IconCache.icon(forPath: path)).resizable().interpolation(.high)
         } else {
-            Image(systemName: row.symbol).font(.system(size: 18)).foregroundStyle(.secondary)
-                .frame(width: 30, height: 30)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Image(systemName: row.symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(.white.opacity(0.85))
+                .frame(width: 32, height: 32)
+                .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
     }
 }
