@@ -206,7 +206,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         if panel.runModal() == .OK { for url in panel.urls { dock?.model.addFolder(url) } }
     }
-    @objc private func openSettings() { settings?.show() }
+    @objc func openSettings() { settings?.show() }
     @objc private func openWidgetGallery() { widgets?.showGallery() }
     @objc private func toggleWidgets() { widgets?.toggleVisible() }
     @objc private func grantAccessibility() { WindowManager.requestAccess() }

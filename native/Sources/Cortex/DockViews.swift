@@ -56,7 +56,7 @@ struct DockRootView: View {
             }
         }
         Divider()
-        Button("Dock Settings…") { NSApp.sendAction(Selector(("openSettings")), to: NSApp.delegate, from: nil) }
+        Button("Dock Settings…") { (NSApp.delegate as? AppDelegate)?.openSettings() }
     }
 
     /// Smooth bell curve around the pointer, measured against each slot's resting centre.
