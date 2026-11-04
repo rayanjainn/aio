@@ -297,3 +297,26 @@ enum Radios {
         Toast.show(on ? "dot.radiowaves.left.and.right" : "wifi.slash", "Bluetooth \(on ? "on" : "off")")
     }
 }
+
+
+// MARK: Translate (MyMemory, free, no key)
+
+enum TranslateService {
+    /// `tr es good morning` / `translate fr where is the station` → (language code, text)
+    static func parse(_ q: String) -> (to: String, text: String)? {
+        let parts = q.split(separator: " ", maxSplits: 2).map(String.init)
+        guard parts.count == 3, ["tr", "translate"].contains(parts[0].lowercased()),
+              parts[1].count == 2 || parts[1].count == 5, !parts[2].trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        return (parts[1].lowercased(), parts[2])
+    }
+
+    static func translate(_ text: String, to code: String) async -> String? {
+        var comps = URLComponents(string: "https://api.mymemory.translated.net/get")
+        comps?.queryItems = [URLQueryItem(name: "q", value: text), URLQueryItem(name: "langpair", value: "autodetect|\(code)")]
+        guard let url = comps?.url,
+              let (data, _) = try? await URLSession.shared.data(from: url),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let r = obj["responseData"] as? [String: Any], let out = r["translatedText"] as? String, !out.isEmpty else { return nil }
+        return out
+    }
+}

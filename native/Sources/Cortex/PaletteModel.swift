@@ -161,6 +161,17 @@ final class PaletteModel: ObservableObject {
                 }
             }
         }
+        if let t = TranslateService.parse(q) {
+            Task { [weak self] in
+                guard let out = await TranslateService.translate(t.text, to: t.to) else { return }
+                await MainActor.run {
+                    guard let self, self.generation == gen else { return }
+                    let row = PaletteRow(id: "translate", title: out, subtitle: "Translated to \(t.to) — copy", symbol: "character.bubble",
+                                         iconPath: nil, tag: t.to.uppercased(), kind: .copy(out), section: "Translate")
+                    if !self.rows.contains(where: { $0.id == "translate" }) { self.rows.insert(row, at: 0) }
+                }
+            }
+        }
         let ql = q.lowercased()
         if ql == "mem" || ql.hasPrefix("mem ") || ql == "rewind" || ql.hasPrefix("rewind ") {
             let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
@@ -237,6 +248,8 @@ final class PaletteModel: ObservableObject {
             cmd("window.max", "Maximise window", "Also ⌃⌥↩", "rectangle.inset.filled"),
             cmd("app.switcher", "Switch window", "Also ⌥⇥", "macwindow.on.rectangle"),
             PaletteRow(id: "home:layout", title: "Window layouts", subtitle: "Type  layout <name>  to save the current arrangement", symbol: "rectangle.3.group",
+                       iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:translate", title: "Translate", subtitle: "Type  tr es good morning  (any 2-letter language code)", symbol: "character.bubble",
                        iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
             sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
