@@ -12,6 +12,8 @@ struct SettingsActions {
     var toggleScreenMemory: () -> Void
     var openDiagnostics: () -> Void
     var addDockFolder: () -> Void
+    var dockHasWidget: (String) -> Bool
+    var dockSetWidget: (String, Bool) -> Void
     var engine: EngineClient
 }
 
@@ -256,6 +258,7 @@ struct DockPane: View {
     @ObservedObject var prefs: Prefs
     let actions: SettingsActions
     @State private var hidden = false
+    @State private var widgetTick = 0
 
     var body: some View {
         Form {
@@ -328,6 +331,16 @@ struct DockPane: View {
                         Text("\(Int(prefs.dockDarken * 100))%").monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
+            }
+            Section("Dock widgets") {
+                ForEach(DockWidgetKind.all) { k in
+                    Toggle(isOn: Binding(get: { actions.dockHasWidget(k.id) }, set: { actions.dockSetWidget(k.id, $0); widgetTick += 1 })) {
+                        Label(k.title, systemImage: k.symbol)
+                    }
+                }
+                .id(widgetTick)
+                Text("Live tiles that sit in the Dock between your apps. Right-click a tile to remove it; drag to reorder.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
             Section("Items") {
                 Toggle("Window previews when hovering an app", isOn: $prefs.dockPreviews)

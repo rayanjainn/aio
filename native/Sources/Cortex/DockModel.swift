@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 struct DockItem: Identifiable, Equatable {
-    enum Kind: String, Codable { case app, folder, trash }
+    enum Kind: String, Codable { case app, folder, trash, widget }
     let id: String            // "app:<bundle id>", "folder:<path>", "trash"
     let kind: Kind
     var value: String         // bundle id or path
@@ -36,6 +36,9 @@ final class DockModel: ObservableObject {
     @Published var darken = 0.0
     @Published private(set) var launching: Set<String> = []
     @Published var hoveredID: String?
+    /// Set by the app so widgets can show live data.
+    var bridge: MediaRemoteBridge?
+    var power: PowerMonitor?
     @Published var pointer: CGFloat?          // along the bar's axis, from the start of the content
 
     /// Pointer from the window's own tracking area: `along` is measured from the content start,
@@ -50,7 +53,7 @@ final class DockModel: ObservableObject {
         var found: String?
         for (i, s) in slots.enumerated() {
             guard case .item(let item) = s else { continue }
-            if abs(along - centre(ofSlot: i)) <= iconSize / 2 + Self.gap / 2 { found = item.id; break }
+            if abs(along - centre(ofSlot: i)) <= length(of: item) / 2 + Self.gap / 2 { found = item.id; break }
         }
         if found != hoveredID {
             hoveredID = found
@@ -158,6 +161,9 @@ final class DockModel: ObservableObject {
                 let url = URL(fileURLWithPath: e.value)
                 guard FileManager.default.fileExists(atPath: e.value) else { continue }
                 pinned.append(DockItem(id: "folder:" + e.value, kind: .folder, value: e.value, name: url.lastPathComponent, url: url))
+            case .widget:
+                guard let kind = DockWidgetKind.find(e.value) else { continue }
+                pinned.append(DockItem(id: "widget:" + e.value, kind: .widget, value: e.value, name: kind.title, url: URL(fileURLWithPath: "/")))
             case .trash: break
             }
         }
@@ -297,6 +303,8 @@ final class DockModel: ObservableObject {
             }
         case .folder, .trash:
             NSWorkspace.shared.open(item.url)
+        case .widget:
+            break
         }
     }
 
@@ -341,13 +349,34 @@ final class DockModel: ObservableObject {
 
     var isVertical: Bool { edge == "left" || edge == "right" }
 
+    /// Length an item takes along the bar: icons are square, widgets are wider on a horizontal Dock.
+    func length(of item: DockItem) -> CGFloat {
+        guard item.kind == .widget, !isVertical, let k = DockWidgetKind.find(item.value) else { return iconSize }
+        return iconSize * k.span
+    }
+
+    func hasWidget(_ id: String) -> Bool { entries.contains { $0.kind == .widget && $0.value == id } }
+
+    func addWidget(_ id: String) {
+        guard !hasWidget(id), DockWidgetKind.find(id) != nil else { return }
+        // Widgets go before the trailing folder/Downloads entries so they sit with the apps.
+        let at = entries.lastIndex(where: { $0.kind == .app }).map { $0 + 1 } ?? entries.count
+        entries.insert(Entry(kind: .widget, value: id), at: at)
+        save(); refresh()
+    }
+
+    func removeWidget(_ id: String) {
+        entries.removeAll { $0.kind == .widget && $0.value == id }
+        save(); refresh()
+    }
+
     /// Length of the bar along its axis, without padding.
     var contentLength: CGFloat {
         var total: CGFloat = 0
         for (i, s) in slots.enumerated() {
             if i > 0 { total += Self.gap }
             switch s {
-            case .item: total += iconSize
+            case .item(let it): total += length(of: it)
             case .divider: total += Self.dividerLength
             }
         }
@@ -364,7 +393,7 @@ final class DockModel: ObservableObject {
         for (i, s) in slots.enumerated() {
             let w: CGFloat
             switch s {
-            case .item: w = iconSize
+            case .item(let it): w = length(of: it)
             case .divider: w = Self.dividerLength
             }
             if i == index { return x + w / 2 }

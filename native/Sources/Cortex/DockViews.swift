@@ -50,6 +50,11 @@ struct DockRootView: View {
                 Button("\(s) pt") { Prefs.shared.dockIconSize = Double(s) }
             }
         }
+        Menu("Add widget") {
+            ForEach(DockWidgetKind.all) { k in
+                Button(k.title) { if model.hasWidget(k.id) { model.removeWidget(k.id) } else { model.addWidget(k.id) } }
+            }
+        }
         Menu("Position") {
             ForEach(["bottom", "left", "right"], id: \.self) { e in
                 Button(e.capitalized) { Prefs.shared.dockEdge = e }
@@ -114,7 +119,20 @@ struct DockIcon: View {
         }
     }
 
-    private func icon(_ size: CGFloat, _ launching: Bool) -> some View {
+    @ViewBuilder private func icon(_ size: CGFloat, _ launching: Bool) -> some View {
+        if item.kind == .widget {
+            let len = model.length(of: item)
+            DockWidgetTile(kind: item.value, size: size, compact: len <= size * 1.3 || model.isVertical, model: model)
+                .frame(width: len, height: size)
+                .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
+                .scaleEffect(scale, anchor: anchor)
+                .animation(.spring(response: 0.22, dampingFraction: 0.78), value: scale)
+        } else {
+            appIcon(size, launching)
+        }
+    }
+
+    private func appIcon(_ size: CGFloat, _ launching: Bool) -> some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !launching)) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             let bounce = launching && Prefs.shared.dockBounce ? -abs(sin(t * 5.5)) * size * 0.32 : 0
@@ -182,6 +200,8 @@ struct DockIcon: View {
             Button("Change Icon…") { model.chooseIcon(for: item) }
             if model.hasCustomIcon(item) { Button("Reset Icon") { model.resetIcon(for: item) } }
             Button("Remove from Dock") { model.unpin(item) }
+        case .widget:
+            Button("Remove Widget") { model.removeWidget(item.value) }
         case .trash:
             Button("Open Trash") { model.activate(item) }
         }

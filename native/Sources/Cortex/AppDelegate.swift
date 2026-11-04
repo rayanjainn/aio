@@ -42,6 +42,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let dock = DockController()
         self.dock = dock
+        dock.model.bridge = nowPlaying
+        dock.model.power = power
         Prefs.shared.$dockEnabled
             .receive(on: DispatchQueue.main)
             .sink { [weak self] enabled in
@@ -73,6 +75,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             toggleScreenMemory: { [weak self] in Task { _ = try? await self?.engine.call("recording_toggle") } },
             openDiagnostics: { [weak self] in self?.showDiagnostics() },
             addDockFolder: { [weak self] in self?.addDockFolder() },
+            dockHasWidget: { [weak self] id in self?.dock?.model.hasWidget(id) ?? false },
+            dockSetWidget: { [weak self] id, on in if on { self?.dock?.model.addWidget(id) } else { self?.dock?.model.removeWidget(id) } },
             engine: engine))
         setUpStatusItem()
         if !Prefs.shared.onboardingDone { onboarding.show() }

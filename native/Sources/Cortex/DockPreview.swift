@@ -171,6 +171,8 @@ final class DockPreviewController {
         shownFor = id
         loadTask?.cancel()
         switch item.kind {
+        case .widget:
+            hide()
         case .trash:
             present(.label("Trash"), forItem: id)
         case .folder:

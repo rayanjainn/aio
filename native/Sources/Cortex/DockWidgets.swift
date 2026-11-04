@@ -1,0 +1,255 @@
+import SwiftUI
+import AppKit
+
+/// Small live tiles that sit in the Dock between the icons: music, clock, battery, weather, timer, system, next meeting.
+struct DockWidgetKind: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let symbol: String
+    /// Width as a multiple of the icon size (on a horizontal Dock).
+    let span: CGFloat
+
+    static let all: [DockWidgetKind] = [
+        DockWidgetKind(id: "music", title: "Now Playing", symbol: "music.note", span: 3.6),
+        DockWidgetKind(id: "clock", title: "Clock", symbol: "clock", span: 1.9),
+        DockWidgetKind(id: "battery", title: "Battery", symbol: "battery.100", span: 1.0),
+        DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 1.5),
+        DockWidgetKind(id: "timer", title: "Focus Timer", symbol: "timer", span: 1.0),
+        DockWidgetKind(id: "stats", title: "System", symbol: "cpu", span: 1.7),
+        DockWidgetKind(id: "meeting", title: "Next Meeting", symbol: "calendar", span: 2.8),
+    ]
+
+    static func find(_ id: String) -> DockWidgetKind? { all.first { $0.id == id } }
+}
+
+struct DockWidgetTile: View {
+    let kind: String
+    let size: CGFloat
+    let compact: Bool
+    let model: DockModel
+
+    var body: some View {
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).fill(Color.white.opacity(0.10)))
+            .overlay(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).strokeBorder(Color.white.opacity(0.16), lineWidth: 0.6))
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))
+            .foregroundStyle(.white)
+            .environment(\.colorScheme, .dark)
+    }
+
+    @ViewBuilder private var content: some View {
+        switch kind {
+        case "music":
+            if let bridge = model.bridge { MusicDockWidget(bridge: bridge, size: size, compact: compact) } else { Image(systemName: "music.note") }
+        case "clock": ClockDockWidget(size: size, compact: compact)
+        case "battery":
+            if let power = model.power { BatteryDockWidget(power: power, size: size) } else { Image(systemName: "battery.100") }
+        case "weather": WeatherDockWidget(size: size, compact: compact)
+        case "timer": TimerDockWidget(size: size)
+        case "stats": StatsDockWidget(size: size, compact: compact)
+        case "meeting": MeetingDockWidget(size: size, compact: compact)
+        default: Image(systemName: "questionmark")
+        }
+    }
+}
+
+private struct MusicDockWidget: View {
+    @ObservedObject var bridge: MediaRemoteBridge
+    let size: CGFloat
+    let compact: Bool
+
+    var body: some View {
+        let art = size - 10
+        HStack(spacing: 7) {
+            Button { bridge.send(.toggle) } label: {
+                ArtworkView(image: bridge.info?.artwork, size: art, radius: size * 0.16)
+                    .overlay {
+                        if compact { Image(systemName: bridge.info?.playing == true ? "pause.fill" : "play.fill").font(.system(size: size * 0.28)).shadow(radius: 3) }
+                    }
+            }
+            .buttonStyle(.plain)
+            if !compact {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(bridge.info?.title ?? "Nothing playing").font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                    Text(bridge.info?.artist ?? "").font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 2) {
+                    control("backward.fill", .previous)
+                    control(bridge.info?.playing == true ? "pause.fill" : "play.fill", .toggle)
+                    control("forward.fill", .next)
+                }
+            }
+        }
+        .padding(.horizontal, 5)
+    }
+
+    private func control(_ symbol: String, _ command: MRCommand) -> some View {
+        Button { bridge.send(command) } label: {
+            Image(systemName: symbol).font(.system(size: 11)).frame(width: 20, height: 24).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+    }
+}
+
+private struct ClockDockWidget: View {
+    let size: CGFloat
+    let compact: Bool
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+            VStack(spacing: 0) {
+                Text(ctx.date.formatted(.dateTime.hour().minute()))
+                    .font(.system(size: size * (compact ? 0.26 : 0.34), weight: .semibold, design: .rounded).monospacedDigit())
+                if !compact {
+                    Text(ctx.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                        .font(.system(size: size * 0.18)).foregroundStyle(.white.opacity(0.6))
+                }
+            }
+        }
+    }
+}
+
+private struct BatteryDockWidget: View {
+    @ObservedObject var power: PowerMonitor
+    let size: CGFloat
+
+    var body: some View {
+        let p = power.percent ?? 0
+        ZStack {
+            Circle().stroke(Color.white.opacity(0.18), lineWidth: 3.5)
+            Circle().trim(from: 0, to: max(0.02, Double(p) / 100))
+                .stroke(Color.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: -1) {
+                if power.charging { Image(systemName: "bolt.fill").font(.system(size: size * 0.16)) }
+                Text(power.percent.map(String.init) ?? "–").font(.system(size: size * 0.28, weight: .semibold, design: .rounded).monospacedDigit())
+            }
+        }
+        .padding(size * 0.14)
+    }
+}
+
+private struct WeatherDockWidget: View {
+    @ObservedObject private var service = WeatherService.shared
+    let size: CGFloat
+    let compact: Bool
+
+    var body: some View {
+        Group {
+            if let w = service.weather {
+                HStack(spacing: 4) {
+                    Image(systemName: w.symbol).symbolRenderingMode(.hierarchical).font(.system(size: size * 0.34))
+                    Text("\(Int(w.temperature.rounded()))°").font(.system(size: size * 0.34, weight: .medium, design: .rounded))
+                }
+            } else {
+                Image(systemName: "cloud.sun").font(.system(size: size * 0.34)).foregroundStyle(.white.opacity(0.6))
+            }
+        }
+        .onAppear { service.watch() }
+        .onDisappear { service.unwatch() }
+    }
+}
+
+private struct TimerDockWidget: View {
+    @ObservedObject private var timer = FocusTimer.shared
+    let size: CGFloat
+
+    var body: some View {
+        Button {
+            if timer.isActive { timer.toggle() } else { timer.start(minutes: 25) }
+        } label: {
+            TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
+                let remaining = Int(timer.remaining(at: ctx.date))
+                ZStack {
+                    Circle().stroke(Color.white.opacity(0.18), lineWidth: 3.5)
+                    Circle().trim(from: 0, to: max(0.02, timer.isActive ? timer.progress(at: ctx.date) : 0))
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    if timer.isActive {
+                        Text(String(format: "%d:%02d", remaining / 60, remaining % 60))
+                            .font(.system(size: size * 0.22, weight: .semibold, design: .rounded).monospacedDigit())
+                    } else {
+                        Image(systemName: "play.fill").font(.system(size: size * 0.24))
+                    }
+                }
+                .padding(size * 0.14)
+            }
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button("25 minutes") { timer.start(minutes: 25) }
+            Button("50 minutes") { timer.start(minutes: 50) }
+            Button("5-minute break") { timer.start(minutes: 5, label: "Break") }
+            if timer.isActive { Button("Reset") { timer.reset() } }
+        }
+    }
+}
+
+private struct StatsDockWidget: View {
+    @ObservedObject private var stats = SystemStats.shared
+    let size: CGFloat
+    let compact: Bool
+
+    var body: some View {
+        let mem = stats.memoryTotal > 0 ? stats.memoryUsed / stats.memoryTotal : 0
+        HStack(spacing: 8) {
+            ring("CPU", stats.cpu)
+            if !compact { ring("MEM", mem) }
+        }
+        .padding(4)
+        .onAppear { stats.watch() }
+        .onDisappear { stats.unwatch() }
+    }
+
+    private func ring(_ label: String, _ value: Double) -> some View {
+        ZStack {
+            Circle().stroke(Color.white.opacity(0.18), lineWidth: 3)
+            Circle().trim(from: 0, to: max(0.02, min(1, value)))
+                .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: -1) {
+                Text("\(Int(value * 100))").font(.system(size: size * 0.24, weight: .semibold, design: .rounded).monospacedDigit())
+                Text(label).font(.system(size: size * 0.13, weight: .medium)).foregroundStyle(.white.opacity(0.55))
+            }
+        }
+        .frame(width: size - 12, height: size - 12)
+    }
+}
+
+private struct MeetingDockWidget: View {
+    @ObservedObject private var calendar = CalendarService.shared
+    let size: CGFloat
+    let compact: Bool
+
+    var body: some View {
+        Group {
+            if let e = calendar.next {
+                if compact {
+                    Image(systemName: "calendar").font(.system(size: size * 0.34))
+                } else {
+                    Button {
+                        if let u = e.joinURL { NSWorkspace.shared.open(u) }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: e.joinURL != nil ? "video.fill" : "calendar").font(.system(size: size * 0.28))
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(e.title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                                Text(e.start.formatted(date: .omitted, time: .shortened)).font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.6))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.horizontal, 8)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    Image(systemName: "calendar").font(.system(size: size * 0.3))
+                    if !compact { Text("No meetings").font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.55)) }
+                }
+            }
+        }
+        .onAppear { calendar.start() }
+    }
+}
