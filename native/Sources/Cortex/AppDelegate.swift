@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var systemDockItem: NSMenuItem?
     private var diagnosticsWindow: NSWindow?
     private var settings: SettingsController?
+    private var widgets: WidgetController?
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -49,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         palette.attach(client: engine, runBuiltin: { [weak self] id in self?.runBuiltin(id) })
         self.palette = palette
 
+        let widgets = WidgetController(bridge: nowPlaying, power: power)
+        widgets.start()
+        self.widgets = widgets
+
         HotKeyCenter.shared.onAction = { [weak self] action in self?.runBuiltin(action) }
         HotKeyCenter.shared.registerAll()
 
@@ -81,6 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "palette": palette?.toggle()
         case "app.diagnostics": showDiagnostics()
         case "app.settings": settings?.show()
+        case "app.addWidget": widgets?.showGallery()
+        case "app.toggleWidgets": widgets?.toggleVisible()
         case "app.toggleDock": toggleDock()
         case "app.toggleSystemDock": toggleSystemDock()
         case "app.island", "island": island?.toggleExpanded()
@@ -115,6 +122,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dockToggle.state = .on
         menu.addItem(dockToggle)
         dockItem = dockToggle
+        let addWidget = NSMenuItem(title: "Add Widget…", action: #selector(openWidgetGallery), keyEquivalent: "")
+        addWidget.target = self
+        menu.addItem(addWidget)
+        let toggleWidgets = NSMenuItem(title: "Show / Hide Widgets", action: #selector(toggleWidgets), keyEquivalent: "")
+        toggleWidgets.target = self
+        menu.addItem(toggleWidgets)
         let sysDock = NSMenuItem(title: "Hide macOS Dock", action: #selector(toggleSystemDock), keyEquivalent: "")
         sysDock.target = self
         sysDock.state = SystemDock.hiddenByUs ? .on : .off
@@ -138,6 +151,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openPalette() { palette?.show() }
     @objc private func openSettings() { settings?.show() }
+    @objc private func openWidgetGallery() { widgets?.showGallery() }
+    @objc private func toggleWidgets() { widgets?.toggleVisible() }
     @objc private func grantAccessibility() { WindowManager.requestAccess() }
 
     @objc private func toggleDock() {
@@ -158,7 +173,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let provider: () -> String = { [weak self] in
             guard let self else { return "" }
             return Diagnostics.report(island: self.island, dock: self.dock, bridge: self.nowPlaying,
-                                      engineProcess: self.engineProcess.describe, engineConnected: self.engine.isConnected)
+                                      engineProcess: self.engineProcess.describe, engineConnected: self.engine.isConnected,
+                                      widgets: self.widgets?.describe() ?? "")
         }
         let view = NSHostingView(rootView: DiagnosticsView(text: provider(), refresh: provider))
         if let w = diagnosticsWindow {
