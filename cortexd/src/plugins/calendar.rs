@@ -22,8 +22,6 @@ use walkdir::WalkDir;
 
 use crate::plugin::{Plugin, ResultAction, SearchQuery, SearchResult, SourceType};
 
-const COLLECTION:     &str = "cortex_calendar";
-
 /* ─── SQLite init ───────────────────────────────────────── */
 
 const INIT_SQL: &str = "

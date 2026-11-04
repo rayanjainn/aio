@@ -62,7 +62,7 @@ final class DockController {
             defer: false
         )
         panel.isFloatingPanel = true
-        panel.level = NSWindow.Level(rawValue: NSWindow.Level.dock.rawValue + 1)
+        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.dockWindow)) + 1)
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
         panel.isOpaque = false
         panel.backgroundColor = .clear

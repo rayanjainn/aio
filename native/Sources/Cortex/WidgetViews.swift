@@ -11,7 +11,13 @@ struct WidgetHostView: View {
             content(config)
                 .padding(16)
                 .frame(width: config.size.dimensions.width, height: config.size.dimensions.height, alignment: .topLeading)
+                .background {
+                    if config.kind == .nowPlaying, let art = bridge.info?.artwork {
+                        ArtworkBackdrop(image: art, strength: 0.6).clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    }
+                }
                 .cortexGlass(in: RoundedRectangle(cornerRadius: 26, style: .continuous), darken: 0.18)
+                .glassRim(cornerRadius: 26)
                 .environment(\.colorScheme, .dark)
                 .contextMenu {
                     Menu("Size") {
@@ -47,20 +53,62 @@ struct ClockWidget: View {
     let size: WidgetSize
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { ctx in
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ctx.date.formatted(.dateTime.weekday(.wide)).uppercased())
-                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).tracking(0.8)
-                Text(ctx.date.formatted(.dateTime.hour().minute()))
-                    .font(.system(size: size == .small ? 42 : 56, weight: .thin, design: .rounded)).monospacedDigit()
-                    .minimumScaleFactor(0.6).lineLimit(1)
-                Text(ctx.date.formatted(.dateTime.month(.wide).day()))
-                    .font(.system(size: 14)).foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                if size != .small {
+        if size == .small {
+            AnalogClock().padding(2)
+        } else {
+            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ctx.date.formatted(.dateTime.weekday(.wide)).uppercased())
+                        .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).tracking(0.8)
+                    Text(ctx.date.formatted(.dateTime.hour().minute()))
+                        .font(.system(size: 64, weight: .thin, design: .rounded)).monospacedDigit()
+                        .minimumScaleFactor(0.6).lineLimit(1)
+                    Text(ctx.date.formatted(.dateTime.month(.wide).day()))
+                        .font(.system(size: 15)).foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
                     Text(TimeZone.current.localizedName(for: .standard, locale: .current) ?? "")
                         .font(.system(size: 11)).foregroundStyle(.tertiary)
                 }
+            }
+        }
+    }
+}
+
+/// A watch-face clock: 60 ticks, three hands, a smooth sweeping second hand.
+struct AnalogClock: View {
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 24)) { ctx in
+            Canvas { context, canvas in
+                let cal = Calendar.current
+                let c = cal.dateComponents([.hour, .minute, .second, .nanosecond], from: ctx.date)
+                let sec = Double(c.second ?? 0) + Double(c.nanosecond ?? 0) / 1e9
+                let minute = Double(c.minute ?? 0) + sec / 60
+                let hour = Double((c.hour ?? 0) % 12) + minute / 60
+                let centre = CGPoint(x: canvas.width / 2, y: canvas.height / 2)
+                let radius = min(canvas.width, canvas.height) / 2
+
+                for i in 0..<60 {
+                    let angle = Double(i) * .pi / 30
+                    let long = i % 5 == 0
+                    let outer = radius - 1
+                    let inner = outer - (long ? 8 : 3.5)
+                    var tick = Path()
+                    tick.move(to: CGPoint(x: centre.x + sin(angle) * inner, y: centre.y - cos(angle) * inner))
+                    tick.addLine(to: CGPoint(x: centre.x + sin(angle) * outer, y: centre.y - cos(angle) * outer))
+                    context.stroke(tick, with: .color(.white.opacity(long ? 0.85 : 0.28)), style: StrokeStyle(lineWidth: long ? 2 : 1, lineCap: .round))
+                }
+                let hands: [(Double, CGFloat, CGFloat, Double)] = [
+                    (hour / 12 * 2 * .pi, radius * 0.5, 4, 0.95),
+                    (minute / 60 * 2 * .pi, radius * 0.74, 2.6, 0.95),
+                    (sec / 60 * 2 * .pi, radius * 0.82, 1.2, 0.55),
+                ]
+                for (angle, length, width, opacity) in hands {
+                    var hand = Path()
+                    hand.move(to: centre)
+                    hand.addLine(to: CGPoint(x: centre.x + sin(angle) * length, y: centre.y - cos(angle) * length))
+                    context.stroke(hand, with: .color(.white.opacity(opacity)), style: StrokeStyle(lineWidth: width, lineCap: .round))
+                }
+                context.fill(Path(ellipseIn: CGRect(x: centre.x - 3.5, y: centre.y - 3.5, width: 7, height: 7)), with: .color(.white))
             }
         }
     }
@@ -110,17 +158,21 @@ struct SystemWidget: View {
     @ObservedObject private var stats = SystemStats.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            meter("CPU", value: stats.cpu, text: "\(Int(stats.cpu * 100))%")
-            meter("Memory", value: stats.memoryTotal > 0 ? stats.memoryUsed / stats.memoryTotal : 0,
-                  text: "\(gb(stats.memoryUsed)) / \(gb(stats.memoryTotal))")
-            if size != .small {
-                meter("Disk", value: stats.diskTotal > 0 ? 1 - stats.diskFree / stats.diskTotal : 0, text: "\(gb(stats.diskFree)) free")
-                if let p = power.percent {
-                    meter("Battery", value: Double(p) / 100, text: "\(p)%\(power.charging ? " ⚡︎" : "")")
-                }
+        let memory = stats.memoryTotal > 0 ? stats.memoryUsed / stats.memoryTotal : 0
+        let disk = stats.diskTotal > 0 ? 1 - stats.diskFree / stats.diskTotal : 0
+        VStack(alignment: .leading, spacing: 8) {
+            Text("SYSTEM").font(.system(size: 10.5, weight: .semibold)).tracking(0.8).foregroundStyle(.secondary)
+            HStack(spacing: size == .small ? 8 : 14) {
+                gauge("CPU", stats.cpu, "\(Int(stats.cpu * 100))")
+                gauge("MEM", memory, "\(Int(memory * 100))")
+                if size != .small { gauge("DISK", disk, "\(Int(disk * 100))") }
+                if size != .small, let p = power.percent { gauge(power.charging ? "⚡︎" : "BAT", Double(p) / 100, "\(p)") }
             }
-            Spacer(minLength: 0)
+            .frame(maxHeight: .infinity)
+            if size == .large {
+                Text("\(gb(stats.memoryUsed)) of \(gb(stats.memoryTotal)) memory · \(gb(stats.diskFree)) free on disk")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
         }
         .onAppear { stats.watch() }
         .onDisappear { stats.unwatch() }
@@ -128,10 +180,18 @@ struct SystemWidget: View {
 
     private func gb(_ bytes: Double) -> String { String(format: "%.1f GB", bytes / 1_073_741_824) }
 
-    private func meter(_ name: String, value: Double, text: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack { Text(name).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary); Spacer(); Text(text).font(.system(size: 11).monospacedDigit()) }
-            ProgressView(value: min(max(value, 0), 1)).progressViewStyle(.linear).tint(.white)
+    private func gauge(_ name: String, _ value: Double, _ text: String) -> some View {
+        VStack(spacing: 5) {
+            ZStack {
+                Circle().stroke(Color.white.opacity(0.14), lineWidth: 6)
+                Circle().trim(from: 0, to: max(0.015, min(1, value)))
+                    .stroke(Color.white.opacity(0.92), style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeOut(duration: 0.6), value: value)
+                Text(text).font(.system(size: 15, weight: .semibold, design: .rounded)).monospacedDigit()
+            }
+            .aspectRatio(1, contentMode: .fit)
+            Text(name).font(.system(size: 9.5, weight: .semibold)).tracking(0.6).foregroundStyle(.secondary)
         }
     }
 }

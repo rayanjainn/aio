@@ -127,7 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setUpStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "sparkle", accessibilityDescription: "Cortex")
+        item.button?.image = MenuBarIcon.image()
         let menu = NSMenu()
         menu.addItem(withTitle: "Cortex \(AppInfo.version)", action: nil, keyEquivalent: "")
         menu.addItem(.separator())

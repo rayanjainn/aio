@@ -203,15 +203,12 @@ impl GitPlugin {
 
             commits.push(CommitDoc {
                 sha:       oid.to_string(),
-                sha_short: oid.to_string()[..8].to_string(),
                 message:   commit.summary().unwrap_or("").to_string(),
                 author:    commit.author().name().unwrap_or("").to_string(),
                 repo:      repo_name.clone(),
                 repo_path: repo_path_str.clone(),
                 files:     files.join(" "),
                 ts:        commit_ts as u64,
-                date:      DateTime::from_timestamp(commit_ts, 0)
-                    .map(|dt| dt.with_timezone(&Utc)),
             });
         }
         (commits, latest_ts)
@@ -237,14 +234,12 @@ impl GitPlugin {
 
 struct CommitDoc {
     sha:       String,
-    sha_short: String,
     message:   String,
     author:    String,
     repo:      String,
     repo_path: String,
     files:     String,
     ts:        u64,
-    date:      Option<DateTime<Utc>>,
 }
 
 /* ─── State DB helpers ──────────────────────────────────── */

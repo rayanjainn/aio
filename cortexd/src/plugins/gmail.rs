@@ -328,10 +328,6 @@ impl EmailPlugin {
 
         Ok(count)
     }
-
-    fn count(&self) -> usize {
-        self.cache.read().unwrap().len()
-    }
 }
 
 /* ─── .emlx parser ──────────────────────────────────────── */

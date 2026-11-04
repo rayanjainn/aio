@@ -239,7 +239,7 @@ final class DockPreviewController {
         let panel = PreviewPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: 10),
                                  styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isFloatingPanel = true
-        panel.level = NSWindow.Level(rawValue: NSWindow.Level.dock.rawValue + 2)
+        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.dockWindow)) + 2)
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
         panel.isOpaque = false
         panel.backgroundColor = .clear

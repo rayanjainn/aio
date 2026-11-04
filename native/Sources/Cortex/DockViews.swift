@@ -45,6 +45,7 @@ struct DockRootView: View {
         }
         .padding(DockModel.padding)
         .cortexGlass(in: RoundedRectangle(cornerRadius: model.iconSize * 0.42, style: .continuous), darken: model.darken)
+        .glassRim(cornerRadius: model.iconSize * 0.42, strength: 0.8)
     }
 
     /// Smooth bell curve around the pointer, measured against each slot's resting centre.
@@ -110,6 +111,7 @@ struct DockIcon: View {
             Image(nsImage: model.icon(for: item))
                 .resizable().interpolation(.high)
                 .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.38), radius: 6, y: 3)
                 .scaleEffect(scale, anchor: anchor)
                 .animation(.spring(response: 0.22, dampingFraction: 0.78), value: scale)
                 .offset(x: model.edge == "bottom" ? 0 : (model.edge == "left" ? -bounce : bounce),

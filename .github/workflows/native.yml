@@ -31,6 +31,8 @@ jobs:
           code=$?
           echo "=== swift build exit code: $code ==="
           grep -E "error:" -A5 /tmp/swift-build.log | head -150
+          echo "=== warnings (unique) ==="
+          grep -E "warning:" /tmp/swift-build.log | sed -E 's#/Users/runner/work/aio/aio/native/##' | sort -u | head -80
           if [ $code -ne 0 ]; then exit $code; fi
           swift test > /tmp/swift-test.log 2>&1
           tcode=$?

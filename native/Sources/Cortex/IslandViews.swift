@@ -96,6 +96,11 @@ struct IslandRootView: View {
         let radius: CGFloat = model.expanded ? 28 : 11
         ZStack(alignment: .top) {
             NotchShape(bottomRadius: radius).fill(Color.black)
+            if model.expanded, model.page == .player, let art = model.track?.artwork {
+                ArtworkBackdrop(image: art, strength: 0.5)
+                    .frame(width: size.width, height: size.height)
+                    .clipShape(NotchShape(bottomRadius: radius))
+            }
             if model.expanded {
                 ExpandedView(model: model, bridge: bridge).transition(.opacity)
             } else if model.hasActivity {
@@ -109,6 +114,14 @@ struct IslandRootView: View {
         }
         .frame(width: size.width, height: size.height, alignment: .top)
         .clipShape(NotchShape(bottomRadius: radius))
+        .overlay(alignment: .top) {
+            if model.expanded {
+                NotchShape(bottomRadius: radius)
+                    .stroke(LinearGradient(colors: [Color.white.opacity(0.0), Color.white.opacity(0.16)], startPoint: .top, endPoint: .bottom), lineWidth: 0.8)
+                    .frame(width: size.width, height: size.height)
+                    .allowsHitTesting(false)
+            }
+        }
         .overlay(alignment: .top) {
             if model.dragTargeted {
                 NotchShape(bottomRadius: radius).stroke(Color.white.opacity(0.7), lineWidth: 1.5)
@@ -148,7 +161,7 @@ struct CompactView: View {
             Image(systemName: Self.hudSymbol(e)).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
         case .flash(let f):
             switch f {
-            case .charging: Image(systemName: "bolt.fill").foregroundStyle(.white)
+            case .charging: Image(systemName: "bolt.fill").foregroundStyle(.white).symbolEffect(.pulse, options: .repeating)
             case .bluetooth: Image(systemName: "airpods").foregroundStyle(.white)
             case .message(let symbol, _): Image(systemName: symbol).foregroundStyle(.white)
             }
@@ -160,7 +173,7 @@ struct CompactView: View {
         case .timer:
             RingView(progress: timer.progress(), size: 16)
         case .download:
-            Image(systemName: "arrow.down.circle").font(.system(size: 14)).foregroundStyle(.white)
+            Image(systemName: "arrow.down.circle").font(.system(size: 14)).foregroundStyle(.white).symbolEffect(.pulse, options: .repeating)
         case .music:
             if let t = model.track { ArtworkView(image: t.artwork, size: 22, radius: 5) }
         case .privacy:

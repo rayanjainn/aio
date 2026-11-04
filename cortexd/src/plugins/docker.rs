@@ -4,7 +4,7 @@
 /// Live cache: refreshed every 30 seconds from Docker daemon
 /// Compose files: walked from home/code/projects dirs
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use bollard::{
     container::{InspectContainerOptions, ListContainersOptions},
@@ -67,7 +67,6 @@ pub struct DockerPlugin {
     db_path: PathBuf,
     cache:   Arc<RwLock<DockerCache>>,
     matcher: SkimMatcherV2,
-    data_dir: PathBuf,
 }
 
 impl DockerPlugin {
@@ -76,7 +75,6 @@ impl DockerPlugin {
         let db_path = data_dir.join("docker.db");
         Self::init_db(&db_path)?;
         Ok(Self {
-            data_dir: data_dir.clone(),
             db_path,
             cache:   Arc::new(RwLock::new(DockerCache::default())),
             matcher: SkimMatcherV2::default(),
@@ -113,10 +111,6 @@ impl DockerPlugin {
             );
         ")?;
         Ok(())
-    }
-
-    fn db(&self) -> Result<Connection> {
-        Connection::open(&self.db_path).context("docker db")
     }
 
     /* ── Container refresh ───────────────────────────────── */

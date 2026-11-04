@@ -70,6 +70,7 @@ struct PaletteView: View {
     @ObservedObject private var prefs = Prefs.shared
     let onClose: () -> Void
     @State private var appeared = false
+    @Namespace private var selectionNS
 
     static let width: CGFloat = 740
 
@@ -96,12 +97,7 @@ struct PaletteView: View {
         }
         .frame(width: Self.width, height: model.totalHeight, alignment: .top)
         .cortexGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), darken: prefs.paletteDarken)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.28), Color.white.opacity(0.04), Color.white.opacity(0.12)],
-                                             startPoint: .top, endPoint: .bottom), lineWidth: 0.8)
-                .allowsHitTesting(false)
-        )
+        .glassRim(cornerRadius: 28)
         .environment(\.colorScheme, .dark)
         .scaleEffect(appeared ? 1 : 0.965, anchor: .top)
         .opacity(appeared ? 1 : 0.4)
@@ -149,7 +145,7 @@ struct PaletteView: View {
                                 .frame(height: PaletteModel.headerHeight, alignment: .bottom)
                                 .padding(.bottom, 4)
                         }
-                        RowView(row: row, selected: index == model.selection)
+                        RowView(row: row, selected: index == model.selection, ns: selectionNS)
                             .id(row.id)
                             .onTapGesture {
                                 model.selection = index
@@ -158,6 +154,7 @@ struct PaletteView: View {
                     }
                 }
                 .padding(.vertical, 4)
+                .animation(.spring(response: 0.26, dampingFraction: 0.86), value: model.selection)
             }
             .scrollIndicators(.hidden)
             .onChange(of: model.selection) { _, new in
@@ -219,6 +216,7 @@ struct ChatPane: View {
 struct RowView: View {
     let row: PaletteRow
     let selected: Bool
+    let ns: Namespace.ID
 
     var body: some View {
         HStack(spacing: 12) {
@@ -239,6 +237,7 @@ struct RowView: View {
             if selected {
                 RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color.white.opacity(0.14))
                     .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
+                    .matchedGeometryEffect(id: "selection", in: ns)
             }
         }
         .padding(.horizontal, 10)

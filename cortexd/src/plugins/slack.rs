@@ -333,10 +333,6 @@ impl SlackPlugin {
         tracing::info!("Slack API: indexed {total_new} new messages");
         Ok(total_new)
     }
-
-    fn count(&self) -> usize {
-        self.cache.read().unwrap().len()
-    }
 }
 
 /* ─── LevelDB helpers ───────────────────────────────────── */
