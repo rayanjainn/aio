@@ -92,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch id {
         case "palette": palette?.toggle()
         case "app.diagnostics": showDiagnostics()
+        case "app.timeline": showTimeline()
         case "app.settings": settings?.show()
         case "switcher", "app.switcher": switcher.showOrAdvance()
         case "timer.25": FocusTimer.shared.start(minutes: 25)
@@ -170,6 +171,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         upd.isHidden = true
         menu.addItem(upd)
         updateItem = upd
+        let timeline = NSMenuItem(title: "Screen Memory Timeline…", action: #selector(showTimeline), keyEquivalent: "")
+        timeline.target = self
+        menu.addItem(timeline)
         let diag = NSMenuItem(title: "Diagnostics…", action: #selector(showDiagnostics), keyEquivalent: "")
         diag.target = self
         menu.addItem(diag)
@@ -230,6 +234,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func revealLog() {
         NSWorkspace.shared.activateFileViewerSelecting([Log.fileURL])
+    }
+
+    private var timelineWindow: NSWindow?
+
+    @objc func showTimeline() {
+        if let w = timelineWindow {
+            w.makeKeyAndOrderFront(nil)
+        } else {
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 520), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+            w.title = "Screen Memory"
+            w.isReleasedWhenClosed = false
+            w.contentView = NSHostingView(rootView: MemoryTimelineView(client: engine))
+            w.center()
+            timelineWindow = w
+            w.makeKeyAndOrderFront(nil)
+        }
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func showDiagnostics() {

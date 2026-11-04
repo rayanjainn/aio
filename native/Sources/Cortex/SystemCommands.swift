@@ -78,6 +78,24 @@ enum SystemCommands {
                 }
             }
         },
+        SystemCommand(id: "sys.focus", title: "Toggle Do Not Disturb", subtitle: "Runs your Shortcut named “Toggle Do Not Disturb”, or opens Focus settings", symbol: "moon",
+                      keywords: ["focus", "dnd", "do not disturb", "silence", "notifications"]) {
+            DispatchQueue.global().async {
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+                p.arguments = ["run", "Toggle Do Not Disturb"]
+                p.standardOutput = Pipe(); p.standardError = Pipe()
+                var ok = false
+                if (try? p.run()) != nil { p.waitUntilExit(); ok = p.terminationStatus == 0 }
+                if !ok {
+                    // macOS has no public switch for Focus: send the user to the pane, and say how to make it one key.
+                    DispatchQueue.main.async {
+                        Toast.show("moon", "Create a Shortcut named “Toggle Do Not Disturb” (action: Set Focus) and this becomes one keystroke")
+                        if let u = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension") { NSWorkspace.shared.open(u) }
+                    }
+                }
+            }
+        },
         SystemCommand(id: "sys.hideOthers", title: "Hide All Other Apps", subtitle: "Clear the screen of everything but the front app", symbol: "eye.slash",
                       keywords: ["hide", "focus", "declutter"]) {
             let front = NSWorkspace.shared.frontmostApplication

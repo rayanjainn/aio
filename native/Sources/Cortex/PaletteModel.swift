@@ -238,6 +238,8 @@ final class PaletteModel: ObservableObject {
             cmd("app.switcher", "Switch window", "Also ⌥⇥", "macwindow.on.rectangle"),
             PaletteRow(id: "home:layout", title: "Window layouts", subtitle: "Type  layout <name>  to save the current arrangement", symbol: "rectangle.3.group",
                        iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
+            sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
             cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),
             sys("sys.screenshot", "Screenshot selection", "Copies to the clipboard", "camera.viewfinder"),
             sys("sys.pickColor", "Pick a colour", "Copies the hex value", "eyedropper"),

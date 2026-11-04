@@ -92,6 +92,11 @@ final class IslandController {
         model.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.layout() }
         }.store(in: &cancellables)
+        Prefs.shared.$islandDisplay.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            guard let self else { return }
+            self.model.geometry = NotchGeometry.detect()
+            self.layout(force: true)
+        }.store(in: &cancellables)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else { return }

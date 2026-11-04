@@ -12,7 +12,9 @@ struct NotchGeometry: Equatable {
     static func detect() -> NotchGeometry {
         let screens = NSScreen.screens
         // Notch screen if there is one, else the screen that owns the menu bar (always first).
-        let screen = screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? screens.first
+        let wanted = Prefs.shared.islandDisplay
+        let screen = (wanted != "auto" ? screens.first(where: { $0.localizedName == wanted }) : nil)
+            ?? screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? screens.first
         guard let screen else {
             return NotchGeometry(screenFrame: NSRect(x: 0, y: 0, width: 1440, height: 900), hasNotch: false, notchWidth: 0, menuBarHeight: 24)
         }
