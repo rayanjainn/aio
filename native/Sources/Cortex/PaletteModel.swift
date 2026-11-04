@@ -177,8 +177,9 @@ final class PaletteModel: ObservableObject {
         let tl = q.lowercased()
         if tl == "tab" || tl == "tabs" || tl.hasPrefix("tab ") || tl.hasPrefix("tabs ") {
             let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces)
-            Task.detached { [weak self] in
-                let found = BrowserTabs.matching(BrowserTabs.list(), text).prefix(30)
+            Task { [weak self] in
+                let all = await Task.detached { BrowserTabs.matching(BrowserTabs.list(), text) }.value
+                let found = all.prefix(30)
                 await MainActor.run {
                     guard let self, self.generation == gen else { return }
                     let rows = found.map { t in
