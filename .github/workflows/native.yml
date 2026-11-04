@@ -31,7 +31,12 @@ jobs:
           code=$?
           echo "=== swift build exit code: $code ==="
           grep -E "error:" -A5 /tmp/swift-build.log | head -150
-          exit $code
+          if [ $code -ne 0 ]; then exit $code; fi
+          swift test > /tmp/swift-test.log 2>&1
+          tcode=$?
+          echo "=== swift test exit code: $tcode ==="
+          grep -E "error:|failed|Executed|XCTAssert" /tmp/swift-test.log | head -80
+          exit $tcode
 
   build:
     runs-on: macos-26

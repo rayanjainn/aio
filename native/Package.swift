@@ -6,5 +6,6 @@ let package = Package(
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(name: "Cortex", path: "Sources/Cortex"),
+        .testTarget(name: "CortexTests", dependencies: ["Cortex"], path: "Tests/CortexTests"),
     ]
 )
