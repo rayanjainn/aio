@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import SwiftUI
 
 /// A short, private clipboard history for the Island: text only, in memory, never written to disk.
 /// Password managers mark what they copy as concealed or transient; those are never recorded.
