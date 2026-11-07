@@ -704,7 +704,6 @@ final class PaletteModel: ObservableObject {
     /// Runs the selected row. Returns true when the palette should close.
     /// Remembers what was run so the empty palette can offer it again.
     private func remember(_ row: PaletteRow) {
-        guard !row.id.hasPrefix("recent:") || true else { return }
         let entry: RecentCommand?
         switch row.kind {
         case .command(let id) where !id.hasPrefix("query:") && !id.hasPrefix("note.add:") && !id.hasPrefix("tab:") && !id.hasPrefix("win:"):
