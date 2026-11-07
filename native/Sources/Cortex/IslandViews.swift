@@ -251,6 +251,7 @@ struct ExpandedView: View {
                 case .player: PlayerPage(model: model, bridge: bridge)
                 case .calendar: CalendarPage(model: model)
                 case .shelf: ShelfPage()
+                case .clipboard: ClipboardPage()
                 case .tools: ToolsPage(model: model)
                 }
             }

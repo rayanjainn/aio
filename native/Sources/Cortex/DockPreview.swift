@@ -107,6 +107,19 @@ struct WindowCard: View {
         .onHover { hover = $0 }
         .contentShape(Rectangle())
         .onTapGesture { WindowService.raise(window); model.onChoose?() }
+        .contextMenu {
+            Button("Bring to Front") { WindowService.raise(window); model.onChoose?() }
+            Divider()
+            Button("Left Half") { WindowService.snap(window, "left"); model.onChoose?() }
+            Button("Right Half") { WindowService.snap(window, "right"); model.onChoose?() }
+            Button("Top Half") { WindowService.snap(window, "top"); model.onChoose?() }
+            Button("Bottom Half") { WindowService.snap(window, "bottom"); model.onChoose?() }
+            Button("Maximise") { WindowService.snap(window, "max"); model.onChoose?() }
+            Button("Centre") { WindowService.snap(window, "center"); model.onChoose?() }
+            Divider()
+            Button("Minimise") { WindowService.minimize(window); model.onRefresh?() }
+            Button("Close") { WindowService.close(window); model.onRefresh?() }
+        }
     }
 }
 

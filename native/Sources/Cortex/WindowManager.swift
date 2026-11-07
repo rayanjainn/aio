@@ -23,10 +23,13 @@ enum WindowManager {
         var focused: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focused) == .success,
               let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return }
-        let window = focused as! AXUIElement
-        guard let frame = frame(of: window) else { return }
+        apply(action, to: focused as! AXUIElement, pid: app.processIdentifier)
+    }
 
-        let key = "\(app.processIdentifier)"
+    /// Moves/resizes one specific window (the front one, or one picked from a Dock preview).
+    static func apply(_ action: String, to window: AXUIElement, pid: pid_t) {
+        guard isTrusted, let frame = frame(of: window) else { return }
+        let key = "\(pid)"
         let screens = screensInAXSpace()
         guard let index = screens.firstIndex(where: { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) }) ?? (screens.isEmpty ? nil : 0) else { return }
         var visible = screens[index].visible

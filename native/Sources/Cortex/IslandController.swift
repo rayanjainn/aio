@@ -174,6 +174,7 @@ final class IslandController {
     /// Starts and stops the heavier services as the user toggles them.
     private func wireServices() {
         let p = Prefs.shared
+        ClipboardHistory.shared.start()
         p.$islandHUD.receive(on: DispatchQueue.main).sink { on in
             if on {
                 HUDService.shared.onEvent = { [weak self] e in self?.showHUD(e) }

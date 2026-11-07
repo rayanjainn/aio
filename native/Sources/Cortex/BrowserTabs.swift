@@ -137,8 +137,28 @@ enum PinStore {
         if let d = try? JSONEncoder().encode(pins) { try? d.write(to: url, options: .atomic) }
     }
 
+    static func addText(_ t: String) {
+        var pins = all().filter { $0 != t }
+        pins.insert(t, at: 0)
+        write(Array(pins.prefix(50)))
+    }
+
+    private static var imagesDir: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/pins", isDirectory: true)
+    }
+
     @discardableResult
     static func addClipboard() -> Bool {
+        let pb = NSPasteboard.general
+        if (pb.string(forType: .string) ?? "").isEmpty,
+           let img = NSImage(pasteboard: pb), let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+           let png = rep.representation(using: .png, properties: [:]) {
+            try? FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true)
+            let file = imagesDir.appendingPathComponent(UUID().uuidString + ".png")
+            guard (try? png.write(to: file)) != nil else { return false }
+            addText("img:" + file.path)
+            return true
+        }
         guard let t = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return false }
         var pins = all().filter { $0 != t }
         pins.insert(t, at: 0)
@@ -149,6 +169,7 @@ enum PinStore {
     static func remove(at index: Int) {
         var pins = all()
         guard pins.indices.contains(index) else { return }
+        if pins[index].hasPrefix("img:") { try? FileManager.default.removeItem(atPath: String(pins[index].dropFirst(4))) }
         pins.remove(at: index)
         write(pins)
     }

@@ -408,11 +408,13 @@ final class PaletteModel: ObservableObject {
         }
         if lower == "pin" || lower == "pins" || lower.hasPrefix("pin ") || lower.hasPrefix("pins ") {
             let rest = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces).lowercased()
-            out.append(PaletteRow(id: "pin.add", title: "Pin the current clipboard", subtitle: String((NSPasteboard.general.string(forType: .string) ?? "Clipboard is empty").prefix(70)),
+            out.append(PaletteRow(id: "pin.add", title: "Pin the current clipboard", subtitle: String((NSPasteboard.general.string(forType: .string) ?? (NSImage(pasteboard: NSPasteboard.general) != nil ? "Image" : "Clipboard is empty")).prefix(70)),
                                   symbol: "pin", iconPath: nil, tag: "", kind: .command("pin.add"), section: "Pinned text"))
             for (i, text) in PinStore.all().enumerated() where rest.isEmpty || text.lowercased().contains(rest) {
-                out.append(PaletteRow(id: "pin:\(i)", title: String(text.split(separator: "\n").first ?? "").prefix(80).description,
-                                      subtitle: "↩ paste  ·  ⌘↩ unpin", symbol: "pin.fill", iconPath: nil, tag: "", kind: .pin(i, text), section: "Pinned text"))
+                let isImage = text.hasPrefix("img:")
+                out.append(PaletteRow(id: "pin:\(i)", title: isImage ? "Pinned image" : String(text.split(separator: "\n").first ?? "").prefix(80).description,
+                                      subtitle: "↩ paste  ·  ⌘↩ unpin", symbol: isImage ? "photo" : "pin.fill", iconPath: isImage ? String(text.dropFirst(4)) : nil,
+                                      tag: "", kind: .pin(i, text), section: "Pinned"))
             }
             return out
         }
@@ -649,6 +651,12 @@ final class PaletteModel: ObservableObject {
             return true
         case .pin(let index, let text):
             if cmd { PinStore.remove(at: index); queryChanged(); return false }
+            if text.hasPrefix("img:"), let image = NSImage(contentsOfFile: String(text.dropFirst(4))) {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.writeObjects([image])
+                PasteService.pasteIntoFront()
+                return true
+            }
             PasteService.copy(text)
             PasteService.pasteIntoFront()
             return true

@@ -117,6 +117,30 @@ enum WindowService {
         NSRunningApplication(processIdentifier: window.pid)?.activate()
     }
 
+    /// Snap one specific window (from a Dock preview) with the same actions as the keyboard shortcuts.
+    static func snap(_ window: WindowInfo, _ action: String) {
+        for el in axWindowElements(pid: window.pid) {
+            var wid: CGWindowID = 0
+            _ = _AXUIElementGetWindow(el, &wid)
+            guard (window.id != 0 && wid == window.id) || stringAttr(el, kAXTitleAttribute as String) == window.title else { continue }
+            if boolAttr(el, kAXMinimizedAttribute as String) == true {
+                AXUIElementSetAttributeValue(el, kAXMinimizedAttribute as CFString, false as CFBoolean)
+            }
+            WindowManager.apply(action, to: el, pid: window.pid)
+            break
+        }
+    }
+
+    static func minimize(_ window: WindowInfo) {
+        for el in axWindowElements(pid: window.pid) {
+            var wid: CGWindowID = 0
+            _ = _AXUIElementGetWindow(el, &wid)
+            guard (window.id != 0 && wid == window.id) || stringAttr(el, kAXTitleAttribute as String) == window.title else { continue }
+            AXUIElementSetAttributeValue(el, kAXMinimizedAttribute as CFString, true as CFBoolean)
+            break
+        }
+    }
+
     static func close(_ window: WindowInfo) {
         for el in axWindowElements(pid: window.pid) {
             var wid: CGWindowID = 0
