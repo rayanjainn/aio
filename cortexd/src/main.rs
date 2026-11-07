@@ -38,7 +38,7 @@ fn init_logging() {
         .init();
 }
 
-#[tokio::main]
+#[tokio::main(worker_threads = 4)]
 async fn main() {
     init_logging();
     tracing::info!("cortexd {} starting (pid {})", env!("CARGO_PKG_VERSION"), std::process::id());

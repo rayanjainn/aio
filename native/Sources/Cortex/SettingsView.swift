@@ -97,6 +97,11 @@ struct GeneralPane: View {
             Section("Startup") {
                 Toggle("Open Cortex at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
             }
+            Section("Keyboard") {
+                Toggle("Hyper key: Caps Lock presses ⌃⌥⌘⇧ together with another key", isOn: $prefs.hyperKey)
+                Text("Use it as a modifier in Settings → Shortcuts, e.g. Hyper+Space. Needs Accessibility. Undone when you turn it off or quit Cortex.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
             Section("Search engine") {
                 LabeledContent("Status", value: actions.engineSummary())
                 Button("Re-index now") { actions.reindex() }

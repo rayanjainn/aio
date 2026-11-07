@@ -77,7 +77,7 @@ impl VscodePlugin {
         } else {
             Index::create_in_dir(&index_dir, schema)?
         };
-        let writer = index.writer(16_000_000)?;
+        let writer = index.writer_with_num_threads(1, 16_000_000)?;
 
         Ok(Self {
             index,

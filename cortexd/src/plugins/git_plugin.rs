@@ -76,7 +76,7 @@ impl GitPlugin {
         } else {
             Index::create_in_dir(&index_dir, schema)?
         };
-        let writer = index.writer(50_000_000)?;
+        let writer = index.writer_with_num_threads(1, 50_000_000)?;
 
         let state_db = data_dir.join("state.db");
         init_state_db(&state_db)?;

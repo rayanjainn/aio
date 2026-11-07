@@ -52,6 +52,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        Prefs.shared.$hyperKey
+            .receive(on: DispatchQueue.main)
+            .sink { on in
+                if on { if !HyperKey.start() { Toast.show("keyboard", "Hyper key needs Accessibility access"); } }
+                else { HyperKey.stop() }
+            }
+            .store(in: &cancellables)
+
         let palette = PaletteController()
         palette.attach(client: engine, runBuiltin: { [weak self] id in self?.runBuiltin(id) })
         self.palette = palette
@@ -96,6 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        HyperKey.stop()
         nowPlaying.stop()
         engineProcess.stop()
         SystemDock.setHidden(false)   // never leave the user without a Dock

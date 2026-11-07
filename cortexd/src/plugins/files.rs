@@ -101,7 +101,7 @@ impl FilesPlugin {
         } else {
             Index::create_in_dir(&index_dir, schema)?
         };
-        let writer = index.writer(50_000_000)?; // 50 MB write buffer
+        let writer = index.writer_with_num_threads(1, 50_000_000)?; // 50 MB write buffer
 
         Ok(Self {
             index,
