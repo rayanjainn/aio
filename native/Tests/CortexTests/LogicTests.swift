@@ -180,6 +180,39 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertNil(BrowserTabs.parse("nope"))
     }
 
+    func testShelfRulesCopyMatchingFiles() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent("shelf-\(UUID().uuidString)")
+        let src = root.appendingPathComponent("in")
+        try fm.createDirectory(at: src, withIntermediateDirectories: true)
+        let png = src.appendingPathComponent("a.png"), txt = src.appendingPathComponent("b.txt")
+        try Data("x".utf8).write(to: png); try Data("y".utf8).write(to: txt)
+        let dest = root.appendingPathComponent("pics").path
+        let n = ShelfStore.route([png, txt], rules: "png, jpg -> \(dest)\nnot a rule")
+        XCTAssertEqual(n, 1)
+        XCTAssertTrue(fm.fileExists(atPath: dest + "/a.png"))
+        XCTAssertFalse(fm.fileExists(atPath: dest + "/b.txt"))
+        try? fm.removeItem(at: root)
+    }
+
+    func testSnippetFormDetection() {
+        XCTAssertTrue(SnippetForm.needsInput("Hi {ask:Name}"))
+        XCTAssertFalse(SnippetForm.needsInput("Hi {date}"))
+    }
+
+    func testAISettingsReadsOlderFiles() throws {
+        let old = #"{"provider":"openai","baseURL":"https://x/v1","model":"m","apiKey":"k"}"#
+        let s = try JSONDecoder().decode(AISettings.self, from: Data(old.utf8))
+        XCTAssertEqual(s.provider, "openai")
+        XCTAssertEqual(s.cloudKey, "")
+        XCTAssertEqual(s.cloudModel, "gpt-oss:120b")
+    }
+
+    func testShortcutDefaultsIncludeNewCommands() {
+        let ids = Set(ShortcutTable.all.map(\.id))
+        XCTAssertTrue(ids.isSuperset(of: ["act", "clip.plain", "dictate"]))
+    }
+
     func testGroupingKeepsFirstAppearanceOrder() {
         let rows = ["Files", "Applications", "Files", "Git"].enumerated().map { i, s in
             PaletteRow(id: "\(i)", title: "t\(i)", subtitle: "", symbol: "doc", iconPath: nil, tag: "", kind: .copy("x"), section: s)
