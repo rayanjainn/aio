@@ -482,7 +482,6 @@ struct ShelfPage: View {
 struct ToolsPage: View {
     @ObservedObject var model: IslandModel
     @ObservedObject private var timer = FocusTimer.shared
-    @State private var shortcuts: [String] = []
     @State private var mirror = false
     @ObservedObject private var prefs = Prefs.shared
 
@@ -520,7 +519,7 @@ struct ToolsPage: View {
                 Button(mirror ? "Turn mirror off" : "Mirror") { mirror.toggle() }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.white.opacity(0.75))
             }
 
-            // Shortcuts
+            // Apps
             VStack(alignment: .leading, spacing: 5) {
                 if !prefs.islandApps.isEmpty {
                     Text("Apps").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
@@ -534,29 +533,15 @@ struct ToolsPage: View {
                         }
                     }
                 }
-                Text("Shortcuts").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                if shortcuts.isEmpty {
-                    Text("None found").font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(shortcuts.prefix(30), id: \.self) { name in
-                                Button { ShortcutsService.run(name) } label: {
-                                    Text(name).font(.system(size: 11.5)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.horizontal, 8).padding(.vertical, 4)
-                                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                }.buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .scrollIndicators(.hidden)
+                if prefs.islandApps.isEmpty {
+                    Text("Apps").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
+                    Text("Add apps for one-tap launching in Settings → Island.").font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .foregroundStyle(.white)
         .padding(.vertical, 8)
-        .task { shortcuts = await ShortcutsService.list() }
         .onDisappear { mirror = false }
     }
 

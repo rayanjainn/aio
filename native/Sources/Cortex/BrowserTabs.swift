@@ -153,3 +153,30 @@ enum PinStore {
         write(pins)
     }
 }
+
+
+/// One-line notes captured from the palette.
+enum QuickNotes {
+    private static var url: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/quicknotes.md")
+    }
+
+    static func add(_ text: String) {
+        let line = "- \(Date().formatted(.dateTime.year().month(.twoDigits).day(.twoDigits).hour().minute())) — \(text)\n"
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close()
+        } else {
+            try? line.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    static func recent(_ n: Int) -> [String] {
+        guard let s = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+        return s.split(separator: "\n").suffix(n).reversed().map { line in
+            let t = String(line)
+            if let r = t.range(of: " — ") { return String(t[r.upperBound...]) }
+            return t
+        }
+    }
+}

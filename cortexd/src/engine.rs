@@ -77,6 +77,20 @@ impl Engine {
         if p.exists() && !file_roots.contains(&p) { file_roots.push(p); }
     }
 
+    // macOS volumes are case-insensitive: "projects" and "Projects" are one folder, and indexing it
+    // twice shows every file twice. Also drop roots that sit inside another root.
+    let mut seen_lower: Vec<String> = Vec::new();
+    file_roots.retain(|p| {
+        let k = p.to_string_lossy().to_lowercase();
+        if seen_lower.contains(&k) { false } else { seen_lower.push(k); true }
+    });
+    let lowered: Vec<String> = file_roots.iter().map(|p| p.to_string_lossy().to_lowercase()).collect();
+    let keep: Vec<bool> = lowered.iter().enumerate()
+        .map(|(i, k)| !lowered.iter().enumerate().any(|(j, o)| j != i && k.starts_with(&format!("{}/", o))))
+        .collect();
+    let mut idx = 0;
+    file_roots.retain(|_| { let k = keep[idx]; idx += 1; k });
+
     if let Ok(files) = FilesPlugin::new(data_dir.join("indices/files"), file_roots) {
         // Extract watcher context BEFORE moving the plugin into the registry.
         let watcher_ctx = files.watcher_context();

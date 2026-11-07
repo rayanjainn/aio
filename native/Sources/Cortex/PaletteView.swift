@@ -75,7 +75,7 @@ struct PaletteView: View {
     static let width: CGFloat = 740
 
     private var placeholder: String {
-        model.chat != nil ? "Ask a follow-up…" : "Search apps, files, commands…   (try 12*4, 10km to mi, :heart, > ls, ? why)"
+        model.chat != nil ? "Ask a follow-up…" : "Search apps, files, commands…"
     }
 
     var body: some View {

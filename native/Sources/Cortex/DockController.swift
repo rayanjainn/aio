@@ -145,22 +145,7 @@ final class DockController {
 
     private var fullScreenHidden = false
 
-    /// A full-screen app covers the whole screen, menu bar included; a maximised one does not.
-    private func frontmostIsFullScreen() -> Bool {
-        guard let scr = screen(), let primary = NSScreen.screens.first,
-              let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return false }
-        let f = scr.frame
-        let cg = CGRect(x: f.minX, y: primary.frame.height - f.maxY, width: f.width, height: f.height)
-        let me = Int(ProcessInfo.processInfo.processIdentifier)
-        for w in list {
-            guard (w[kCGWindowLayer as String] as? Int) == 0,
-                  (w[kCGWindowOwnerPID as String] as? Int) != me,
-                  let dict = w[kCGWindowBounds as String] as? NSDictionary,
-                  let b = CGRect(dictionaryRepresentation: dict as CFDictionary) else { continue }
-            if b.width >= cg.width - 1, b.height >= cg.height - 1, abs(b.minX - cg.minX) < 2, abs(b.minY - cg.minY) < 2 { return true }
-        }
-        return false
-    }
+    private func frontmostIsFullScreen() -> Bool { FullScreen.isCovering(screen()) }
 
     private func updateFullScreen() {
         guard panel != nil else { return }
@@ -176,16 +161,7 @@ final class DockController {
         publishReserved()
     }
 
-    private func watchFullScreen() {
-        let ws = NSWorkspace.shared.notificationCenter
-        for name in [NSWorkspace.activeSpaceDidChangeNotification, NSWorkspace.didActivateApplicationNotification] {
-            ws.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                // The Space switch animates; check once it settles as well.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { self?.updateFullScreen() }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { self?.updateFullScreen() }
-            }
-        }
-    }
+    private func watchFullScreen() { FullScreen.observe { [weak self] in self?.updateFullScreen() } }
 
     /// Tells window snapping how much room the Dock takes.
     private func publishReserved() {

@@ -117,7 +117,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id == "pin.add" { Toast.show("pin.fill", PinStore.addClipboard() ? "Pinned" : "Clipboard is empty") }
+            if id.hasPrefix("note.add:") { QuickNotes.add(String(id.dropFirst("note.add:".count))); Toast.show("square.and.pencil", "Note saved") }
+            else if id == "pin.add" { Toast.show("pin.fill", PinStore.addClipboard() ? "Pinned" : "Clipboard is empty") }
             else if let tab = BrowserTabs.parse(id) { BrowserTabs.focus(tab) }
             else if id.hasPrefix("layout.save:") {
                 let n = String(id.dropFirst("layout.save:".count))

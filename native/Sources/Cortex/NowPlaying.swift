@@ -97,7 +97,8 @@ final class MediaRemoteBridge: ObservableObject {
             let d = h.availableData
             if d.isEmpty { h.readabilityHandler = nil; return }
             if let s = String(data: d, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty {
-                Log.warn("mediaremote stderr: \(s)")
+                // Live streams report an infinite duration, which the adapter cannot serialise: harmless, and chatty.
+                if !s.contains("Invalid JSON value type") { Log.warn("mediaremote stderr: \(s)") }
             }
         }
         p.terminationHandler = { [weak self] proc in

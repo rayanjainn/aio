@@ -306,6 +306,8 @@ final class PaletteModel: ObservableObject {
             PaletteRow(id: "home:tabs", title: "Search browser tabs", subtitle: "Type  tab <words>", symbol: "safari", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:ai", title: "AI commands", subtitle: "Type  ai  — summarise, fix grammar, explain… on your clipboard", symbol: "sparkles", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:pins", title: "Pinned text", subtitle: "Type  pin  — keep snippets of the clipboard one command away", symbol: "pin", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:cal", title: "Today's schedule", subtitle: "Type  cal  — with Join buttons for calls", symbol: "calendar", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:note", title: "Quick note", subtitle: "Type  note <text>  to jot something down", symbol: "square.and.pencil", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
             sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
             cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),
@@ -315,14 +317,6 @@ final class PaletteModel: ObservableObject {
             cmd("app.settings", "Cortex settings", "Dock, Island, shortcuts, appearance", "gearshape"),
         ]
         out.append(contentsOf: Self.recentFileRows())
-        let front = NSWorkspace.shared.frontmostApplication
-        var n = 0
-        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app != front && app.bundleIdentifier != Bundle.main.bundleIdentifier {
-            guard let bid = app.bundleIdentifier, n < 5 else { continue }
-            out.append(PaletteRow(id: "home:app:\(bid)", title: app.localizedName ?? bid, subtitle: "Running", symbol: "app", iconPath: app.bundleURL?.path,
-                                  tag: "", kind: .command("app:\(bid)"), section: "Running apps"))
-            n += 1
-        }
         return out
     }
 
@@ -379,6 +373,36 @@ final class PaletteModel: ObservableObject {
             if out.isEmpty {
                 out.append(PaletteRow(id: "layout.hint", title: "Type a name to save this arrangement", subtitle: "e.g.  layout coding", symbol: "rectangle.3.group",
                                       iconPath: nil, tag: "", kind: .copy(""), section: "Window layouts"))
+            }
+            return out
+        }
+        if lower == "cal" || lower == "schedule" || lower == "agenda" || lower == "meetings" {
+            CalendarService.shared.start()
+            let upcoming = CalendarService.shared.events.filter { $0.end > Date() }.prefix(8)
+            for e in upcoming {
+                let when = e.allDay ? "All day" : e.start.formatted(date: .abbreviated, time: .shortened)
+                out.append(PaletteRow(id: "cal:\(e.id)", title: e.title, subtitle: when + (e.location.map { " · " + $0 } ?? ""),
+                                      symbol: e.joinURL != nil ? "video" : "calendar", iconPath: nil, tag: e.joinURL != nil ? "Join" : "",
+                                      kind: e.joinURL.map { .web($0.absoluteString) } ?? .copy(e.title), section: "Schedule"))
+            }
+            if out.isEmpty {
+                out.append(PaletteRow(id: "cal:none", title: CalendarService.shared.authorized ? "Nothing coming up" : "Allow Calendar access to see your schedule",
+                                      subtitle: "Open the Island's Calendar page to grant access", symbol: "calendar", iconPath: nil, tag: "", kind: .copy(""), section: "Schedule"))
+            }
+            return out
+        }
+        if lower == "notes" || lower == "note" || lower.hasPrefix("note ") {
+            let text = lower == "notes" || lower == "note" ? "" : String(q.dropFirst(5)).trimmingCharacters(in: .whitespaces)
+            if !text.isEmpty {
+                out.append(PaletteRow(id: "note.add", title: "Save note: " + text, subtitle: "Appends to ~/.cortex/native/quicknotes.md", symbol: "square.and.pencil",
+                                      iconPath: nil, tag: "", kind: .command("note.add:" + text), section: "Quick note"))
+            }
+            for n in QuickNotes.recent(5) {
+                out.append(PaletteRow(id: "note:\(n)", title: n, subtitle: "↩ copy", symbol: "note.text", iconPath: nil, tag: "", kind: .copy(n), section: "Recent notes"))
+            }
+            if out.isEmpty {
+                out.append(PaletteRow(id: "note.hint", title: "Type a note after “note”", subtitle: "e.g.  note call Sam about the invoice", symbol: "square.and.pencil",
+                                      iconPath: nil, tag: "", kind: .copy(""), section: "Quick note"))
             }
             return out
         }

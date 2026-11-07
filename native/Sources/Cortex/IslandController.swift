@@ -92,6 +92,9 @@ final class IslandController {
         model.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.layout() }
         }.store(in: &cancellables)
+        FullScreen.observe { [weak self] in self?.updateFullScreen() }
+        Prefs.shared.$islandHideFullscreen.dropFirst().receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateFullScreen() }.store(in: &cancellables)
         Prefs.shared.$islandDisplay.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             guard let self else { return }
             self.model.geometry = NotchGeometry.detect()
@@ -275,8 +278,18 @@ final class IslandController {
 
     /// The window always hugs the pill (so it never blocks menu-bar clicks around the
     /// notch). It grows instantly and shrinks only once the pill's animation is done.
+    private var fullScreenHidden = false
+
+    private func updateFullScreen() {
+        let now = Prefs.shared.islandHideFullscreen && FullScreen.isCovering(NSScreen.screens.first(where: { $0.frame == model.geometry.screenFrame }))
+        guard now != fullScreenHidden else { return }
+        fullScreenHidden = now
+        if now { panel?.orderOut(nil) } else { layout(force: true) }
+    }
+
     private func layout(force: Bool = false) {
         guard let panel else { return }
+        if fullScreenHidden { return }
         guard Prefs.shared.islandEnabled else { panel.orderOut(nil); return }
         let target = model.pillSize()
         if target == .zero { panel.orderOut(nil); return }
@@ -296,7 +309,7 @@ final class IslandController {
     }
 
     private func place(_ size: CGSize) {
-        guard let panel, size != .zero else { return }
+        guard let panel, size != .zero, !fullScreenHidden else { return }
         let f = model.geometry.screenFrame
         panel.setFrame(NSRect(x: f.midX - size.width / 2, y: f.maxY - size.height, width: size.width, height: size.height), display: true)
         if !panel.isVisible { panel.orderFrontRegardless() }
