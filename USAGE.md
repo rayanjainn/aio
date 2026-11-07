@@ -25,8 +25,15 @@
 | `⌥↩` on a file | Quick Look |
 | *(nothing typed)* | quick actions, your newest files, your running apps |
 
+| `cal` | today's schedule, with Join buttons |
+| `note buy milk` | jot a quick note (kept in `~/.cortex/native/quicknotes.md`) |
+| `pin` | pin the clipboard (text or an image) and paste it back later |
+
 Snippets understand `{date}`, `{time}`, `{datetime}`, `{day}`, `{uuid}` and `{clipboard}`.
 
+**Island** also has a Clipboard page (recent text, click to paste), hides in full-screen apps, and can show a pill on every display (Settings → Island).
+**Hyper key** — Settings → General: Caps Lock presses ⌃⌥⌘⇧ with another key; use it in Settings → Shortcuts.
+**AI** — Settings → AI: Ollama on this Mac, or any OpenAI-compatible server with your key.
 **Dock widgets** — Settings → Dock, or right-click the Dock → *Add widget*: Now Playing, Clock, Battery, Weather, Focus Timer, System, Next Meeting.
 **Dock** — right-click the bar for size, magnification, position; right-click an icon for *Change Icon…*, *Show All Windows*, Hide, Quit.
 **⌥⇥** — switch between any window. **Notch** — hover it; swipe sideways to change page; drop files on it to park them on the Shelf.
