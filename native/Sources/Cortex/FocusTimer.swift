@@ -12,6 +12,9 @@ final class FocusTimer: ObservableObject {
     @Published var label = "Focus"
     var onFinish: (() -> Void)?
     private var ticker: Timer?
+    /// App switches while a focus session runs: shown when it ends.
+    private(set) var switches = 0
+    private var switchObserver: NSObjectProtocol?
 
     var isRunning: Bool { endsAt != nil }
     var isActive: Bool { isRunning || remainingWhenPaused < total }
@@ -24,6 +27,16 @@ final class FocusTimer: ObservableObject {
     func progress(at date: Date = Date()) -> Double { total > 0 ? 1 - remaining(at: date) / total : 0 }
 
     func start(minutes: Int, label: String = "Focus") {
+        switches = 0
+        if switchObserver == nil {
+            switchObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in if self?.isRunning == true { self?.switches += 1 } }
+            }
+        }
+        if label == "Focus", Prefs.shared.focusHideOthers {
+            let front = NSWorkspace.shared.frontmostApplication
+            for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app != front { app.hide() }
+        }
         total = TimeInterval(minutes * 60)
         remainingWhenPaused = total
         self.label = label

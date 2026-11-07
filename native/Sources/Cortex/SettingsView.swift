@@ -97,6 +97,18 @@ struct GeneralPane: View {
             Section("Startup") {
                 Toggle("Open Cortex at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
             }
+            Section("Nudges") {
+                Toggle("Tell me when an app drains the battery", isOn: $prefs.batteryCoach)
+                Toggle("Hide other apps when a focus session starts", isOn: $prefs.focusHideOthers)
+            }
+            Section("Move to another Mac") {
+                HStack {
+                    Button("Export settings…") { SettingsTransfer.export() }
+                    Button("Import settings…") { SettingsTransfer.importFrom() }
+                }
+                Text("Copies your Dock, widgets, snippets, quicklinks, layouts and preferences to a folder (an iCloud Drive folder works). Your AI keys are never exported.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
             Section("Keyboard") {
                 Toggle("Hyper key: Caps Lock presses ⌃⌥⌘⇧ together with another key", isOn: $prefs.hyperKey)
                 Text("Use it as a modifier in Settings → Shortcuts, e.g. Hyper+Space. Needs Accessibility. Undone when you turn it off or quit Cortex.")
@@ -234,6 +246,13 @@ struct IslandPane: View {
                 Toggle("Expand when the pointer touches it", isOn: $prefs.islandHoverExpand)
                 Toggle("Hide it while a full-screen app is showing", isOn: $prefs.islandHideFullscreen)
                 Toggle("Also show a pill on my other displays", isOn: $prefs.islandAllDisplays)
+                LabeledContent("Hover delay") {
+                    HStack {
+                        Slider(value: $prefs.islandHoverDelay, in: 0...0.8).frame(width: 200)
+                        Text(String(format: "%.2f s", prefs.islandHoverDelay)).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                Toggle("Music takes priority over timers and downloads", isOn: $prefs.islandMusicFirst)
                 Picker("Show the Island on", selection: $prefs.islandDisplay) {
                     Text("Automatic (the display with the notch)").tag("auto")
                     ForEach(NSScreen.screens, id: \.localizedName) { s in Text(s.localizedName).tag(s.localizedName) }
@@ -365,6 +384,18 @@ struct DockPane: View {
                         Text("\(Int(prefs.dockDarken * 100))%").monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
+            }
+            Section("Profiles") {
+                let names = DockModel.profiles().keys.sorted()
+                Picker("With an external display", selection: $prefs.dockProfileExternal) {
+                    Text("Don't switch").tag("")
+                    ForEach(names, id: \.self) { Text($0).tag($0) }
+                }
+                Picker("On the built-in display only", selection: $prefs.dockProfileBuiltIn) {
+                    Text("Don't switch").tag("")
+                    ForEach(names, id: \.self) { Text($0).tag($0) }
+                }
+                Text("Save a profile from ⌘K: type  dock work  and press Return. Switch with  dock work.").font(.callout).foregroundStyle(.secondary)
             }
             Section("Dock widgets") {
                 ForEach(DockWidgetKind.all) { k in

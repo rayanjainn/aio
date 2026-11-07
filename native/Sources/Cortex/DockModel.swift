@@ -373,6 +373,30 @@ final class DockModel: ObservableObject {
         return iconSize * k.span
     }
 
+    // MARK: profiles (a saved set of pinned items, switched by hand or by display)
+
+    private static var profilesURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/dock-profiles.json")
+    }
+
+    static func profiles() -> [String: [Entry]] {
+        guard let d = try? Data(contentsOf: profilesURL), let p = try? JSONDecoder().decode([String: [Entry]].self, from: d) else { return [:] }
+        return p
+    }
+
+    func saveProfile(_ name: String) {
+        var p = Self.profiles()
+        p[name] = entries
+        if let d = try? JSONEncoder().encode(p) { try? d.write(to: Self.profilesURL, options: .atomic) }
+    }
+
+    func applyProfile(_ name: String) {
+        guard let e = Self.profiles()[name], e != entries else { return }
+        entries = e
+        save(); refresh()
+        Log.info("dock: profile '\(name)'")
+    }
+
     func hasWidget(_ id: String) -> Bool { entries.contains { $0.kind == .widget && $0.value == id } }
 
     func addWidget(_ id: String) {

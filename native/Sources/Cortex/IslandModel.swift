@@ -98,6 +98,7 @@ final class IslandModel: ObservableObject {
         if let hud { return .hud(hud) }
         if let flash { return .flash(flash) }
         if let meeting { return .meeting(meeting) }
+        if Prefs.shared.islandMusicFirst, track != nil { return .music }
         if timerRunning { return .timer }
         if !downloads.isEmpty { return .download(downloads) }
         if track != nil { return .music }

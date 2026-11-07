@@ -172,7 +172,11 @@ final class IslandController {
         // Focus timer
         FocusTimer.shared.$endsAt.receive(on: DispatchQueue.main)
             .sink { [weak self] end in self?.model.timerRunning = end != nil }.store(in: &cancellables)
-        FocusTimer.shared.onFinish = { [weak self] in self?.flash(.message("checkmark.circle", "\(FocusTimer.shared.label) done"), seconds: 5) }
+        FocusTimer.shared.onFinish = { [weak self] in
+            let t = FocusTimer.shared
+            let note = t.label == "Focus" ? " · \(t.switches) app switch\(t.switches == 1 ? "" : "es")" : ""
+            self?.flash(.message("checkmark.circle", "\(t.label) done\(note)"), seconds: 6)
+        }
 
         // Downloads, privacy dots
         DownloadWatcher.shared.$active.receive(on: DispatchQueue.main)
@@ -248,7 +252,23 @@ final class IslandController {
         }
     }
 
+    private var announced = Set<String>()
+
+    /// Says when a meeting starts (with Join) and when it ends (with a nudge to jot notes).
+    private func announceMeetings() {
+        let now = Date()
+        for e in CalendarService.shared.events where !e.allDay {
+            if e.start <= now, now.timeIntervalSince(e.start) < 90, announced.insert("s:" + e.id).inserted {
+                flash(.message(e.joinURL != nil ? "video.fill" : "calendar", "\(e.title) is starting"), seconds: 6)
+            }
+            if e.end <= now, now.timeIntervalSince(e.end) < 90, announced.insert("e:" + e.id).inserted {
+                flash(.message("square.and.pencil", "\(e.title) ended — ⌘K, note … to jot it down"), seconds: 6)
+            }
+        }
+    }
+
     private func updateMeeting() {
+        announceMeetings()
         let soon = CalendarService.shared.next.flatMap { e -> MeetingEvent? in
             let until = e.start.timeIntervalSinceNow
             return (until < 10 * 60 && e.end > Date()) ? e : nil
@@ -269,7 +289,7 @@ final class IslandController {
             }
         }
         hoverWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + (inside ? 0.12 : 0.3), execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (inside ? Prefs.shared.islandHoverDelay : 0.3), execute: work)
     }
 
     private func swipe(_ dir: Int) {

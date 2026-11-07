@@ -131,6 +131,26 @@ enum WindowService {
         }
     }
 
+    /// Dock Peek: drop a window where a preview was dragged to (screen point, AppKit coordinates).
+    static func move(_ window: WindowInfo, to point: NSPoint) {
+        guard let primary = NSScreen.screens.first else { return }
+        for el in axWindowElements(pid: window.pid) {
+            var wid: CGWindowID = 0
+            _ = _AXUIElementGetWindow(el, &wid)
+            guard (window.id != 0 && wid == window.id) || stringAttr(el, kAXTitleAttribute as String) == window.title else { continue }
+            if boolAttr(el, kAXMinimizedAttribute as String) == true {
+                AXUIElementSetAttributeValue(el, kAXMinimizedAttribute as CFString, false as CFBoolean)
+            }
+            guard let f = WindowManager.frame(of: el) else { break }
+            // Centre the title bar under the pointer.
+            let topY = primary.frame.height - point.y
+            WindowManager.set(frame: CGRect(x: point.x - f.width / 2, y: max(0, topY - 12), width: f.width, height: f.height), on: el)
+            AXUIElementPerformAction(el, kAXRaiseAction as CFString)
+            break
+        }
+        NSRunningApplication(processIdentifier: window.pid)?.activate()
+    }
+
     static func minimize(_ window: WindowInfo) {
         for el in axWindowElements(pid: window.pid) {
             var wid: CGWindowID = 0

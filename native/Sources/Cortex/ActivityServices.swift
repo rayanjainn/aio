@@ -104,23 +104,31 @@ final class DownloadWatcher: ObservableObject {
 
     func stop() { timer?.invalidate(); timer = nil }
 
+    private var lastSizes: [String: (UInt64, Date)] = [:]   // touched only on the utility queue
+
     private func poll() {
         let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self else { return }
             let names = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
-            let busy = names.filter { n in
-                guard self.suffixes.contains(where: { n.hasSuffix($0) }) else { return false }
-                // Only files that are still growing: a leftover partial download is not an activity.
+            var seen: [String: (UInt64, Date)] = [:]
+            var busy: [String] = []
+            for n in names where self.suffixes.contains(where: { n.hasSuffix($0) }) {
                 let path = dir.appendingPathComponent(n).path
-                guard let m = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date else { return false }
-                return Date().timeIntervalSince(m) < 15
-            }
-                .map { n -> String in
-                    var base = n
-                    for s in self.suffixes where base.hasSuffix(s) { base = String(base.dropLast(s.count)) }
-                    return base
+                guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+                      let m = attrs[.modificationDate] as? Date, Date().timeIntervalSince(m) < 15 else { continue }
+                let size = (attrs[.size] as? NSNumber)?.uint64Value ?? 0
+                var base = n
+                for s in self.suffixes where base.hasSuffix(s) { base = String(base.dropLast(s.count)) }
+                var label = base
+                if let (prev, at) = self.lastSizes[n], size > prev {
+                    let rate = Double(size - prev) / max(0.5, Date().timeIntervalSince(at))
+                    label += " · " + ByteCountFormatter.string(fromByteCount: Int64(rate), countStyle: .file) + "/s"
                 }
+                seen[n] = (size, Date())
+                busy.append(label)
+            }
+            self.lastSizes = seen
             DispatchQueue.main.async { if busy != self.active { self.active = busy } }
         }
     }

@@ -10,6 +10,14 @@ enum Diagnostics {
         out.append("macOS \(os.operatingSystemVersionString)  arch=\(machineArch())")
         out.append("log: \(Log.fileURL.path)")
         out.append("")
+        out.append("== Resources ==")
+        let me = ProcessInfo.processInfo.processIdentifier
+        let engine = SystemCommands.shell("/usr/bin/pgrep", ["-x", "cortexd"]).trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "\n").first.map(String.init)
+        for (label, pid) in [("Cortex", "\(me)"), ("cortexd", engine ?? "")] where !pid.isEmpty {
+            let r = SystemCommands.shell("/bin/ps", ["-o", "pcpu=,rss=", "-p", pid]).trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ", omittingEmptySubsequences: true)
+            if r.count == 2, let kb = Double(r[1]) { out.append("\(label): cpu \(r[0])%  memory \(Int(kb / 1024)) MB") }
+        }
+        out.append("")
         out.append("== Screens ==")
         for (i, s) in NSScreen.screens.enumerated() {
             out.append("[\(i)] frame=\(NSStringFromRect(s.frame)) scale=\(s.backingScaleFactor) safeTop=\(s.safeAreaInsets.top) auxL=\(s.auxiliaryTopLeftArea.map { NSStringFromRect($0) } ?? "nil") auxR=\(s.auxiliaryTopRightArea.map { NSStringFromRect($0) } ?? "nil")")

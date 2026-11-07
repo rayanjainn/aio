@@ -404,6 +404,22 @@ final class PaletteModel: ObservableObject {
             }
             return out
         }
+        if lower == "dock" || lower.hasPrefix("dock ") {
+            let rest = String(q.dropFirst(4)).trimmingCharacters(in: .whitespaces)
+            if !rest.isEmpty {
+                out.append(PaletteRow(id: "dock.save", title: "Save this Dock as “\(rest)”", subtitle: "Switch back any time with  dock \(rest)", symbol: "square.and.arrow.down",
+                                      iconPath: nil, tag: "", kind: .command("dock.save:" + rest), section: "Dock profiles"))
+            }
+            for name in DockModel.profiles().keys.sorted() where rest.isEmpty || name.lowercased().contains(rest.lowercased()) {
+                out.append(PaletteRow(id: "dock.use.\(name)", title: "Switch the Dock to “\(name)”", subtitle: "Pinned apps, folders and widgets", symbol: "dock.rectangle",
+                                      iconPath: nil, tag: "", kind: .command("dock.use:" + name), section: "Dock profiles"))
+            }
+            if out.isEmpty {
+                out.append(PaletteRow(id: "dock.hint", title: "Type a name to save this Dock", subtitle: "e.g.  dock work", symbol: "dock.rectangle",
+                                      iconPath: nil, tag: "", kind: .copy(""), section: "Dock profiles"))
+            }
+            return out
+        }
         if lower == "cal" || lower == "schedule" || lower == "agenda" || lower == "meetings" {
             CalendarService.shared.start()
             let upcoming = CalendarService.shared.events.filter { $0.end > Date() }.prefix(8)

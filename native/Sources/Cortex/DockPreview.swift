@@ -107,6 +107,11 @@ struct WindowCard: View {
         .onHover { hover = $0 }
         .contentShape(Rectangle())
         .onTapGesture { WindowService.raise(window); model.onChoose?() }
+        .gesture(DragGesture(minimumDistance: 14).onEnded { _ in
+            // Dock Peek: drag a preview out and the window lands where you let go.
+            WindowService.move(window, to: NSEvent.mouseLocation)
+            model.onChoose?()
+        })
         .contextMenu {
             Button("Bring to Front") { WindowService.raise(window); model.onChoose?() }
             Divider()

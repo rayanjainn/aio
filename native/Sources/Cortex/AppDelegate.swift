@@ -57,9 +57,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Prefs.shared.$islandDisplay.dropFirst().receive(on: DispatchQueue.main)
             .sink { [weak self] _ in DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self?.syncSecondaryIslands() } }.store(in: &cancellables)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self?.syncSecondaryIslands() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                self?.syncSecondaryIslands()
+                self?.applyDockProfileForDisplays()
+            }
         }
         syncSecondaryIslands()
+        Coach.shared.start()
         Prefs.shared.$hyperKey
             .receive(on: DispatchQueue.main)
             .sink { on in
@@ -162,7 +166,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id.hasPrefix("note.add:") { QuickNotes.add(String(id.dropFirst("note.add:".count))); Toast.show("square.and.pencil", "Note saved") }
+            if id.hasPrefix("dock.save:") { let n = String(id.dropFirst(10)); dock?.model.saveProfile(n); Toast.show("dock.rectangle", "Saved Dock “\(n)”") }
+            else if id.hasPrefix("dock.use:") { dock?.model.applyProfile(String(id.dropFirst(9))) }
+            else if id.hasPrefix("note.add:") { QuickNotes.add(String(id.dropFirst("note.add:".count))); Toast.show("square.and.pencil", "Note saved") }
             else if id == "pin.add" { Toast.show("pin.fill", PinStore.addClipboard() ? "Pinned" : "Clipboard is empty") }
             else if let tab = BrowserTabs.parse(id) { BrowserTabs.focus(tab) }
             else if id.hasPrefix("layout.save:") {
@@ -289,6 +295,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var secondaryIslands: [String: IslandController] = [:]
+
+    /// Uses the Dock profile chosen for "external display connected" / "built-in only", if any.
+    private func applyDockProfileForDisplays() {
+        let p = Prefs.shared
+        let name = NSScreen.screens.count > 1 ? p.dockProfileExternal : p.dockProfileBuiltIn
+        if !name.isEmpty { dock?.model.applyProfile(name) }
+    }
 
     /// One extra pill per other display when "Also show a pill on my other displays" is on.
     private func syncSecondaryIslands() {
