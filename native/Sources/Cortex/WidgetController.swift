@@ -93,7 +93,7 @@ final class WidgetController {
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = false
+        panel.hasShadow = true   // follows the rounded mask, so the widget floats like a real card
         panel.hidesOnDeactivate = false
         panel.isMovableByWindowBackground = true
         panel.becomesKeyOnlyIfNeeded = true
