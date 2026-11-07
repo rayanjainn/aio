@@ -111,6 +111,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// cortex://run/<command>, cortex://palette?q=…, cortex://toast?text=… — so scripts and Shortcuts can drive Cortex.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "cortex" {
+            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            func q(_ k: String) -> String? { items.first(where: { $0.name == k })?.value }
+            switch url.host {
+            case "run": runBuiltin(String(url.path.dropFirst()))
+            case "palette": palette?.show(query: q("q") ?? "")
+            case "toast": Toast.show(q("symbol") ?? "bell", q("text") ?? "")
+            case "layout": if let n = q("name") { WindowLayouts.restore(n) }
+            default: Log.warn("unknown cortex:// link \(url)")
+            }
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         HyperKey.stop()
         nowPlaying.stop()
@@ -123,6 +138,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func runBuiltin(_ id: String) {
         switch id {
         case "palette": palette?.toggle()
+        case "act": ActOnThis.captureSelection { [weak self] in self?.palette?.show(query: "ai ") }
+        case "clip.plain": ActOnThis.pastePlain()
         case "app.diagnostics": showDiagnostics()
         case "app.timeline": showTimeline()
         case "app.settings": settings?.show()

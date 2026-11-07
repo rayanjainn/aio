@@ -285,6 +285,33 @@ final class PaletteModel: ObservableObject {
         return Array(rows)
     }
 
+    /// Commands for the app you were just in: its most useful menu items, plus extras for browsers.
+    private func contextRows() -> [PaletteRow] {
+        guard let pid = frontPID, let app = NSRunningApplication(processIdentifier: pid) else { return [] }
+        let name = app.localizedName ?? "this app"
+        let section = "In \(name)"
+        var rows: [PaletteRow] = []
+        let browsers = ["com.apple.Safari", "com.google.Chrome", "com.brave.Browser", "company.thebrowser.Browser", "com.microsoft.edgemac"]
+        if let bid = app.bundleIdentifier, browsers.contains(bid) {
+            rows.append(PaletteRow(id: "ctx:tabs", title: "Search open tabs", subtitle: "Every window of every browser", symbol: "safari",
+                                   iconPath: nil, tag: "", kind: .command("query:tab "), section: section))
+        }
+        guard WindowManager.isTrusted else { return rows }
+        let wanted = ["New Window", "New Tab", "New", "New Document", "Open…", "Save", "Find…", "Export…", "Print…", "Settings…", "Preferences…"]
+        let entries = MenuItemService.entries(forPID: pid)
+        var picked: [MenuEntry] = []
+        for w in wanted {
+            if let e = entries.first(where: { $0.title == w }), !picked.contains(where: { $0.id == e.id }) { picked.append(e) }
+            if picked.count >= 5 { break }
+        }
+        for e in picked {
+            menuCache[e.id] = e
+            rows.append(PaletteRow(id: "ctx:\(e.id)", title: e.title.replacingOccurrences(of: "…", with: ""), subtitle: e.path, symbol: "filemenu.and.selection",
+                                   iconPath: nil, tag: "", kind: .menu(e.id), section: section))
+        }
+        return rows
+    }
+
     /// What the palette shows before you type: things worth one keystroke, then your running apps.
     private func homeRows() -> [PaletteRow] {
         func cmd(_ id: String, _ title: String, _ sub: String, _ symbol: String) -> PaletteRow {
@@ -293,7 +320,8 @@ final class PaletteModel: ObservableObject {
         func sys(_ id: String, _ title: String, _ sub: String, _ symbol: String) -> PaletteRow {
             PaletteRow(id: "home:\(id)", title: title, subtitle: sub, symbol: symbol, iconPath: nil, tag: "", kind: .system(id), section: "Quick actions")
         }
-        var out: [PaletteRow] = [
+        var out: [PaletteRow] = contextRows()
+        out += [
             cmd("timer.25", "Start a 25-minute focus timer", "Shows in the Island", "timer"),
             cmd("window.left", "Snap window to the left half", "Also ⌃⌥←", "rectangle.lefthalf.filled"),
             cmd("window.right", "Snap window to the right half", "Also ⌃⌥→", "rectangle.righthalf.filled"),
@@ -430,6 +458,16 @@ final class PaletteModel: ObservableObject {
                 ("Make it shorter", "scissors", "Rewrite this to be shorter and clearer:"),
                 ("Write a commit message", "point.topleft.down.curvedto.point.bottomright.up", "Write a concise conventional commit message for this change:"),
             ]
+            if !clip.isEmpty && rest.isEmpty {
+                let one = String(clip.prefix(200))
+                let encoded = one.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                out.append(PaletteRow(id: "act:web", title: "Search the web", subtitle: String(clip.prefix(70)), symbol: "magnifyingglass",
+                                      iconPath: nil, tag: "", kind: .web("https://www.google.com/search?q=" + encoded), section: "AI commands"))
+                out.append(PaletteRow(id: "act:note", title: "Save as a note", subtitle: String(clip.prefix(70)), symbol: "square.and.pencil",
+                                      iconPath: nil, tag: "", kind: .command("note.add:" + one.replacingOccurrences(of: "\n", with: " ")), section: "AI commands"))
+                out.append(PaletteRow(id: "act:pin", title: "Pin it", subtitle: "Keep it one command away", symbol: "pin",
+                                      iconPath: nil, tag: "", kind: .command("pin.add"), section: "AI commands"))
+            }
             for (title, symbol, prompt) in presets where rest.isEmpty || title.lowercased().contains(rest) {
                 out.append(PaletteRow(id: "aipreset:\(title)", title: title, subtitle: clip.isEmpty ? "Copy some text first" : String(clip.prefix(70)), symbol: symbol,
                                       iconPath: nil, tag: "AI", kind: clip.isEmpty ? .copy("") : .ai(prompt + "\n\n" + clip), section: "AI commands"))
@@ -519,7 +557,7 @@ final class PaletteModel: ObservableObject {
         let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
         out.append(PaletteRow(id: "web:google", title: "Search the web for “\(q)”", subtitle: "Google", symbol: "magnifyingglass", iconPath: nil, tag: "",
                               kind: .web("https://www.google.com/search?q=\(encoded)"), section: "Web"))
-        out.append(PaletteRow(id: "ai:ask", title: "Ask Cortex AI: “\(q)”", subtitle: AISettings.load().provider == "openai" ? "Your AI server (Settings → AI)" : "Local model via Ollama", symbol: "sparkles", iconPath: nil, tag: "",
+        out.append(PaletteRow(id: "ai:ask", title: "Ask Cortex AI: “\(q)”", subtitle: ["openai": "Your AI server (Settings → AI)", "ollamaCloud": "Ollama Cloud"][AISettings.load().provider] ?? "Local model via Ollama", symbol: "sparkles", iconPath: nil, tag: "",
                               kind: .ai(q), section: "Web"))
         return out
     }
@@ -623,6 +661,7 @@ final class PaletteModel: ObservableObject {
             return true
         case .command(let id):
             if id == "app.clipboard" { query = "clip "; return false }
+            if id.hasPrefix("query:") { query = String(id.dropFirst(6)); return false }
             if id == "app.memory" { query = "mem "; return false }
             runBuiltin?(id)
             return true
@@ -639,6 +678,16 @@ final class PaletteModel: ObservableObject {
             startChat(prompt)
             return false
         case .paste(let raw):
+            if SnippetForm.needsInput(raw) {
+                let front = frontPID
+                DispatchQueue.main.async {
+                    guard let filled = SnippetForm.fill(raw) else { return }
+                    PasteService.copy(SnippetExpander.expand(filled))
+                    if let front { NSRunningApplication(processIdentifier: front)?.activate() }
+                    PasteService.pasteIntoFront(after: 0.35)
+                }
+                return true
+            }
             let text = SnippetExpander.expand(raw)
             PasteService.copy(text)
             PasteService.pasteIntoFront()

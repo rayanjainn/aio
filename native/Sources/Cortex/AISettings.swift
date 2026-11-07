@@ -3,7 +3,9 @@ import SwiftUI
 /// Where the palette's AI answers come from: your local Ollama (default), Ollama Cloud, or any
 /// OpenAI-compatible server (OpenAI, OpenRouter, Groq, LM Studio, a company gateway…).
 struct AISettings: Codable, Equatable {
-    var provider = "ollama"            // "ollama" | "openai"
+    var provider = "ollama"            // "ollama" | "ollamaCloud" | "openai"
+    var cloudKey = ""
+    var cloudModel = "gpt-oss:120b"
     var baseURL = "https://api.openai.com/v1"
     var model = "gpt-4o-mini"
     var apiKey = ""
@@ -15,6 +17,19 @@ struct AISettings: Codable, Equatable {
     static func load() -> AISettings {
         guard let d = try? Data(contentsOf: url), let s = try? JSONDecoder().decode(AISettings.self, from: d) else { return AISettings() }
         return s
+    }
+
+    init() {}
+
+    // Tolerate files written before newer fields existed.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        provider = (try? c.decode(String.self, forKey: .provider)) ?? "ollama"
+        baseURL = (try? c.decode(String.self, forKey: .baseURL)) ?? "https://api.openai.com/v1"
+        model = (try? c.decode(String.self, forKey: .model)) ?? "gpt-4o-mini"
+        apiKey = (try? c.decode(String.self, forKey: .apiKey)) ?? ""
+        cloudKey = (try? c.decode(String.self, forKey: .cloudKey)) ?? ""
+        cloudModel = (try? c.decode(String.self, forKey: .cloudModel)) ?? "gpt-oss:120b"
     }
 
     func save() {
@@ -34,9 +49,15 @@ struct AIPane: View {
             Section("Answers") {
                 Picker("Provider", selection: $s.provider) {
                     Text("Ollama (on this Mac)").tag("ollama")
+                    Text("Ollama Cloud").tag("ollamaCloud")
                     Text("OpenAI-compatible server").tag("openai")
                 }
-                if s.provider == "openai" {
+                if s.provider == "ollamaCloud" {
+                    SecureField("Ollama API key", text: $s.cloudKey)
+                    TextField("Model", text: $s.cloudModel)
+                    Text("Create a key at ollama.com → Settings → Keys (the free tier works). Cloud models include gpt-oss:120b, gpt-oss:20b, qwen3-coder:480b and deepseek-v3.1:671b. Your prompt is sent to ollama.com. The key is stored in ~/.cortex/native/ai.json, readable only by you.")
+                        .font(.callout).foregroundStyle(.secondary)
+                } else if s.provider == "openai" {
                     TextField("Base URL", text: $s.baseURL)
                     TextField("Model", text: $s.model)
                     SecureField("API key", text: $s.apiKey)

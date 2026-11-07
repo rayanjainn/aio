@@ -49,12 +49,14 @@ enum WindowLayouts {
         var s = all()
         s[name] = entries
         write(s)
+        saveTabs(name)
         Log.info("layout: saved '\(name)' with \(entries.count) windows")
         return entries.count
     }
 
     static func restore(_ name: String) {
         guard WindowManager.isTrusted else { WindowManager.requestAccess(); return }
+        restoreTabs(name)
         guard let entries = all()[name] else { return }
         var used = Set<String>()
         for e in entries {
@@ -65,6 +67,44 @@ enum WindowLayouts {
             guard let m = match else { continue }
             used.insert("\(e.bundle)#\(m.offset)")
             WindowManager.set(frame: CGRect(x: e.x, y: e.y, width: e.w, height: e.h), on: m.element.0)
+        }
+    }
+
+    // MARK: browser tabs, saved alongside the windows
+
+    private static var tabsURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/layout-tabs.json")
+    }
+
+    private static func allTabs() -> [String: [String: [String]]] {
+        guard let d = try? Data(contentsOf: tabsURL), let s = try? JSONDecoder().decode([String: [String: [String]]].self, from: d) else { return [:] }
+        return s
+    }
+
+    /// Off the main thread: asks each running browser for its tabs.
+    static func saveTabs(_ name: String) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            var byBrowser: [String: [String]] = [:]
+            for t in BrowserTabs.list() where !t.url.isEmpty { byBrowser[t.bundle, default: []].append(t.url) }
+            var s = allTabs()
+            s[name] = byBrowser
+            if let d = try? JSONEncoder().encode(s) { try? d.write(to: tabsURL, options: .atomic) }
+        }
+    }
+
+    /// Reopens tabs from the snapshot that are not open already.
+    static func restoreTabs(_ name: String) {
+        guard let saved = allTabs()[name], !saved.isEmpty else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let open = Set(BrowserTabs.list().map(\.url))
+            for (bundle, urls) in saved {
+                guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) else { continue }
+                let missing = urls.filter { !open.contains($0) }.compactMap(URL.init(string:))
+                guard !missing.isEmpty else { continue }
+                DispatchQueue.main.async {
+                    NSWorkspace.shared.open(missing, withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
+                }
+            }
         }
     }
 

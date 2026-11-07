@@ -15,6 +15,13 @@
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>dev.cortex.native</string>
+      <key>CFBundleURLSchemes</key><array><string>cortex</string></array>
+    </dict>
+  </array>
   <key>NSCalendarsFullAccessUsageDescription</key>
   <string>Cortex shows your next meeting in the Island and offers a Join button.</string>
   <key>NSCalendarsUsageDescription</key>

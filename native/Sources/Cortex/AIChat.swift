@@ -5,6 +5,10 @@ enum AIChat {
     struct Config { var host: String; var apiKey: String?; var model: String }
 
     static func config() -> Config {
+        let ai = AISettings.load()
+        if ai.provider == "ollamaCloud", !ai.cloudKey.isEmpty {
+            return Config(host: "https://ollama.com", apiKey: ai.cloudKey, model: ai.cloudModel)
+        }
         let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/config.toml")
         let raw = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
         func field(_ key: String) -> String? {
@@ -97,7 +101,7 @@ enum AIChat {
                     let model: String
                     do { model = try await pickModel(cfg) }
                     catch let e as EngineError { throw e }
-                    catch { throw EngineError(message: "Ollama isn't running. Start it (ollama.com) or add an api_key to ~/.cortex/config.toml.") }
+                    catch { throw EngineError(message: cfg.apiKey != nil ? "Couldn't reach Ollama Cloud. Check the key and model in Settings → AI." : "Ollama isn't running. Start it (ollama.com), or choose Ollama Cloud in Settings → AI.") }
                     let payload: [String: Any] = [
                         "model": model, "stream": true,
                         "messages": [

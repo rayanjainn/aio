@@ -39,6 +39,12 @@ final class PaletteController {
         }
     }
 
+    /// Opens the palette with text already typed (used by "Act on this" and cortex:// links).
+    func show(query: String) {
+        show()
+        DispatchQueue.main.async { self.model.query = query }
+    }
+
     func hide() {
         guard let panel, panel.isVisible else { return }
         NSAnimationContext.runAnimationGroup({ ctx in
