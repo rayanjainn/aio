@@ -383,7 +383,7 @@ final class PaletteModel: ObservableObject {
                 let when = e.allDay ? "All day" : e.start.formatted(date: .abbreviated, time: .shortened)
                 out.append(PaletteRow(id: "cal:\(e.id)", title: e.title, subtitle: when + (e.location.map { " · " + $0 } ?? ""),
                                       symbol: e.joinURL != nil ? "video" : "calendar", iconPath: nil, tag: e.joinURL != nil ? "Join" : "",
-                                      kind: e.joinURL.map { .web($0.absoluteString) } ?? .copy(e.title), section: "Schedule"))
+                                      kind: e.joinURL.map { RowKind.web($0.absoluteString) } ?? RowKind.copy(e.title), section: "Schedule"))
             }
             if out.isEmpty {
                 out.append(PaletteRow(id: "cal:none", title: CalendarService.shared.authorized ? "Nothing coming up" : "Allow Calendar access to see your schedule",
