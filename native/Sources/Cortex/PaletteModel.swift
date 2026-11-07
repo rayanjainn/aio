@@ -519,7 +519,7 @@ final class PaletteModel: ObservableObject {
         let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
         out.append(PaletteRow(id: "web:google", title: "Search the web for “\(q)”", subtitle: "Google", symbol: "magnifyingglass", iconPath: nil, tag: "",
                               kind: .web("https://www.google.com/search?q=\(encoded)"), section: "Web"))
-        out.append(PaletteRow(id: "ai:ask", title: "Ask Cortex AI: “\(q)”", subtitle: "Local model via Ollama", symbol: "sparkles", iconPath: nil, tag: "",
+        out.append(PaletteRow(id: "ai:ask", title: "Ask Cortex AI: “\(q)”", subtitle: AISettings.load().provider == "openai" ? "Your AI server (Settings → AI)" : "Local model via Ollama", symbol: "sparkles", iconPath: nil, tag: "",
                               kind: .ai(q), section: "Web"))
         return out
     }

@@ -42,7 +42,54 @@ enum AIChat {
         return first
     }
 
+    private static let systemPrompt = "You are Cortex, a concise assistant inside a Mac launcher. Answer directly in a few sentences unless asked for more."
+
+    private static func streamOpenAI(_ s: AISettings, prompt: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    guard !s.apiKey.isEmpty, let url = URL(string: s.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/chat/completions") else {
+                        throw EngineError(message: "Add your server address and API key in Settings → AI.")
+                    }
+                    var r = URLRequest(url: url)
+                    r.httpMethod = "POST"
+                    r.timeoutInterval = 120
+                    r.setValue("Bearer \(s.apiKey)", forHTTPHeaderField: "Authorization")
+                    r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    r.httpBody = try JSONSerialization.data(withJSONObject: [
+                        "model": s.model, "stream": true,
+                        "messages": [["role": "system", "content": systemPrompt], ["role": "user", "content": prompt]],
+                    ] as [String: Any])
+                    let (bytes, response) = try await URLSession.shared.bytes(for: r)
+                    if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                        throw EngineError(message: "The AI server answered \(http.statusCode). Check the key, model and address in Settings → AI.")
+                    }
+                    for try await line in bytes.lines {
+                        guard line.hasPrefix("data:") else { continue }
+                        let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+                        if payload == "[DONE]" { break }
+                        guard let data = payload.data(using: .utf8),
+                              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                              let delta = ((obj["choices"] as? [[String: Any]])?.first?["delta"] as? [String: Any])?["content"] as? String,
+                              !delta.isEmpty else { continue }
+                        continuation.yield(delta)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     static func stream(_ prompt: String) -> AsyncThrowingStream<String, Error> {
+        let settings = AISettings.load()
+        if settings.provider == "openai" { return streamOpenAI(settings, prompt: prompt) }
+        return streamOllama(prompt)
+    }
+
+    private static func streamOllama(_ prompt: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {

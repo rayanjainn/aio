@@ -18,7 +18,7 @@ struct SettingsActions {
 }
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, shortcuts, snippets, quicklinks, island, dock, appearance, memory, privacy, about
+    case general, shortcuts, snippets, quicklinks, island, dock, appearance, ai, memory, privacy, about
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -30,6 +30,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .island: "Island"
         case .dock: "Dock"
         case .appearance: "Appearance"
+        case .ai: "AI"
         case .privacy: "Privacy & Permissions"
         case .about: "About & Updates"
         }
@@ -44,6 +45,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .island: "capsule.portrait"
         case .dock: "dock.rectangle"
         case .appearance: "paintbrush"
+        case .ai: "sparkles"
         case .privacy: "hand.raised"
         case .about: "info.circle"
         }
@@ -72,6 +74,7 @@ struct SettingsView: View {
                 case .island: IslandPane(prefs: prefs)
                 case .dock: DockPane(prefs: prefs, actions: actions)
                 case .appearance: AppearancePane(prefs: prefs)
+                case .ai: AIPane()
                 case .privacy: PrivacyPane(prefs: prefs, actions: actions)
                 case .about: AboutPane(actions: actions)
                 }
