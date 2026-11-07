@@ -151,3 +151,17 @@ Also: does the palette open instantly on the hotkey (target < 100 ms)? Does typi
 - **Reset Cortex settings** (keeps nothing): quit Cortex, `mv ~/.cortex/native ~/Desktop/cortex-native-backup`, relaunch.
 - **Permissions stuck**: `tccutil reset Accessibility dev.cortex.native` and `tccutil reset ScreenCapture dev.cortex.native`, relaunch, grant again.
 - **Gatekeeper blocks launch**: `xattr -dr com.apple.quarantine /path/to/Cortex.app`
+
+## Signing and notarization (optional)
+
+Releases are ad-hoc signed until these repository secrets exist (Settings → Secrets and variables → Actions):
+
+| Secret | What |
+|---|---|
+| `MACOS_CERT_P12` | Your "Developer ID Application" certificate exported as .p12, base64-encoded (`base64 -i cert.p12 \| pbcopy`) |
+| `MACOS_CERT_PASSWORD` | The .p12 password |
+| `NOTARY_APPLE_ID` | Your Apple ID email |
+| `NOTARY_TEAM_ID` | Your 10-character Team ID |
+| `NOTARY_PASSWORD` | An app-specific password from appleid.apple.com |
+
+With them set, the Release workflow signs with your Developer ID (hardened runtime), notarizes and staples the .dmg — no more `xattr -cr`.

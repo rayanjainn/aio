@@ -29,7 +29,31 @@ final class ShelfStore: ObservableObject {
         }
     }
 
+    /// Lines like  "png jpg heic -> ~/Pictures/Shelf"  copy matching dropped files to that folder.
+    static func route(_ urls: [URL], rules: String) -> Int {
+        var copied = 0
+        for line in rules.split(separator: "\n") {
+            let parts = line.components(separatedBy: "->")
+            guard parts.count == 2 else { continue }
+            let exts = Set(parts[0].lowercased().split(whereSeparator: { $0 == " " || $0 == "," }).map { $0.trimmingCharacters(in: CharacterSet(charactersIn: ".")) })
+            let folder = (parts[1].trimmingCharacters(in: .whitespaces) as NSString).expandingTildeInPath
+            guard !exts.isEmpty, !folder.isEmpty else { continue }
+            for u in urls where exts.contains(u.pathExtension.lowercased()) || exts.contains("*") {
+                let dir = URL(fileURLWithPath: folder, isDirectory: true)
+                try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                let dest = dir.appendingPathComponent(u.lastPathComponent)
+                if !FileManager.default.fileExists(atPath: dest.path), (try? FileManager.default.copyItem(at: u, to: dest)) != nil { copied += 1 }
+            }
+        }
+        return copied
+    }
+
     func add(_ urls: [URL]) {
+        let rules = Prefs.shared.shelfRules
+        if !rules.isEmpty {
+            let n = Self.route(urls, rules: rules)
+            if n > 0 { Toast.show("folder.badge.plus", "Filed \(n) item\(n == 1 ? "" : "s") by your Shelf rules") }
+        }
         var changed = false
         for u in urls where !items.contains(where: { $0.path == u.path }) {
             items.insert(ShelfItem(path: u.path), at: 0)

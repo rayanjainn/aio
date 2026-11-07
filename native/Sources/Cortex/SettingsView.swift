@@ -283,6 +283,12 @@ struct IslandPane: View {
                 }
                 Text("They appear on the Island's Tools page, one tap to open.").font(.callout).foregroundStyle(.secondary)
             }
+            Section("Shelf rules") {
+                TextEditor(text: $prefs.shelfRules)
+                    .font(.system(size: 12, design: .monospaced)).frame(minHeight: 70)
+                Text("One rule per line: file types, an arrow, a folder. Files you drop on the Island are also copied there. Example:  png jpg heic -> ~/Pictures/Shelf")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
             Section("Live activities") {
                 Toggle("Now Playing (any app)", isOn: $prefs.islandMusic)
                 Toggle("Synced lyrics", isOn: $prefs.islandLyrics)
@@ -384,6 +390,9 @@ struct DockPane: View {
                         Text("\(Int(prefs.dockDarken * 100))%").monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
+            }
+            Section("Menu bar") {
+                Toggle("Also show the Dock as a menu in the menu bar", isOn: $prefs.dockMenuBar)
             }
             Section("Profiles") {
                 let names = DockModel.profiles().keys.sorted()

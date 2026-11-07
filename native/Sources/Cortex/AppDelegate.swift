@@ -64,6 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         syncSecondaryIslands()
         Coach.shared.start()
+        menuBarDock.attach(dock.model)
+        Prefs.shared.$dockMenuBar.receive(on: DispatchQueue.main)
+            .sink { [weak self] on in self?.menuBarDock.setVisible(on) }.store(in: &cancellables)
+        Engine.client = engine
         Prefs.shared.$hyperKey
             .receive(on: DispatchQueue.main)
             .sink { on in
@@ -144,6 +148,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "palette": palette?.toggle()
         case "act": ActOnThis.captureSelection { [weak self] in self?.palette?.show(query: "ai ") }
         case "clip.plain": ActOnThis.pastePlain()
+        case "dictate": ActOnThis.dictate()
         case "app.diagnostics": showDiagnostics()
         case "app.timeline": showTimeline()
         case "app.settings": settings?.show()
@@ -166,7 +171,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id.hasPrefix("dock.save:") { let n = String(id.dropFirst(10)); dock?.model.saveProfile(n); Toast.show("dock.rectangle", "Saved Dock “\(n)”") }
+            if id.hasPrefix("widget.ai:"), let store = widgets?.store { AIWidgetMaker.make(String(id.dropFirst(10)), store: store) }
+            else if id.hasPrefix("dock.save:") { let n = String(id.dropFirst(10)); dock?.model.saveProfile(n); Toast.show("dock.rectangle", "Saved Dock “\(n)”") }
             else if id.hasPrefix("dock.use:") { dock?.model.applyProfile(String(id.dropFirst(9))) }
             else if id.hasPrefix("note.add:") { QuickNotes.add(String(id.dropFirst("note.add:".count))); Toast.show("square.and.pencil", "Note saved") }
             else if id == "pin.add" { Toast.show("pin.fill", PinStore.addClipboard() ? "Pinned" : "Clipboard is empty") }
@@ -295,6 +301,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var secondaryIslands: [String: IslandController] = [:]
+    private let menuBarDock = MenuBarDock()
 
     /// Uses the Dock profile chosen for "external display connected" / "built-in only", if any.
     private func applyDockProfileForDisplays() {

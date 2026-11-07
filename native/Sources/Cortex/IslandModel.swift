@@ -31,7 +31,7 @@ struct NotchGeometry: Equatable {
 }
 
 enum IslandPage: String, CaseIterable, Identifiable {
-    case player, calendar, shelf, clipboard, tools
+    case player, calendar, shelf, clipboard, rewind, tools
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -39,6 +39,7 @@ enum IslandPage: String, CaseIterable, Identifiable {
         case .calendar: "calendar"
         case .shelf: "tray.full"
         case .clipboard: "doc.on.clipboard"
+        case .rewind: "clock.arrow.circlepath"
         case .tools: "slider.horizontal.3"
         }
     }
@@ -48,6 +49,7 @@ enum IslandPage: String, CaseIterable, Identifiable {
         case .calendar: "Calendar"
         case .shelf: "Shelf"
         case .clipboard: "Clipboard"
+        case .rewind: "Rewind"
         case .tools: "Tools"
         }
     }

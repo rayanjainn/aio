@@ -23,7 +23,27 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: cortexd -> target
+      - name: Import Developer ID certificate (only when the secrets exist)
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          if [ -z "$CERT_P12" ]; then echo "No signing certificate configured: building ad-hoc."; exit 0; fi
+          KC="$RUNNER_TEMP/sign.keychain-db"
+          security create-keychain -p cortex "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p cortex "$KC"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k cortex "$KC"
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          ID=$(security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
+          echo "SIGN_IDENTITY=$ID" >> "$GITHUB_ENV"
       - name: Build universal app + dmg
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
         run: native/scripts/bundle.sh "${{ inputs.version }}"
       - name: Publish release
         env:

@@ -57,6 +57,7 @@ final class PaletteModel: ObservableObject {
 
     var frontPID: pid_t?
     private var menuCache: [String: MenuEntry] = [:]
+    private var windowCache: [String: WindowInfo] = [:]
     var client: EngineClient?
     var runBuiltin: ((String) -> Void)?
     private var searchTask: Task<Void, Never>?
@@ -171,6 +172,31 @@ final class PaletteModel: ObservableObject {
                     let row = PaletteRow(id: "translate", title: out, subtitle: "Translated to \(t.to) — copy", symbol: "character.bubble",
                                          iconPath: nil, tag: t.to.uppercased(), kind: .copy(out), section: "Translate")
                     if !self.rows.contains(where: { $0.id == "translate" }) { self.rows.insert(row, at: 0) }
+                }
+            }
+        }
+        let wl = q.lowercased()
+        if wl == "win" || wl.hasPrefix("win ") || wl == "windows" {
+            let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces).lowercased()
+            Task { [weak self] in
+                let all = await WindowService.allWindows()
+                await MainActor.run {
+                    guard let self, self.generation == gen else { return }
+                    let words = text.split(separator: " ").map(String.init)
+                    let found = all.filter { w in
+                        let hay = (w.appName + " " + w.title).lowercased()
+                        return words.allSatisfy { hay.contains($0) }
+                    }.prefix(40)
+                    self.windowCache = Dictionary(found.map { ("win:\($0.key)", $0) }, uniquingKeysWith: { a, _ in a })
+                    self.rows = found.map { w in
+                        PaletteRow(id: "win:\(w.key)", title: w.title.isEmpty ? w.appName : w.title, subtitle: w.appName + (w.minimized ? " · minimised" : ""),
+                                   symbol: "macwindow", iconPath: NSRunningApplication(processIdentifier: w.pid)?.bundleURL?.path, tag: "",
+                                   kind: .command("win:\(w.key)"), section: "Windows")
+                    }
+                    if self.rows.isEmpty {
+                        self.rows = [PaletteRow(id: "win:none", title: "No windows match", subtitle: "Needs Accessibility (and Screen Recording for windows on other Spaces)",
+                                                symbol: "macwindow", iconPath: nil, tag: "", kind: .copy(""), section: "Windows")]
+                    }
                 }
             }
         }
@@ -401,6 +427,14 @@ final class PaletteModel: ObservableObject {
             if out.isEmpty {
                 out.append(PaletteRow(id: "layout.hint", title: "Type a name to save this arrangement", subtitle: "e.g.  layout coding", symbol: "rectangle.3.group",
                                       iconPath: nil, tag: "", kind: .copy(""), section: "Window layouts"))
+            }
+            return out
+        }
+        if lower.hasPrefix("widget ") {
+            let rest = String(q.dropFirst(7)).trimmingCharacters(in: .whitespaces)
+            if !rest.isEmpty {
+                out.append(PaletteRow(id: "widget.ai", title: "Make a widget: \(rest)", subtitle: "AI writes a command; you approve it before it runs", symbol: "sparkles",
+                                      iconPath: nil, tag: "AI", kind: .command("widget.ai:" + rest), section: "Widgets"))
             }
             return out
         }
@@ -678,6 +712,7 @@ final class PaletteModel: ObservableObject {
         case .command(let id):
             if id == "app.clipboard" { query = "clip "; return false }
             if id.hasPrefix("query:") { query = String(id.dropFirst(6)); return false }
+            if id.hasPrefix("win:"), let w = windowCache[id] { WindowService.raise(w); return true }
             if id == "app.memory" { query = "mem "; return false }
             runBuiltin?(id)
             return true

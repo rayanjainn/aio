@@ -24,6 +24,17 @@ enum ActOnThis {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: poll)
     }
 
+    /// Starts macOS dictation in the front app through its Edit → Start Dictation menu item.
+    static func dictate() {
+        guard WindowManager.isTrusted else { WindowManager.requestAccess(); return }
+        guard let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return }
+        if let item = MenuItemService.entries(forPID: pid).first(where: { $0.title.localizedCaseInsensitiveContains("dictation") }) {
+            MenuItemService.press(item)
+        } else {
+            Toast.show("mic.slash", "This app has no Start Dictation item. Turn on Dictation in System Settings → Keyboard.")
+        }
+    }
+
     /// Paste what is on the clipboard as plain text (no fonts, colours or links).
     static func pastePlain() {
         guard let s = NSPasteboard.general.string(forType: .string) else { return }

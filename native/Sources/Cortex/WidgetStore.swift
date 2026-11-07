@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 enum WidgetKind: String, CaseIterable, Codable, Identifiable {
-    case clock, calendar, system, nowPlaying, notes, todos, weather, claude, codex
+    case clock, calendar, system, nowPlaying, notes, todos, weather, claude, codex, script
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -15,6 +15,7 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .weather: "Weather"
         case .claude: "Claude Code Usage"
         case .codex: "Codex Usage"
+        case .script: "Command Output"
         }
     }
     var detail: String {
@@ -28,6 +29,7 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .weather: "Right now and today's range"
         case .claude: "Tokens today, the 5-hour block, last 7 days"
         case .codex: "Tokens today and the last 7 days"
+        case .script: "Any shell command, refreshed every minute (or ask AI to write one: ⌘K, widget …)"
         }
     }
     var symbol: String {
@@ -41,6 +43,7 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .weather: "cloud.sun"
         case .claude: "sparkles"
         case .codex: "chevron.left.forwardslash.chevron.right"
+        case .script: "terminal"
         }
     }
 }
@@ -73,6 +76,9 @@ struct WidgetConfig: Codable, Identifiable, Equatable {
     var floating = false
     var text = ""
     var todos: [TodoItem] = []
+    /// Command Output widgets: the shell command and a title.
+    var command: String?
+    var title: String?
 }
 
 /// The widgets on your desktop, saved to ~/.cortex/native/widgets.json.
@@ -94,6 +100,15 @@ final class WidgetStore: ObservableObject {
     func add(_ kind: WidgetKind) {
         var config = WidgetConfig(kind: kind)
         config.size = (kind == .system || kind == .nowPlaying || kind == .claude || kind == .codex) ? .medium : .small
+        items.append(config)
+        save()
+    }
+
+    func addScript(title: String, command: String) {
+        var config = WidgetConfig(kind: .script)
+        config.size = .medium
+        config.title = title
+        config.command = command
         items.append(config)
         save()
     }

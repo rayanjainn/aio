@@ -28,11 +28,34 @@ sed "s/__VERSION__/${VERSION}/g" Info.plist > "$APP/Contents/Info.plist"
 cp -a Resources/mediaremote "$APP/Contents/Resources/mediaremote"
 cp Resources/icon.icns "$APP/Contents/Resources/icon.icns"
 
-# Ad-hoc signed, NOT hardened: a hardened runtime without entitlements makes
-# macOS silently refuse Apple Events.
-codesign --force --sign - --entitlements Entitlements.plist "$APP"
+if [ -n "${SIGN_IDENTITY:-}" ]; then
+  # Developer ID: hardened runtime is required for notarization. The Apple Events entitlement
+  # keeps automation working under it.
+  echo "Signing with: $SIGN_IDENTITY"
+  find "$APP/Contents/Resources/mediaremote" -type f \( -perm -u+x -o -name "*.dylib" \) -print0 | while IFS= read -r -d '' f; do
+    file "$f" | grep -q Mach-O && codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$f"
+  done
+  find "$APP/Contents/Resources/mediaremote" -name "*.framework" -maxdepth 2 -print0 | while IFS= read -r -d '' fw; do
+    codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$fw"
+  done
+  codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$APP/Contents/Helpers/cortexd"
+  codesign --force --timestamp --options runtime --entitlements Entitlements.plist --sign "$SIGN_IDENTITY" "$APP"
+else
+  # Ad-hoc signed, NOT hardened: a hardened runtime without entitlements makes
+  # macOS silently refuse Apple Events.
+  codesign --force --sign - --entitlements Entitlements.plist "$APP"
+fi
 codesign --verify --verbose=2 "$APP"
 codesign -dv --entitlements - "$APP" 2>&1 | head -20 || true
 
 hdiutil create -volname Cortex -srcfolder "$APP" -ov -format UDZO "$OUT/Cortex.dmg"
+
+if [ -n "${SIGN_IDENTITY:-}" ]; then
+  codesign --force --timestamp --sign "$SIGN_IDENTITY" "$OUT/Cortex.dmg"
+fi
+if [ -n "${SIGN_IDENTITY:-}" ] && [ -n "${NOTARY_APPLE_ID:-}" ] && [ -n "${NOTARY_TEAM_ID:-}" ] && [ -n "${NOTARY_PASSWORD:-}" ]; then
+  echo "Notarizing…"
+  xcrun notarytool submit "$OUT/Cortex.dmg" --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
+  xcrun stapler staple "$OUT/Cortex.dmg"
+fi
 ls -la "$OUT"

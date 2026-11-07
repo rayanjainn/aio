@@ -32,6 +32,8 @@ final class Prefs: ObservableObject {
     @Published var batteryCoach = true { didSet { save() } }
     @Published var dockProfileExternal = "" { didSet { save() } }
     @Published var dockProfileBuiltIn = "" { didSet { save() } }
+    @Published var dockMenuBar = false { didSet { save() } }
+    @Published var shelfRules = "" { didSet { save() } }
     @Published var islandApps: [String] = [] { didSet { save() } }
     @Published var islandDisplay = "auto" { didSet { save() } }
     @Published var islandEnabled = true { didSet { save() } }
@@ -58,7 +60,7 @@ final class Prefs: ObservableObject {
         var dockMagnification: Double?, dockSpacing: Double?, dockRoundness: Double?
         var dockIndicators: Bool?, dockBounce: Bool?, dockShowRunning: Bool?, dockDisplay: String?, islandDisplay: String?, dockClickHides: Bool?, islandApps: [String]?, islandHideFullscreen: Bool?, hyperKey: Bool?, islandAllDisplays: Bool?
         var islandHoverDelay: Double?, islandMusicFirst: Bool?, focusHideOthers: Bool?, batteryCoach: Bool?
-        var dockProfileExternal: String?, dockProfileBuiltIn: String?
+        var dockProfileExternal: String?, dockProfileBuiltIn: String?, dockMenuBar: Bool?, shelfRules: String?
     }
 
     private static var url: URL {
@@ -93,6 +95,8 @@ final class Prefs: ObservableObject {
             batteryCoach = s.batteryCoach ?? true
             dockProfileExternal = s.dockProfileExternal ?? ""
             dockProfileBuiltIn = s.dockProfileBuiltIn ?? ""
+            dockMenuBar = s.dockMenuBar ?? false
+            shelfRules = s.shelfRules ?? ""
             islandApps = s.islandApps ?? []
             islandEnabled = s.islandEnabled ?? true
             islandMusic = s.islandMusic ?? true
@@ -121,7 +125,7 @@ final class Prefs: ObservableObject {
                        dockMagnification: dockMagnification, dockSpacing: dockSpacing, dockRoundness: dockRoundness,
                        dockIndicators: dockIndicators, dockBounce: dockBounce, dockShowRunning: dockShowRunning, dockDisplay: dockDisplay, islandDisplay: islandDisplay, dockClickHides: dockClickHides, islandApps: islandApps, islandHideFullscreen: islandHideFullscreen, hyperKey: hyperKey, islandAllDisplays: islandAllDisplays,
                        islandHoverDelay: islandHoverDelay, islandMusicFirst: islandMusicFirst, focusHideOthers: focusHideOthers, batteryCoach: batteryCoach,
-                       dockProfileExternal: dockProfileExternal, dockProfileBuiltIn: dockProfileBuiltIn)
+                       dockProfileExternal: dockProfileExternal, dockProfileBuiltIn: dockProfileBuiltIn, dockMenuBar: dockMenuBar, shelfRules: shelfRules)
         let url = Self.url
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let data = try? JSONEncoder().encode(s) { try? data.write(to: url, options: .atomic) }

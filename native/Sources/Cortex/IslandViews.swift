@@ -250,6 +250,7 @@ struct ExpandedView: View {
         case .calendar: CalendarPage(model: model)
         case .shelf: ShelfPage()
         case .clipboard: ClipboardPage()
+        case .rewind: RewindPage()
         case .tools: ToolsPage(model: model)
         }
     }

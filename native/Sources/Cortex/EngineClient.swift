@@ -58,6 +58,12 @@ struct EngineStatus: Codable {
     let pluginCounts: [String: Int]
 }
 
+/// The app's one engine connection, for views that live outside the palette (the Island's Rewind page).
+@MainActor
+enum Engine {
+    static var client: EngineClient?
+}
+
 struct FrameHit: Codable, Identifiable {
     let timestamp: Int
     let appName: String
