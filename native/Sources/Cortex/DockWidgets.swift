@@ -10,7 +10,7 @@ struct DockWidgetKind: Identifiable, Equatable {
     let span: CGFloat
 
     static let all: [DockWidgetKind] = [
-        DockWidgetKind(id: "music", title: "Now Playing", symbol: "music.note", span: 3.6),
+        DockWidgetKind(id: "music", title: "Now Playing", symbol: "music.note", span: 4.4),
         DockWidgetKind(id: "clock", title: "Clock", symbol: "clock", span: 1.9),
         DockWidgetKind(id: "battery", title: "Battery", symbol: "battery.100", span: 1.0),
         DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 1.5),
@@ -61,28 +61,54 @@ private struct MusicDockWidget: View {
 
     var body: some View {
         let art = size - 10
-        HStack(spacing: 7) {
-            Button { bridge.send(.toggle) } label: {
-                ArtworkView(image: bridge.info?.artwork, size: art, radius: size * 0.16)
-                    .overlay {
-                        if compact { Image(systemName: bridge.info?.playing == true ? "pause.fill" : "play.fill").font(.system(size: size * 0.28)).shadow(radius: 3) }
-                    }
+        // Pick the richest layout that fits: artwork + title + controls, artwork + controls, artwork alone.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 7) {
+                artwork(art)
+                titles.frame(minWidth: 64, maxWidth: .infinity, alignment: .leading)
+                controls
             }
-            .buttonStyle(.plain)
-            if !compact {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(bridge.info?.title ?? "Nothing playing").font(.system(size: 11, weight: .semibold)).lineLimit(1)
-                    Text(bridge.info?.artist ?? "").font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 2) {
-                    control("backward.fill", .previous)
-                    control(bridge.info?.playing == true ? "pause.fill" : "play.fill", .toggle)
-                    control("forward.fill", .next)
-                }
+            HStack(spacing: 6) {
+                artwork(art)
+                Spacer(minLength: 0)
+                controls
             }
+            artwork(art).overlay { playGlyph }
         }
         .padding(.horizontal, 5)
+        .animation(.easeInOut(duration: 0.2), value: bridge.info?.title)
+    }
+
+    private func artwork(_ side: CGFloat) -> some View {
+        Button { bridge.send(.toggle) } label: {
+            ArtworkView(image: bridge.info?.artwork, size: side, radius: size * 0.16)
+                .overlay { if compact { playGlyph } }
+                .opacity(bridge.info == nil ? 0.55 : 1)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var playGlyph: some View {
+        Image(systemName: bridge.info?.playing == true ? "pause.fill" : "play.fill")
+            .font(.system(size: size * 0.28)).shadow(color: .black.opacity(0.6), radius: 3)
+    }
+
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(bridge.info?.title ?? "Not playing").font(.system(size: 11, weight: .semibold)).lineLimit(1)
+            if let artist = bridge.info?.artist, !artist.isEmpty {
+                Text(artist).font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+            }
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: 2) {
+            control("backward.fill", .previous)
+            control(bridge.info?.playing == true ? "pause.fill" : "play.fill", .toggle)
+            control("forward.fill", .next)
+        }
+        .opacity(bridge.info == nil ? 0.45 : 1)
     }
 
     private func control(_ symbol: String, _ command: MRCommand) -> some View {

@@ -242,6 +242,7 @@ struct CompactView: View {
 struct ExpandedView: View {
     @ObservedObject var model: IslandModel
     let bridge: MediaRemoteBridge
+    @Namespace private var tabNS
 
     var body: some View {
         VStack(spacing: 0) {
@@ -258,15 +259,23 @@ struct ExpandedView: View {
             .padding(.horizontal, 22)
             .frame(maxHeight: .infinity)
             .id(model.page)
-            .transition(.opacity)
+            .transition(.blurReplace)
 
             HStack(spacing: 4) {
                 ForEach(IslandPage.allCases) { p in
-                    Button { withAnimation(.easeInOut(duration: 0.2)) { model.page = p } } label: {
+                    Button { withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { model.page = p } } label: {
                         Image(systemName: p.symbol).font(.system(size: 12, weight: .medium))
+                            .symbolEffect(.bounce, value: model.page == p)
                             .frame(width: 34, height: 24)
-                            .background(model.page == p ? Color.white.opacity(0.18) : Color.clear, in: Capsule())
+                            .background {
+                                if model.page == p {
+                                    Capsule().fill(Color.white.opacity(0.18))
+                                        .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.6))
+                                        .matchedGeometryEffect(id: "tab", in: tabNS)
+                                }
+                            }
                             .foregroundStyle(model.page == p ? Color.white : Color.white.opacity(0.5))
+                            .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .help(p.title)
