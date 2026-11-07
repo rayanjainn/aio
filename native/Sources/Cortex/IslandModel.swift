@@ -8,12 +8,14 @@ struct NotchGeometry: Equatable {
     var notchWidth: CGFloat
     var menuBarHeight: CGFloat
 
+    /// `screenNamed` picks one display (for the extra pills); nil follows the Settings choice.
     @MainActor
-    static func detect() -> NotchGeometry {
+    static func detect(screenNamed: String? = nil) -> NotchGeometry {
         let screens = NSScreen.screens
         // Notch screen if there is one, else the screen that owns the menu bar (always first).
         let wanted = Prefs.shared.islandDisplay
-        let screen = (wanted != "auto" ? screens.first(where: { $0.localizedName == wanted }) : nil)
+        let screen = (screenNamed.flatMap { n in screens.first(where: { $0.localizedName == n }) })
+            ?? (wanted != "auto" ? screens.first(where: { $0.localizedName == wanted }) : nil)
             ?? screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? screens.first
         guard let screen else {
             return NotchGeometry(screenFrame: NSRect(x: 0, y: 0, width: 1440, height: 900), hasNotch: false, notchWidth: 0, menuBarHeight: 24)

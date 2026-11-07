@@ -233,6 +233,7 @@ struct IslandPane: View {
                 Toggle("Show the Island", isOn: $prefs.islandEnabled)
                 Toggle("Expand when the pointer touches it", isOn: $prefs.islandHoverExpand)
                 Toggle("Hide it while a full-screen app is showing", isOn: $prefs.islandHideFullscreen)
+                Toggle("Also show a pill on my other displays", isOn: $prefs.islandAllDisplays)
                 Picker("Show the Island on", selection: $prefs.islandDisplay) {
                     Text("Automatic (the display with the notch)").tag("auto")
                     ForEach(NSScreen.screens, id: \.localizedName) { s in Text(s.localizedName).tag(s.localizedName) }

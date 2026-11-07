@@ -52,6 +52,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        Prefs.shared.$islandAllDisplays.dropFirst().receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.syncSecondaryIslands() }.store(in: &cancellables)
+        Prefs.shared.$islandDisplay.dropFirst().receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self?.syncSecondaryIslands() } }.store(in: &cancellables)
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self?.syncSecondaryIslands() }
+        }
+        syncSecondaryIslands()
         Prefs.shared.$hyperKey
             .receive(on: DispatchQueue.main)
             .sink { on in
@@ -261,6 +269,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func revealLog() {
         NSWorkspace.shared.activateFileViewerSelecting([Log.fileURL])
+    }
+
+    private var secondaryIslands: [String: IslandController] = [:]
+
+    /// One extra pill per other display when "Also show a pill on my other displays" is on.
+    private func syncSecondaryIslands() {
+        guard let island else { return }
+        let primaryFrame = island.model.geometry.screenFrame
+        let wanted: [String] = Prefs.shared.islandAllDisplays && Prefs.shared.islandEnabled
+            ? NSScreen.screens.filter { $0.frame != primaryFrame }.map(\.localizedName) : []
+        for (name, controller) in secondaryIslands where !wanted.contains(name) {
+            controller.hide()
+            secondaryIslands[name] = nil
+        }
+        for name in wanted where secondaryIslands[name] == nil {
+            let c = IslandController(bridge: nowPlaying, power: power, screenName: name, primary: island)
+            c.show()
+            secondaryIslands[name] = c
+        }
     }
 
     private var timelineWindow: NSWindow?

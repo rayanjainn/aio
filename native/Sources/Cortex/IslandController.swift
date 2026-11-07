@@ -56,10 +56,42 @@ final class IslandController {
     private var hudWork: DispatchWorkItem?
     private var meetingTimer: Timer?
 
-    init(bridge: MediaRemoteBridge, power: PowerMonitor) {
+    /// An extra pill on another display mirrors the main Island's state (`primary`).
+    private let screenName: String?
+    private let primary: IslandController?
+
+    init(bridge: MediaRemoteBridge, power: PowerMonitor, screenName: String? = nil, primary: IslandController? = nil) {
         self.bridge = bridge
         self.power = power
+        self.screenName = screenName
+        self.primary = primary
+        if screenName != nil { model.geometry = NotchGeometry.detect(screenNamed: screenName) }
     }
+
+    func hide() {
+        cancellables.removeAll()
+        hoverWork?.cancel(); shrinkWork?.cancel()
+        panel?.orderOut(nil)
+        panel = nil
+    }
+
+    /// Follows the main Island's activity so every display shows the same thing.
+    private func mirror(_ src: IslandModel) {
+        let q = DispatchQueue.main
+        src.$track.receive(on: q).sink { [weak self] in self?.model.track = $0 }.store(in: &cancellables)
+        src.$battery.receive(on: q).sink { [weak self] in self?.model.battery = $0 }.store(in: &cancellables)
+        src.$charging.receive(on: q).sink { [weak self] in self?.model.charging = $0 }.store(in: &cancellables)
+        src.$timerRunning.receive(on: q).sink { [weak self] in self?.model.timerRunning = $0 }.store(in: &cancellables)
+        src.$meeting.receive(on: q).sink { [weak self] in self?.model.meeting = $0 }.store(in: &cancellables)
+        src.$downloads.receive(on: q).sink { [weak self] in self?.model.downloads = $0 }.store(in: &cancellables)
+        src.$micInUse.receive(on: q).sink { [weak self] in self?.model.micInUse = $0 }.store(in: &cancellables)
+        src.$cameraInUse.receive(on: q).sink { [weak self] in self?.model.cameraInUse = $0 }.store(in: &cancellables)
+        src.$hud.receive(on: q).sink { [weak self] in self?.model.hud = $0 }.store(in: &cancellables)
+        src.$flash.receive(on: q).sink { [weak self] in self?.model.flash = $0 }.store(in: &cancellables)
+        src.$lyric.receive(on: q).sink { [weak self] in self?.model.lyric = $0 }.store(in: &cancellables)
+    }
+
+    private func detectGeometry() -> NotchGeometry { NotchGeometry.detect(screenNamed: screenName) }
 
     func show() {
         let panel = IslandPanel(
@@ -86,8 +118,10 @@ final class IslandController {
         panel.contentView = host
         self.panel = panel
 
-        wireState()
-        wireServices()
+        if let primary { mirror(primary.model) } else {
+            wireState()
+            wireServices()
+        }
 
         model.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.layout() }
@@ -97,13 +131,13 @@ final class IslandController {
             .sink { [weak self] _ in self?.updateFullScreen() }.store(in: &cancellables)
         Prefs.shared.$islandDisplay.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             guard let self else { return }
-            self.model.geometry = NotchGeometry.detect()
+            self.model.geometry = self.detectGeometry()
             self.layout(force: true)
         }.store(in: &cancellables)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else { return }
-                self.model.geometry = NotchGeometry.detect()
+                self.model.geometry = self.detectGeometry()
                 Log.info("screens changed: \(self.describeGeometry())")
                 self.layout(force: true)
             }
