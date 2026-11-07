@@ -244,22 +244,24 @@ struct ExpandedView: View {
     let bridge: MediaRemoteBridge
     @Namespace private var tabNS
 
+    @ViewBuilder private var page: some View {
+        switch model.page {
+        case .player: PlayerPage(model: model, bridge: bridge)
+        case .calendar: CalendarPage(model: model)
+        case .shelf: ShelfPage()
+        case .clipboard: ClipboardPage()
+        case .tools: ToolsPage(model: model)
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: model.geometry.menuBarHeight)   // the hardware notch
-            Group {
-                switch model.page {
-                case .player: PlayerPage(model: model, bridge: bridge)
-                case .calendar: CalendarPage(model: model)
-                case .shelf: ShelfPage()
-                case .clipboard: ClipboardPage()
-                case .tools: ToolsPage(model: model)
-                }
-            }
-            .padding(.horizontal, 22)
-            .frame(maxHeight: .infinity)
-            .id(model.page)
-            .transition(.blurReplace)
+            page
+                .padding(.horizontal, 22)
+                .frame(maxHeight: .infinity)
+                .id(model.page)
+                .transition(AnyTransition.opacity.combined(with: .scale(scale: 0.97)))
 
             HStack(spacing: 4) {
                 ForEach(IslandPage.allCases) { p in
