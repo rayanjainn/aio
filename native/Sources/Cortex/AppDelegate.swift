@@ -6,6 +6,7 @@ import Combine
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let nowPlaying = MediaRemoteBridge()
     private let power = PowerMonitor()
+    private var accessibilityPoll: Timer?
     private let engineProcess = EngineProcess()
     private let engine = EngineClient()
     private var island: IslandController?
@@ -81,7 +82,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setUpStatusItem()
         if !Prefs.shared.onboardingDone { onboarding.show() }
         checkForUpdatesQuietly()
-        if !WindowManager.isTrusted { Log.info("Accessibility not granted yet (needed for window snapping)") }
+        if !WindowManager.isTrusted {
+            Log.info("Accessibility not granted yet (needed for window snapping)")
+            // Pick the permission up the moment it is granted — no relaunch needed.
+            accessibilityPoll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] t in
+                guard WindowManager.isTrusted else { return }
+                t.invalidate()
+                self?.accessibilityPoll = nil
+                Log.info("Accessibility granted — starting media keys and window features")
+                if Prefs.shared.islandHUD { HUDService.shared.captureKeys() }
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
