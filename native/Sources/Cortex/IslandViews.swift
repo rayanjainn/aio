@@ -159,6 +159,7 @@ struct CompactView: View {
         switch model.activity {
         case .hud(let e):
             Image(systemName: Self.hudSymbol(e)).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
+                .contentTransition(.symbolEffect(.replace))
         case .flash(let f):
             switch f {
             case .charging: Image(systemName: "bolt.fill").foregroundStyle(.white).symbolEffect(.pulse, options: .repeating)
@@ -175,9 +176,17 @@ struct CompactView: View {
         case .download:
             Image(systemName: "arrow.down.circle").font(.system(size: 14)).foregroundStyle(.white).symbolEffect(.pulse, options: .repeating)
         case .music:
-            if let t = model.track { ArtworkView(image: t.artwork, size: 22, radius: 5) }
+            if let t = model.track {
+                // Playing: full size and bright. Paused: a little smaller and dimmer, like a resting record.
+                ArtworkView(image: t.artwork, size: 22, radius: 5)
+                    .scaleEffect(t.playing ? 1 : 0.86)
+                    .opacity(t.playing ? 1 : 0.6)
+                    .shadow(color: .white.opacity(t.playing ? 0.18 : 0), radius: 4)
+                    .animation(.spring(response: 0.35, dampingFraction: 0.75), value: t.playing)
+            }
         case .privacy:
             Image(systemName: model.cameraInUse ? "video.fill" : "mic.fill").font(.system(size: 12)).foregroundStyle(.white)
+                .symbolEffect(.pulse, options: .repeating)
         case .idle:
             Color.clear
         }
@@ -187,15 +196,23 @@ struct CompactView: View {
         switch model.activity {
         case .hud(let e):
             HStack(spacing: 8) {
-                Capsule().fill(Color.white.opacity(0.22)).frame(width: 52, height: 5)
+                Capsule().fill(Color.white.opacity(0.18)).frame(width: 52, height: 6)
                     .overlay(alignment: .leading) {
-                        Capsule().fill(Color.white).frame(width: 52 * CGFloat(e.muted ? 0 : e.level), height: 5)
+                        Capsule().fill(Color.white).frame(width: max(6, 52 * CGFloat(e.muted ? 0 : e.level)), height: 6)
+                            .opacity(e.muted ? 0.3 : 1)
+                            .shadow(color: .white.opacity(0.55), radius: 3)
                     }
             }
             .animation(.easeOut(duration: 0.12), value: e.level)
         case .flash(let f):
             switch f {
-            case .charging(let p): Text("\(p)%").font(.system(size: 12, weight: .semibold).monospacedDigit()).foregroundStyle(.white)
+            case .charging(let p):
+                HStack(spacing: 5) {
+                    Text("\(p)%").font(.system(size: 12, weight: .semibold).monospacedDigit())
+                    Capsule().fill(Color.white.opacity(0.2)).frame(width: 22, height: 8)
+                        .overlay(alignment: .leading) { Capsule().fill(Color.white).frame(width: max(3, 22 * CGFloat(p) / 100), height: 8) }
+                }
+                .foregroundStyle(.white)
             case .bluetooth(let name, let battery):
                 Text(battery ?? name).font(.system(size: 11, weight: .medium)).foregroundStyle(.white).lineLimit(1).padding(.horizontal, 8)
             case .message(_, let text): Text(text).font(.system(size: 11, weight: .medium)).foregroundStyle(.white).lineLimit(1).padding(.horizontal, 8)
