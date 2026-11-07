@@ -29,11 +29,22 @@
 | `note buy milk` | jot a quick note (kept in `~/.cortex/native/quicknotes.md`) |
 | `pin` | pin the clipboard (text or an image) and paste it back later |
 
+| `⌃⌥A` | **Act on this**: copies your selection and offers summarise, fix grammar, translate, reply, search, note, pin |
+| `⌃⌥⇧V` | paste as plain text |
+| `dock work` | save / switch Dock profiles (auto-switch per display in Settings → Dock) |
+| *(nothing typed)* | commands for the app you were just in, then quick actions and recent files |
+
+Snippets can ask for values: `Hi {ask:Name}, see you {ask:When}`.
+Scripts and Shortcuts can drive Cortex: `open "cortex://run/timer.25"`, `cortex://palette?q=tab`, `cortex://toast?text=Hello`, `cortex://layout?name=coding`.
+Window layouts now also remember and reopen your browser tabs.
+
 Snippets understand `{date}`, `{time}`, `{datetime}`, `{day}`, `{uuid}` and `{clipboard}`.
 
 **Island** also has a Clipboard page (recent text, click to paste), hides in full-screen apps, and can show a pill on every display (Settings → Island).
+**Dock Peek** — drag a window preview off the Dock and the window lands where you drop it.
+**Nudges** — meeting start/end, focus sessions count app switches (and can hide other apps), battery hogs, "welcome back" after sleep.
 **Hyper key** — Settings → General: Caps Lock presses ⌃⌥⌘⇧ with another key; use it in Settings → Shortcuts.
-**AI** — Settings → AI: Ollama on this Mac, or any OpenAI-compatible server with your key.
+**AI** — Settings → AI: Ollama on this Mac, **Ollama Cloud** (paste your ollama.com key), or any OpenAI-compatible server.
 **Dock widgets** — Settings → Dock, or right-click the Dock → *Add widget*: Now Playing, Clock, Battery, Weather, Focus Timer, System, Next Meeting.
 **Dock** — right-click the bar for size, magnification, position; right-click an icon for *Change Icon…*, *Show All Windows*, Hide, Quit.
 **⌥⇥** — switch between any window. **Notch** — hover it; swipe sideways to change page; drop files on it to park them on the Shelf.
