@@ -68,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Prefs.shared.$dockMenuBar.receive(on: DispatchQueue.main)
             .sink { [weak self] on in self?.menuBarDock.setVisible(on) }.store(in: &cancellables)
         Engine.client = engine
+        if !Prefs.shared.hyperKey { HyperKey.cleanUpStaleRemap() }
         Prefs.shared.$hyperKey
             .receive(on: DispatchQueue.main)
             .sink { on in

@@ -15,6 +15,26 @@ enum HyperKey {
 
     static var isRunning: Bool { tap != nil }
 
+    /// If Cortex quit without undoing its Caps Lock → F18 remap (a crash, a force quit), undo it now —
+    /// but only that one mapping, never mappings you set up yourself.
+    static func cleanUpStaleRemap() {
+        guard tap == nil else { return }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/hidutil")
+        p.arguments = ["property", "--get", "UserKeyMapping"]
+        let out = Pipe()
+        p.standardOutput = out; p.standardError = Pipe()
+        guard (try? p.run()) != nil else { return }
+        p.waitUntilExit()
+        let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let ours = text.contains("\(capsLock)") && text.contains("\(f18)")
+        let onlyOurs = text.components(separatedBy: "HIDKeyboardModifierMappingSrc").count == 2
+        if ours && onlyOurs {
+            hidutil("{\"UserKeyMapping\":[]}")
+            Log.info("hyper key: removed a Caps Lock remap left over from an earlier run")
+        }
+    }
+
     private static func hidutil(_ json: String) {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/hidutil")
