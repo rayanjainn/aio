@@ -145,7 +145,7 @@ struct PaletteView: View {
                                 .frame(height: PaletteModel.headerHeight, alignment: .bottom)
                                 .padding(.bottom, 4)
                         }
-                        RowView(row: row, selected: index == model.selection, ns: selectionNS)
+                        RowView(row: row, selected: index == model.selection, ns: selectionNS, query: model.query)
                             .id(row.id)
                             .onTapGesture {
                                 model.selection = index
@@ -217,26 +217,51 @@ struct RowView: View {
     let row: PaletteRow
     let selected: Bool
     let ns: Namespace.ID
+    var query: String = ""
+
+    /// The title with the part you typed in full white and the rest a touch softer.
+    private var title: AttributedString {
+        var a = AttributedString(row.title)
+        a.foregroundColor = .white.opacity(0.88)
+        let needle = query.split(separator: " ").last.map(String.init) ?? ""
+        guard needle.count >= 1, let r = a.range(of: needle, options: .caseInsensitive) else { return a }
+        a[r].foregroundColor = .white
+        a[r].font = .system(size: 14, weight: .bold)
+        return a
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             icon.frame(width: 32, height: 32)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(row.title).font(.system(size: 14, weight: .medium)).lineLimit(1)
+                .shadow(color: .black.opacity(selected ? 0.35 : 0.18), radius: selected ? 4 : 2, y: 1)
+            VStack(alignment: .leading, spacing: 1.5) {
+                Text(title).font(.system(size: 14, weight: .medium)).lineLimit(1)
                 if !row.subtitle.isEmpty {
-                    Text(row.subtitle).font(.system(size: 11.5)).foregroundStyle(.secondary).lineLimit(1)
+                    Text(row.subtitle).font(.system(size: 11.5)).foregroundStyle(.white.opacity(selected ? 0.62 : 0.5)).lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
-            if !row.tag.isEmpty { Text(row.tag).font(.system(size: 11)).foregroundStyle(.tertiary) }
-            if selected { Image(systemName: "return").font(.system(size: 11, weight: .medium)).foregroundStyle(.tertiary) }
+            if !row.tag.isEmpty {
+                Text(row.tag).font(.system(size: 10.5, weight: .medium)).foregroundStyle(.white.opacity(0.7))
+                    .padding(.horizontal, 7).padding(.vertical, 2.5)
+                    .background(Capsule().fill(Color.white.opacity(0.08)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
+            }
+            if selected {
+                Image(systemName: "return").font(.system(size: 10, weight: .semibold)).foregroundStyle(.white.opacity(0.75))
+                    .frame(width: 22, height: 18)
+                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.white.opacity(0.12)))
+                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
+            }
         }
         .padding(.horizontal, 12)
         .frame(height: PaletteModel.rowHeight)
         .background {
             if selected {
-                RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color.white.opacity(0.14))
-                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(LinearGradient(colors: [Color.white.opacity(0.17), Color.white.opacity(0.11)], startPoint: .top, endPoint: .bottom))
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.22), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom), lineWidth: 0.6))
                     .matchedGeometryEffect(id: "selection", in: ns)
             }
         }
@@ -250,9 +275,14 @@ struct RowView: View {
         } else if let path = row.iconPath {
             Image(nsImage: IconCache.icon(forPath: path)).resizable().interpolation(.high)
         } else {
-            Image(systemName: row.symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(.white.opacity(0.85))
+            Image(systemName: row.symbol).font(.system(size: 15, weight: .medium)).foregroundStyle(.white.opacity(selected ? 1 : 0.85))
                 .frame(width: 32, height: 32)
-                .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(LinearGradient(colors: [Color.white.opacity(selected ? 0.22 : 0.14), Color.white.opacity(selected ? 0.10 : 0.06)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                )
+                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
         }
     }
 }

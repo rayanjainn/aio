@@ -28,7 +28,7 @@ struct DockRootView: View {
             ForEach(Array(model.slots.enumerated()), id: \.element.id) { index, slot in
                 switch slot {
                 case .item(let item):
-                    DockIcon(model: model, item: item, itemIndex: itemIndexes[item.id] ?? 0, scale: scale(at: index))
+                    DockIcon(model: model, item: item, itemIndex: itemIndexes[item.id] ?? 0, scale: scale(at: index), isFront: model.frontBundle == item.value)
                 case .divider:
                     Capsule().fill(Color.white.opacity(0.22))
                         .frame(width: vertical ? model.iconSize * 0.6 : 1.5, height: vertical ? 1.5 : model.iconSize * 0.6)
@@ -78,6 +78,7 @@ struct DockIcon: View {
     let item: DockItem
     let itemIndex: Int
     let scale: CGFloat
+    var isFront = false
     @State private var drag: CGSize = .zero
     @State private var dropTargeted = false
 
@@ -111,7 +112,13 @@ struct DockIcon: View {
     }
 
     @ViewBuilder private func stack(size: CGFloat, launching: Bool) -> some View {
-        let dot = Circle().fill(Color.white.opacity(item.running && Prefs.shared.dockIndicators ? 0.85 : 0)).frame(width: 4, height: 4)
+        let front = item.kind == .app && isFront
+        let show = item.running && Prefs.shared.dockIndicators
+        let dot = Capsule()
+            .fill(Color.white.opacity(show ? (front ? 1 : 0.7) : 0))
+            .frame(width: front ? 12 : 4, height: 4)
+            .shadow(color: .white.opacity(front && show ? 0.8 : 0), radius: 3)
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: front)
         switch model.edge {
         case "left": HStack(spacing: 3) { dot; icon(size, launching) }
         case "right": HStack(spacing: 3) { icon(size, launching); dot }

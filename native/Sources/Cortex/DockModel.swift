@@ -40,7 +40,9 @@ final class DockModel: ObservableObject {
     /// Set by the app so widgets can show live data.
     var bridge: MediaRemoteBridge?
     var power: PowerMonitor?
-    @Published var pointer: CGFloat?          // along the bar's axis, from the start of the content
+    @Published var pointer: CGFloat?
+    /// Bundle id of the app in front, so its indicator can be drawn as a lit bar.
+    @Published private(set) var frontBundle: String?          // along the bar's axis, from the start of the content
 
     /// Pointer from the window's own tracking area: `along` is measured from the content start,
     /// `across` is the distance from the screen edge the Dock sits on.
@@ -106,6 +108,12 @@ final class DockModel: ObservableObject {
         p.$dockIndicators.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
         refresh()
         let center = NSWorkspace.shared.notificationCenter
+        frontBundle = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        observers.append(center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            let id = app?.bundleIdentifier
+            DispatchQueue.main.async { if self?.frontBundle != id { self?.frontBundle = id } }
+        })
         for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 DispatchQueue.main.async { self?.refresh() }
