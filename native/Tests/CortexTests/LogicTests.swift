@@ -195,6 +195,17 @@ final class PaletteCurationTests: XCTestCase {
         try? fm.removeItem(at: root)
     }
 
+    func testDevToolsEpochBase64AndHash() {
+        let epoch = DevTools.results(for: "1700000000")
+        XCTAssertEqual(epoch.count, 1)
+        XCTAssertTrue(epoch[0].value.hasPrefix("2023-11-14"))
+        XCTAssertTrue(DevTools.results(for: "b64 hello").contains { $0.value == "aGVsbG8=" })
+        XCTAssertTrue(DevTools.results(for: "b64 aGVsbG8=").contains { $0.value == "hello" })
+        XCTAssertEqual(DevTools.results(for: "sha256 abc").first?.value, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+        XCTAssertEqual(DevTools.results(for: "md5 abc").first?.value, "900150983cd24fb0d6963f7d28e17f72")
+        XCTAssertTrue(DevTools.results(for: "hello world").isEmpty)
+    }
+
     func testSnippetFormDetection() {
         XCTAssertTrue(SnippetForm.needsInput("Hi {ask:Name}"))
         XCTAssertFalse(SnippetForm.needsInput("Hi {date}"))

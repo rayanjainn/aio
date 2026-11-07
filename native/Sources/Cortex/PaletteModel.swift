@@ -175,6 +175,18 @@ final class PaletteModel: ObservableObject {
                 }
             }
         }
+        if q.lowercased() == "ip" || q.lowercased() == "my ip" {
+            Task { [weak self] in
+                guard let url = URL(string: "https://api.ipify.org"),
+                      let (data, _) = try? await URLSession.shared.data(from: url),
+                      let ip = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !ip.isEmpty else { return }
+                await MainActor.run {
+                    guard let self, self.generation == gen else { return }
+                    self.rows.append(PaletteRow(id: "ip:public", title: ip, subtitle: "Public IP · ↩ copy", symbol: "globe", iconPath: nil, tag: "",
+                                                kind: .copy(ip), section: "Network"))
+                }
+            }
+        }
         let wl = q.lowercased()
         if wl == "win" || wl.hasPrefix("win ") || wl == "windows" {
             let text = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces).lowercased()
@@ -427,6 +439,28 @@ final class PaletteModel: ObservableObject {
             if out.isEmpty {
                 out.append(PaletteRow(id: "layout.hint", title: "Type a name to save this arrangement", subtitle: "e.g.  layout coding", symbol: "rectangle.3.group",
                                       iconPath: nil, tag: "", kind: .copy(""), section: "Window layouts"))
+            }
+            return out
+        }
+        for r in DevTools.results(for: q) {
+            out.append(PaletteRow(id: "dev:\(r.symbol):\(r.value.prefix(40))", title: r.title, subtitle: "↩ copy", symbol: r.symbol,
+                                  iconPath: nil, tag: "", kind: .copy(r.value), section: "Developer"))
+        }
+        if lower.hasPrefix("port "), let port = Int(lower.dropFirst(5).trimmingCharacters(in: .whitespaces)) {
+            let found = DevTools.listeners(port: port)
+            for l in found {
+                out.append(PaletteRow(id: "port:\(l.pid)", title: "Quit \(l.name) (pid \(l.pid))", subtitle: "Listening on port \(port) · ⌘↩ force quit",
+                                      symbol: "network", iconPath: nil, tag: "", kind: .kill(l.pid), section: "Port \(port)"))
+            }
+            if found.isEmpty {
+                out.append(PaletteRow(id: "port:none", title: "Nothing is listening on port \(port)", subtitle: "", symbol: "network",
+                                      iconPath: nil, tag: "", kind: .copy(""), section: "Port \(port)"))
+            }
+            return out
+        }
+        if lower == "ip" || lower == "my ip" {
+            if let ip = DevTools.localIP() {
+                out.append(PaletteRow(id: "ip:local", title: ip, subtitle: "Local IP · ↩ copy", symbol: "wifi", iconPath: nil, tag: "", kind: .copy(ip), section: "Network"))
             }
             return out
         }
