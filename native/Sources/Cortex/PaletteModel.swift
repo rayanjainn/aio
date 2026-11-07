@@ -346,7 +346,7 @@ final class PaletteModel: ObservableObject {
         func sys(_ id: String, _ title: String, _ sub: String, _ symbol: String) -> PaletteRow {
             PaletteRow(id: "home:\(id)", title: title, subtitle: sub, symbol: symbol, iconPath: nil, tag: "", kind: .system(id), section: "Quick actions")
         }
-        var out: [PaletteRow] = contextRows()
+        var out: [PaletteRow] = Self.recentRows() + contextRows()
         out += [
             cmd("timer.25", "Start a 25-minute focus timer", "Shows in the Island", "timer"),
             cmd("window.left", "Snap window to the left half", "Also ⌃⌥←", "rectangle.lefthalf.filled"),
@@ -702,8 +702,44 @@ final class PaletteModel: ObservableObject {
     }
 
     /// Runs the selected row. Returns true when the palette should close.
+    /// Remembers what was run so the empty palette can offer it again.
+    private func remember(_ row: PaletteRow) {
+        guard !row.id.hasPrefix("recent:") || true else { return }
+        let entry: RecentCommand?
+        switch row.kind {
+        case .command(let id) where !id.hasPrefix("query:") && !id.hasPrefix("note.add:") && !id.hasPrefix("tab:") && !id.hasPrefix("win:"):
+            entry = RecentCommand(title: row.title, subtitle: row.subtitle, symbol: row.symbol, iconPath: row.iconPath, type: "command", value: id)
+        case .system(let id):
+            entry = RecentCommand(title: row.title, subtitle: row.subtitle, symbol: row.symbol, iconPath: nil, type: "system", value: id)
+        case .web(let u):
+            entry = RecentCommand(title: row.title, subtitle: u, symbol: row.symbol, iconPath: nil, type: "web", value: u)
+        case .file(let p):
+            entry = RecentCommand(title: row.title, subtitle: row.subtitle, symbol: row.symbol, iconPath: p, type: "file", value: p)
+        case .engine(let r) where r.path?.hasSuffix(".app") == true:
+            entry = RecentCommand(title: r.title, subtitle: "Application", symbol: "app", iconPath: r.path, type: "file", value: r.path ?? "")
+        default:
+            entry = nil
+        }
+        if let entry, !entry.value.isEmpty { RecentCommands.record(entry) }
+    }
+
+    static func recentRows() -> [PaletteRow] {
+        RecentCommands.all().prefix(5).enumerated().map { i, r in
+            let kind: RowKind
+            switch r.type {
+            case "system": kind = .system(r.value)
+            case "web": kind = .web(r.value)
+            case "file": kind = .file(r.value)
+            default: kind = .command(r.value)
+            }
+            return PaletteRow(id: "recent:\(i):\(r.value)", title: r.title, subtitle: r.subtitle, symbol: r.symbol, iconPath: r.iconPath,
+                              tag: "", kind: kind, section: "Recent")
+        }
+    }
+
     func activateSelection(modifiers: NSEvent.ModifierFlags = []) -> Bool {
         guard let row = selectedRow else { return false }
+        if modifiers.isEmpty { remember(row) }
         let cmd = modifiers.contains(.command), shift = modifiers.contains(.shift)
         switch row.kind {
         case .copy(let value):

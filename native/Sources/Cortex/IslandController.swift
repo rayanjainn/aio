@@ -271,7 +271,7 @@ final class IslandController {
         announceMeetings()
         let soon = CalendarService.shared.next.flatMap { e -> MeetingEvent? in
             let until = e.start.timeIntervalSinceNow
-            return (until < 10 * 60 && e.end > Date()) ? e : nil
+            return (until < Prefs.shared.islandMeetingLead * 60 && e.end > Date()) ? e : nil
         }
         if soon != model.meeting { model.meeting = soon }
     }

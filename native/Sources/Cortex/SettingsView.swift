@@ -253,6 +253,12 @@ struct IslandPane: View {
                     }
                 }
                 Toggle("Music takes priority over timers and downloads", isOn: $prefs.islandMusicFirst)
+                LabeledContent("Show the next meeting") {
+                    HStack {
+                        Slider(value: $prefs.islandMeetingLead, in: 5...60, step: 5).frame(width: 200)
+                        Text("\(Int(prefs.islandMeetingLead)) min before").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
                 Picker("Show the Island on", selection: $prefs.islandDisplay) {
                     Text("Automatic (the display with the notch)").tag("auto")
                     ForEach(NSScreen.screens, id: \.localizedName) { s in Text(s.localizedName).tag(s.localizedName) }
