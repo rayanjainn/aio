@@ -34,6 +34,11 @@
 | `dock work` | save / switch Dock profiles (auto-switch per display in Settings → Dock) |
 | *(nothing typed)* | commands for the app you were just in, then quick actions and recent files |
 
+| `port 3000` | what is listening on a port — ↩ quits it |
+| `uuid`, `now`, `1700000000`, `b64 …`, `sha256 …`, `md5 …`, `urlencode …` | developer tools, ↩ copies |
+| `ip` | your local and public IP |
+| *(nothing typed)* | your last five commands come first |
+
 Snippets can ask for values: `Hi {ask:Name}, see you {ask:When}`.
 Scripts and Shortcuts can drive Cortex: `open "cortex://run/timer.25"`, `cortex://palette?q=tab`, `cortex://toast?text=Hello`, `cortex://layout?name=coding`.
 Window layouts now also remember and reopen your browser tabs.
