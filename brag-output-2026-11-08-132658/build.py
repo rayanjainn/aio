@@ -10,7 +10,10 @@ OUT = sys.argv[2]
 V = MODE == "portrait"
 W, H = (1080, 1920) if V else (1920, 1080)
 
-B, T0 = 60 / 110, 0.27                     # beat grid of the track: ~110 BPM, first beat at 0.27 s
+B = float(os.environ.get("MUSIC_B", 60 / 110))   # seconds per beat of the music track
+T0 = float(os.environ.get("MUSIC_T0", 0.27))   # time of the first beat in the track
+MUSIC = os.environ.get("MUSIC_SRC", "assets/music.mp3")
+MUSIC_VOL = os.environ.get("MUSIC_VOL", "0.85")
 def beat(n): return round(T0 + n * B, 3)
 
 SCENES = [  # id, start beat, end beat
@@ -303,7 +306,7 @@ sfx.append(("swish", beat(14), 0.3))
 sfx.append(("drop", round(starts["dock"][0] + L("dock", 18), 3), 0.25))
 for i in range(4): sfx.append(("click", beat(34.5 + i), 0.2))
 sfx.append(("drop", round(starts["outro"][0] + 0.05, 3), 0.3))
-audio = f'      <audio id="music" class="clip" src="assets/music.mp3" data-start="0" data-duration="{TOTAL}" data-volume="0.85" data-fade-out="1.4" data-track-index="20"></audio>\n'
+audio = f'      <audio id="music" class="clip" src="{MUSIC}" data-start="0" data-duration="{TOTAL}" data-volume="{MUSIC_VOL}" data-fade-out="1.4" data-track-index="20"></audio>\n'
 for k, (name_, t, v) in enumerate(sfx):
     audio += f'      <audio id="sfx{k}" class="clip" src="assets/sfx/{name_}.ogg" data-start="{t}" data-duration="{ {"click": 0.01, "impact": 0.18, "swish": 0.06, "drop": 0.11}[name_] }" data-volume="{v}" data-track-index="{21+k}"></audio>\n'
 variables = json.dumps([

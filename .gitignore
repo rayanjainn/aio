@@ -12,3 +12,6 @@ cortexd/target
 brag-output/work/
 brag-output-*/composition*/.hyperframes/
 brag-output-*/*-raw.mp4
+brag-output-*/composition-m*/
+brag-output-*/render-*.log
+brag-output-*/preview-*.mp4
