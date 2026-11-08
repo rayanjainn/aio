@@ -61,6 +61,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp native/build/Cortex.dmg "native/build/Cortex-${{ inputs.version }}.dmg"
-          gh release create "${{ inputs.version }}" "native/build/Cortex-${{ inputs.version }}.dmg" \
+          # Also attach a fixed-name copy, so releases/latest/download/Cortex.dmg always downloads the newest build.
+          gh release create "${{ inputs.version }}" "native/build/Cortex-${{ inputs.version }}.dmg" "native/build/Cortex.dmg" \
             --target "$GITHUB_SHA" --title "Cortex ${{ inputs.version }}" --latest \
-            --notes "Download the .dmg and drag Cortex to Applications. Not notarized yet: if macOS says the app is damaged run  xattr -cr /Applications/Cortex.app  (or use Open Anyway in System Settings → Privacy & Security). macOS 14 or later; Liquid Glass needs macOS 26."
+            --notes "Download the .dmg and drag Cortex to Applications. Cortex is not notarized by Apple (that needs a paid developer account), so the first time macOS says it “could not verify Cortex is free of malware” or that it is “damaged”. It is safe to open: run  xattr -cr /Applications/Cortex.app  once in Terminal, or open System Settings → Privacy & Security and click Open Anyway. macOS 14 or later; Liquid Glass needs macOS 26."

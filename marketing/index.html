@@ -186,6 +186,11 @@ h3{font-size:22px;letter-spacing:-.025em;font-weight:700}
 .steps div{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
 .steps div::before{content:counter(s);display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fff;color:#000;font-weight:800;font-size:14px;margin-bottom:12px}
 .steps code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px;background:rgba(255,255,255,.08);padding:2px 6px;border-radius:6px;word-break:break-all}
+.warn{display:flex;gap:18px;max-width:860px;margin:36px auto 0;text-align:left;padding:22px 24px;border-radius:22px;background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.35)}
+.warn .wicon{flex:0 0 34px;height:34px;border-radius:50%;background:#ff9f0a;color:#000;font-weight:900;display:grid;place-items:center}
+.warn p{color:var(--t2);margin-top:6px;font-size:15px}
+.warn ol{margin:10px 0 0 18px;color:var(--t2);font-size:15px;display:grid;gap:6px}
+.warn code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;background:rgba(255,255,255,.1);padding:2px 7px;border-radius:6px;user-select:all}
 details{max-width:760px;margin:12px auto 0;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 20px}
 details summary{cursor:pointer;font-weight:600}
 details p{color:var(--t2);margin-top:10px;font-size:15px}
@@ -204,7 +209,7 @@ footer .wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between}
   <div class="links">
     <a href="#launcher">Launcher</a><a href="#dock">Dock</a><a href="#notch">Notch</a><a href="#music">Music</a><a href="#command">⌘K</a><a href="#privacy">Privacy</a>
   </div>
-  <a class="btn primary small cta" href="https://github.com/rayanjainn/aio/releases/latest">Download</a>
+  <a class="btn primary small cta" href="https://github.com/rayanjainn/aio/releases/latest/download/Cortex.dmg" data-dl>Download</a>
 </nav>
 
 <main id="top">
@@ -215,13 +220,13 @@ footer .wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between}
       <h1>The Launchpad replacement.<br><span>Dock. Notch. Music. ⌘K.</span></h1>
       <p class="lede center" style="margin:0 auto">One Mac app brings together a full-screen launcher with widgets, a Dock you can actually customise, a live Island in the notch, a stunning full-screen music player with synced lyrics, and a command bar for everything else.</p>
       <div class="actions">
-        <a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest">
+        <a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/Cortex.dmg" data-dl>
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.6c.02 2.53 2.22 3.37 2.25 3.38-.02.06-.35 1.2-1.16 2.38-.7 1.02-1.42 2.04-2.57 2.06-1.12.02-1.48-.66-2.77-.66-1.28 0-1.69.64-2.75.68-1.1.04-1.95-1.11-2.65-2.13-1.44-2.08-2.54-5.88-1.06-8.44.73-1.27 2.04-2.08 3.47-2.1 1.08-.02 2.1.73 2.77.73.66 0 1.9-.9 3.2-.77.54.02 2.07.22 3.05 1.66-.08.05-1.82 1.06-1.8 3.17M14.3 4.15c.59-.71.98-1.7.87-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.61.95.07 1.92-.48 2.52-1.2"/></svg>
           Download for macOS
         </a>
         <a class="btn ghost" href="#launcher">Take the tour</a>
       </div>
-      <p class="meta">macOS 14 or later · Apple silicon and Intel · Updates itself</p>
+      <p class="meta">macOS 14 or later · Apple silicon and Intel · Updates itself · <a href="#safe" style="text-decoration:underline">macOS warning?</a></p>
       <div class="pills"><span>Launcher</span><span>Dock</span><span>Dynamic Notch</span><span>Widgets</span><span>Music</span><span>⌘K</span><span>Spaces</span></div>
       <div class="mac reveal">
         <div class="screen"><img src="shots/launcher.jpg" alt="The Cortex launcher: date, music, weather and calendar widgets beside every app, grouped into folders"></div>
@@ -409,10 +414,22 @@ footer .wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between}
     <div class="wrap">
       <h2 class="reveal">Make your Mac yours.</h2>
       <p class="lede center reveal" style="margin-top:16px">Free. Updates install themselves.</p>
-      <div class="reveal" style="margin-top:30px"><a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest">Download the latest release</a></div>
+      <div class="reveal" style="margin-top:30px"><a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/Cortex.dmg" data-dl>Download the latest release</a></div>
+      <div class="warn reveal" id="safe">
+        <div class="wicon">!</div>
+        <div>
+          <b>macOS will warn you the first time — that's expected.</b>
+          <p>Because Cortex isn't notarized by Apple (that needs a paid developer account), macOS says <i>“Apple could not verify Cortex is free of malware”</i> or that it <i>“is damaged and can't be opened”</i>. It's neither — it's open source and signed with the same certificate every release. To open it once:</p>
+          <ol>
+            <li>Open <b>Terminal</b> and run <code>xattr -cr /Applications/Cortex.app</code>, then open Cortex again.</li>
+            <li>Or: <b>System Settings → Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.</li>
+          </ol>
+          <p class="muted">You only do this once — updates install themselves and keep their permissions.</p>
+        </div>
+      </div>
       <div class="steps reveal">
         <div><h3>Download</h3><p class="muted">Get the <code>.dmg</code> from the latest release and drag Cortex to Applications.</p></div>
-        <div><h3>Open</h3><p class="muted">If macOS says it can't check the developer, run <code>xattr -cr /Applications/Cortex.app</code> once, or use Open Anyway in Privacy &amp; Security.</p></div>
+        <div><h3>Open</h3><p class="muted">macOS warns the first time (see above): run <code>xattr -cr /Applications/Cortex.app</code> once, or click Open Anyway in Privacy &amp; Security.</p></div>
         <div><h3>Grant</h3><p class="muted">Settings → Privacy &amp; Permissions → <b>Grant everything</b>. Accessibility and Screen Recording you switch on yourself.</p></div>
       </div>
       <details class="reveal"><summary>Why does macOS warn me the first time?</summary><p>Cortex isn't notarized by Apple (that needs a paid developer account). Every release is signed with the same certificate, so once you allow it, updates and permissions carry over.</p></details>
@@ -430,6 +447,11 @@ footer .wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between}
 </footer>
 
 <script>
+  // Download buttons go straight to the newest .dmg. Older releases lack the fixed-name Cortex.dmg, so ask the API.
+  fetch('https://api.github.com/repos/rayanjainn/aio/releases/latest').then(r => r.json()).then(rel => {
+    const a = (rel.assets || []).find(x => x.name === 'Cortex.dmg') || (rel.assets || []).find(x => x.name.endsWith('.dmg'));
+    if (a) document.querySelectorAll('[data-dl]').forEach(el => { el.href = a.browser_download_url; el.title = 'Download ' + rel.tag_name; });
+  }).catch(() => {});
   // Fade sections in as they scroll into view.
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
