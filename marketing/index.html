@@ -3,590 +3,427 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cortex — ⌘K, widgets & a dock for your Mac</title>
+<title>Cortex — Launcher, Dock, Notch and Music for your Mac</title>
+<meta name="description" content="Cortex replaces Launchpad, upgrades the Dock, turns the notch into a live Island and gives your music a full-screen stage — plus a ⌘K command bar. Free, native, private." />
 <link rel="icon" type="image/svg+xml" href="cortex-icon.svg" />
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<meta property="og:image" content="cortex-icon-256.png" />
-<meta name="description" content="Cortex is a ⌘K launcher with memory, Liquid Glass desktop widgets and a customizable dock for macOS. Local-first and private." />
-<meta name="theme-color" content="#06060a" />
+<meta property="og:title" content="Cortex — Launcher, Dock, Notch and Music for your Mac" />
+<meta property="og:description" content="One native app: a Launchpad replacement, a Dock with widgets, a Dynamic Island for the notch, a full-screen music player with synced lyrics, and ⌘K." />
+<meta property="og:image" content="shots/launcher.jpg" />
+<meta name="theme-color" content="#0b0b0f" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#06060a; --t1:rgba(255,255,255,.96); --t2:rgba(255,255,255,.64); --t3:rgba(255,255,255,.40);
-  /* Apple's system typeface on Apple devices (SF Pro), Inter everywhere else. */
+  --bg:#0b0b0f; --bg2:#121218; --card:#16161d; --line:rgba(255,255,255,.08);
+  --t1:#f5f5f7; --t2:rgba(245,245,247,.66); --t3:rgba(245,245,247,.42);
+  --red:#ff453a; --orange:#ff9f0a; --accent:#ffffff;
   --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
   --display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,'SF Mono',monospace;
-  --spring:cubic-bezier(.34,1.56,.64,1); --out:cubic-bezier(.16,1,.3,1);
+  --out:cubic-bezier(.16,1,.3,1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;background:var(--ink)}
-body{font-family:var(--sans);color:var(--t1);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;letter-spacing:-.01em}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:var(--sans);color:var(--t1);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;letter-spacing:-.011em}
 a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
 ::selection{background:rgba(255,255,255,.25)}
 
-/* ── Wallpaper: soft macOS-style gradient field (gives the glass something to bend) ── */
-.wall{position:fixed;inset:0;z-index:-2;overflow:hidden;background:
-  radial-gradient(90% 70% at 20% 0%,#3a3a40 0%,transparent 60%),
-  radial-gradient(80% 70% at 90% 30%,#2a2a30 0%,transparent 60%),
-  radial-gradient(100% 80% at 50% 110%,#34343a 0%,transparent 60%),#0a0a0c}
-.wall i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.22;animation:float 30s ease-in-out infinite}
-.wall i:nth-child(1){width:42vw;height:42vw;left:-6vw;top:20vh;background:#e8e8ee}
-.wall i:nth-child(2){width:34vw;height:34vw;right:-4vw;top:8vh;background:#9a9aa4;animation-delay:-9s}
-.wall i:nth-child(3){width:38vw;height:38vw;left:38vw;bottom:-14vh;background:#d0d0d8;animation-delay:-17s;opacity:.16}
-@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(5vw,-4vh) scale(1.1)}66%{transform:translate(-4vw,5vh) scale(.92)}}
-.wall::after{content:"";position:absolute;inset:0;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:50;height:56px;display:flex;align-items:center;gap:28px;padding:0 max(16px,calc((100vw - 1180px)/2));
+  background:rgba(11,11,15,.72);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--line)}
+nav .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.02em}
+nav .brand img{width:26px;height:26px;border-radius:7px}
+nav .links{display:flex;gap:24px;font-size:14px;color:var(--t2)}
+nav .links a:hover{color:var(--t1)}
+nav .cta{margin-left:auto}
+@media(max-width:820px){nav .links{display:none}}
 
-/* ── Liquid Glass ──
-   Frosted base everywhere; Chromium additionally refracts the backdrop through an
-   SVG displacement map (html.refract). Rim = masked gradient border lit from the
-   top-left; sheen follows the pointer (--mx/--my). */
-.glass{position:relative;isolation:isolate;border-radius:24px;
-  background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 45%,rgba(255,255,255,.08));
-  -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.35),inset 0 -1px 1px rgba(255,255,255,.08),0 18px 50px rgba(0,0,0,.28)}
-html.refract .glass{backdrop-filter:url(#lg) blur(14px) saturate(190%)}
-.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
-  background:radial-gradient(420px circle at var(--mx,30%) var(--my,-20%),rgba(255,255,255,.16),transparent 45%)}
-.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
-  background:linear-gradient(135deg,rgba(255,255,255,.7),rgba(255,255,255,.12) 25%,rgba(255,255,255,.03) 50%,rgba(255,255,255,.12) 75%,rgba(255,255,255,.4));
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
-.glass.dark{background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.02) 45%),rgba(12,12,20,.42)}
+.btn{display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 22px;border-radius:999px;font-weight:600;font-size:15px;transition:transform .2s var(--out),background .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.primary{background:#fff;color:#000}
+.btn.ghost{background:rgba(255,255,255,.08);border:1px solid var(--line)}
+.btn.small{height:34px;padding:0 16px;font-size:13.5px}
+.btn svg{width:16px;height:16px}
 
-/* ── Menu bar ── */
-.menubar{position:fixed;top:0;left:0;right:0;height:30px;z-index:50;display:flex;align-items:center;gap:20px;padding:0 16px;font-size:13px;font-weight:500;
-  background:rgba(20,20,30,.28);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.06)}
-.menubar b{font-weight:700}
-.menubar span{opacity:.82}
-.menubar .r{margin-left:auto;display:flex;gap:16px;align-items:center;font-variant-numeric:tabular-nums}
-.menubar .r a{opacity:.85}
-.menubar .r a:hover{opacity:1}
-.menubar .left{display:flex;gap:20px}
-@media(max-width:720px){.menubar .left span{display:none}}
+main{padding-top:56px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+section{padding:120px 0}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t2);padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.045em;line-height:1.02;font-weight:800}
+h1{font-size:clamp(46px,8.4vw,104px)}
+h2{font-size:clamp(36px,5.6vw,68px)}
+h3{font-size:22px;letter-spacing:-.025em;font-weight:700}
+.lede{font-size:clamp(17px,1.8vw,21px);color:var(--t2);max-width:640px;letter-spacing:-.015em}
+.center{text-align:center}
+.center .lede,.lede.center{margin-left:auto;margin-right:auto;text-align:center}
+.muted{color:var(--t3)}
 
-/* ── Layout ── */
-main{position:relative;z-index:1}
-section{padding:120px 24px;max-width:1180px;margin:0 auto}
-.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
-h1,h2{font-family:var(--display);font-weight:700;letter-spacing:-.045em;line-height:1.02}
-h1{font-size:clamp(44px,9vw,96px)}
-h2{font-size:clamp(34px,5vw,60px);margin:14px 0 16px}
-.lede{font-size:clamp(17px,2vw,21px);color:var(--t2);max-width:620px;font-weight:400;letter-spacing:-.015em}
+/* hero */
+.hero{padding:90px 0 60px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-20% -10% auto;height:120%;z-index:-1;
+  background:radial-gradient(50% 45% at 30% 20%,rgba(255,69,58,.18),transparent 70%),radial-gradient(45% 40% at 75% 15%,rgba(10,132,255,.16),transparent 70%),radial-gradient(40% 40% at 50% 60%,rgba(255,159,10,.10),transparent 70%)}
+.hero h1{margin:22px auto 20px;max-width:1000px}
+.hero h1 span{color:var(--t3)}
+.hero .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.hero .meta{margin-top:16px;font-size:13px;color:var(--t3)}
+.pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin-top:26px;color:var(--t2);font-size:14px}
+.pills span::before{content:"·";margin-right:18px;color:var(--t3)}
+.pills span:first-child::before{content:none}
 
-/* ── Hero ── */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:110px;gap:26px}
-.hero h1 .soft{display:block;background:linear-gradient(180deg,#fff,rgba(255,255,255,.55));-webkit-background-clip:text;background-clip:text;color:transparent}
-.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:999px;font-weight:600;font-size:15px;cursor:pointer;border:none;color:#fff;transition:transform .3s var(--spring)}
-.btn:hover{transform:translateY(-2px) scale(1.02)}
-.btn:active{transform:scale(.97)}
-.btn.primary{background:linear-gradient(180deg,#fff,#e9e9ef);color:#111;box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 -1px 0 rgba(0,0,0,.1)}
-.btn small{font-weight:400;opacity:.6;font-size:12.5px}
-kbd{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16)}
+/* mac frame */
+.mac{margin:64px auto 0;max-width:1100px;position:relative}
+.mac .screen{border-radius:18px 18px 4px 4px;overflow:hidden;border:10px solid #1b1b20;border-bottom-width:14px;box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);background:#000;position:relative}
+.mac .screen::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:13%;height:16px;background:#1b1b20;border-radius:0 0 10px 10px;z-index:2}
+.mac .base{height:16px;margin:0 -5%;background:linear-gradient(#cfd0d4,#8e8f94);border-radius:0 0 14px 14px;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.mac .base::after{content:"";display:block;width:14%;height:6px;margin:0 auto;background:#a7a8ad;border-radius:0 0 8px 8px}
 
-/* ── Palette demo ── */
-.palette{width:min(720px,94vw);margin-top:26px;border-radius:20px;text-align:left;overflow:hidden;animation:materialize .9s var(--out) .15s both}
-@keyframes materialize{from{opacity:0;transform:scale(.94) translateY(20px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
-.p-search{display:flex;align-items:center;gap:12px;height:58px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.1)}
-.p-search input{flex:1;background:none;border:none;outline:none;color:#fff;font:400 18px var(--sans);letter-spacing:-.015em}
-.p-search input::placeholder{color:rgba(255,255,255,.4)}
-.p-list{padding:8px;max-height:330px;overflow:hidden;position:relative}
-.p-sec{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);padding:8px 12px 4px}
-.p-row{position:relative;display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:11px;cursor:pointer;z-index:0}
-.p-row .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:15px;background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.07));box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
-.p-row .t{font-size:14.5px;font-weight:500}
-.p-row .s{font-size:13px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p-row .k{margin-left:auto;font-size:12px;color:var(--t3)}
-.pill{position:absolute;left:8px;right:8px;height:44px;border-radius:11px;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 16px rgba(0,0,0,.15);
-  transition:transform .42s var(--spring),opacity .2s}
-.p-foot{display:flex;justify-content:space-between;align-items:center;height:36px;padding:0 16px;font-size:12px;color:var(--t3);border-top:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.08)}
-.rec{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono)}
-.rec i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.8);animation:pulse 2s infinite}
-@keyframes pulse{50%{opacity:.35}}
+/* feature sections */
+.feature{display:grid;grid-template-columns:1fr;gap:40px}
+.feature header{max-width:780px}
+.feature header h2{margin:16px 0 18px}
+.grid{display:grid;gap:16px}
+.grid.c3{grid-template-columns:repeat(3,1fr)}
+.grid.c2{grid-template-columns:repeat(2,1fr)}
+.grid.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.grid.c3,.grid.c4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid.c3,.grid.c2,.grid.c4{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:28px;position:relative;overflow:hidden}
+.card h3{margin-bottom:8px}
+.card p{color:var(--t2);font-size:15.5px}
+.card .k{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
+.shot{border-radius:22px;overflow:hidden;border:1px solid var(--line);background:#000;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.shot img{width:100%}
+.tight{padding:0}
+.cap{font-size:13.5px;color:var(--t3);margin-top:12px;text-align:center}
 
-/* ── Widgets ── */
-.widgets{display:grid;grid-template-columns:repeat(4,170px);grid-auto-rows:170px;gap:18px;justify-content:center;margin-top:56px}
-.w{padding:16px;display:flex;flex-direction:column;transition:transform .5s var(--spring);will-change:transform}
-.w:hover{transform:translateY(-6px) scale(1.02)}
-.w.m{grid-column:span 2}.w.l{grid-column:span 2;grid-row:span 2}
-.w .lab{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.6)}
-.big{font-size:44px;font-weight:300;letter-spacing:-.03em;line-height:1.05}
-.sub{font-size:12.5px;color:var(--t2)}
-.tn{font-variant-numeric:tabular-nums}
-.clock{width:118px;height:118px;margin:auto}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:10.5px}
-.cal b{font-weight:600;color:var(--t3);font-size:9.5px}
-.cal span{height:17px;line-height:17px;border-radius:9px}
-.cal .today{background:#fff;color:#111;font-weight:700}
-.rings{display:flex;justify-content:space-around;align-items:center;flex:1}
-.ring{position:relative;width:64px;height:64px}
-.ring svg{transform:rotate(-90deg)}
-.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;font-weight:700}
-.ring circle{transition:stroke-dashoffset 1.2s var(--out)}
-.np{display:flex;gap:14px;align-items:center;flex:1}
-.w.brand-spotify{background:radial-gradient(130% 110% at 0% 0%,rgba(30,215,96,.42),transparent 58%),radial-gradient(90% 80% at 100% 100%,rgba(30,215,96,.16),transparent 62%),linear-gradient(165deg,rgba(255,255,255,.10),rgba(255,255,255,.02) 45%),rgba(18,18,18,.62)}
-.brand-spotify .bar i{background:#1ed760}
-.brand-spotify .ctl span:nth-child(2){background:#1ed760;color:#000;box-shadow:0 6px 16px rgba(30,215,96,.45)}
-.brand-spotify .art{background:conic-gradient(from 210deg,#1ed760,#0f5c2e,#121212,#2b7a4b,#1ed760);animation:none}
-.art{width:96px;height:96px;border-radius:14px;flex-shrink:0;background:conic-gradient(from 210deg,#f4f4f6,#8e8e96,#3a3a40,#c8c8ce,#f4f4f6);box-shadow:0 10px 26px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4);animation:spin 18s linear infinite}
-@keyframes spin{to{filter:hue-rotate(360deg)}}
-.bar{height:4px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;margin:10px 0 4px}
-.bar i{display:block;height:100%;background:rgba(255,255,255,.85);border-radius:4px;width:38%;animation:prog 30s linear infinite}
-@keyframes prog{from{width:12%}to{width:96%}}
-.ctl{display:flex;gap:10px;margin-top:6px}
-.ctl span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
-.todo{display:flex;gap:9px;align-items:center;font-size:13px;padding:3px 0}
-.todo i{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);flex-shrink:0;display:grid;place-items:center;font-size:9px;font-style:normal;color:#111}
-.todo.d i{background:#fff;border-color:#fff}.todo.d span{opacity:.4;text-decoration:line-through}
-.heat{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;flex:1;margin-top:8px}
-.heat i{border-radius:3px;background:rgba(255,255,255,.08)}
-@media(max-width:820px){.widgets{grid-template-columns:repeat(2,160px);grid-auto-rows:160px}.w.l{grid-row:span 2}}
+/* colourful section backgrounds, LaunchMe-style */
+.band{border-radius:40px;padding:72px 56px;position:relative;overflow:hidden}
+@media(max-width:700px){.band{padding:48px 22px;border-radius:28px}}
+.band.sunset{background:radial-gradient(80% 90% at 10% 0%,#ff7a45,transparent 60%),radial-gradient(70% 80% at 100% 100%,#c2185b,transparent 60%),#5a1c2a}
+.band.ocean{background:radial-gradient(80% 90% at 0% 100%,#1fb5d6,transparent 60%),radial-gradient(70% 80% at 100% 0%,#3c5cff,transparent 60%),#0d2340}
+.band.ink{background:radial-gradient(70% 80% at 80% 0%,#3a3a48,transparent 60%),#15151b}
+.band .grain{position:absolute;inset:0;opacity:.08;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-/* ── Feature grid ── */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
-.card{padding:26px}
-.card h3{font-size:18px;font-weight:600;margin:14px 0 6px;letter-spacing:-.02em}
-.card p{font-size:14.5px;color:var(--t2)}
-.card .glyph{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.06));box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
-@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.grid{grid-template-columns:1fr}}
-.k-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+/* dock presets */
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:28px}
+.preset{border-radius:18px;padding:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12)}
+.preset .bar{display:flex;gap:6px;padding:6px;border-radius:14px;background:rgba(255,255,255,.12)}
+.preset .bar i{height:30px;border-radius:9px;flex:1}
+.preset .bar i.app{flex:0 0 30px;background:rgba(255,255,255,.85)}
+.preset b{display:block;margin-top:10px;font-size:14px}
+.preset small{color:rgba(255,255,255,.7);font-size:12px}
 
-/* ── Island demo ── */
-.isl-stage{position:relative;margin-top:44px;height:330px;border-radius:28px;overflow:hidden;
-  background:radial-gradient(80% 120% at 50% 0%,#3a3a42,#101014 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
-.isl-stage::before{content:"";position:absolute;left:0;right:0;top:0;height:34px;background:rgba(255,255,255,.06);backdrop-filter:blur(20px)}
-.isl{--e:cubic-bezier(.32,.72,0,1);position:absolute;top:0;left:50%;transform:translateX(-50%);width:330px;height:34px;background:#000;
-  border-radius:0 0 21px 21px;overflow:hidden;cursor:pointer;transition:width .56s var(--e),height .56s var(--e),border-radius .56s var(--e);
-  box-shadow:0 10px 30px rgba(0,0,0,.4);outline:none}
-.isl:hover,.isl:focus{width:600px;height:262px;border-radius:0 0 36px 36px}
-.isl-compact{position:absolute;inset:0 0 auto;height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;transition:opacity .2s .15s}
-.isl:hover .isl-compact,.isl:focus .isl-compact{opacity:0;transition-delay:0s}
-.isl-art{width:22px;height:22px;border-radius:6px;background:conic-gradient(from 210deg,#1ed760,#0f5c2e,#121212,#2b7a4b,#1ed760)}
-.isl-eq{display:flex;align-items:flex-end;gap:2px;height:13px}.isl-eq i{width:2.6px;border-radius:2px;background:#1ed760;animation:iq 1s ease-in-out infinite}
-.isl-eq i:nth-child(2){animation-delay:-.25s}.isl-eq i:nth-child(3){animation-delay:-.5s}.isl-eq i:nth-child(4){animation-delay:-.75s}
-@keyframes iq{0%,100%{height:25%}50%{height:100%}}
-.isl-full{position:absolute;inset:0;padding:42px 16px 16px;display:grid;grid-template-columns:1.15fr 1fr;gap:10px;opacity:0;transform:scale(.96) translateY(-10px);transition:opacity .2s,transform .42s var(--e)}
-.isl:hover .isl-full,.isl:focus .isl-full{opacity:1;transform:none;transition-delay:.14s,.06s}
-.isl-card{border-radius:20px;padding:12px 13px;background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03));box-shadow:inset 0 1px 0 rgba(255,255,255,.12);font-size:13px;text-align:left;min-width:0}
-.isl-music{display:flex;gap:12px;align-items:center;background:radial-gradient(120% 120% at 0% 0%,rgba(30,215,96,.45),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}
-.isl-cover{width:84px;height:84px;border-radius:16px;flex-shrink:0;background:conic-gradient(from 210deg,#1ed760,#0f5c2e,#121212,#2b7a4b,#1ed760);box-shadow:0 10px 24px rgba(0,0,0,.4)}
-.isl-bar{height:4px;border-radius:4px;background:rgba(255,255,255,.18);margin-top:10px;overflow:hidden}.isl-bar i{display:block;height:100%;width:38%;background:#1ed760}
-.isl-ctl{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:10px;font-size:12px}.isl-ctl .big{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14)}
-.isl-col{display:flex;flex-direction:column;gap:10px;min-width:0}.isl-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1}
-.isl-lab{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px}
-.isl-big{font-size:21px;font-weight:650;letter-spacing:-.03em}.isl-sub{font-size:11.5px;color:rgba(255,255,255,.55)}
-.isl-spark{width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,#fff 0 30%,rgba(217,119,87,.9) 60%,transparent 70%);box-shadow:0 0 10px rgba(217,119,87,.9);animation:ib 1.6s ease-in-out infinite}
-@keyframes ib{50%{transform:scale(1.35);opacity:.7}}
-.isl-hint{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-size:12px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
-@media(max-width:640px){.isl:hover,.isl:focus{width:92vw;height:300px}.isl-full{grid-template-columns:1fr}}
-.chip{padding:8px 14px;border-radius:999px;font-size:13.5px;font-family:var(--mono)}
+/* island mock */
+.island{margin:0 auto;max-width:640px;background:#000;border-radius:0 0 36px 36px;padding:14px 18px 16px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.island .cards{display:grid;grid-template-columns:1.7fr .8fr 1fr;gap:10px;height:170px}
+.island .c{border-radius:18px;background:rgba(255,255,255,.08);overflow:hidden;position:relative}
+.island .music{background:linear-gradient(135deg,#ff6a3d,#b5179e 55%,#3a0ca3)}
+.island .music::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 20%,rgba(0,0,0,.75))}
+.island .music>div{position:absolute;left:12px;right:12px;bottom:10px;z-index:1;display:flex;flex-direction:column;gap:2px}
+.island .music b{font-size:14px;display:block}
+.island .music small{font-size:11px;opacity:.7;display:block}
+.island .music .p{height:3px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px 0 6px}
+.island .music .p i{display:block;height:100%;width:42%;background:#fff;border-radius:2px}
+.island .music .ctl{display:flex;justify-content:center;gap:18px;font-size:13px;line-height:1.2;margin-top:2px}
+.island .date{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.island .date em{font-style:normal;color:var(--red);font-weight:700;font-size:13px}
+.island .date strong{font-size:56px;line-height:1;font-weight:600}
+.island .date small{font-size:11px;color:var(--t3);margin-top:4px}
+.island .wx{padding:12px;font-weight:700;font-size:16px;line-height:1.2}
+.island .wx span{color:var(--t3)}
+.island .tabs{display:flex;justify-content:center;gap:12px;margin-top:12px;color:var(--t3);font-size:12px}
+.island .tabs i{width:28px;height:20px;border-radius:999px;display:inline-block;background:rgba(255,255,255,.06)}
+.island .tabs i.on{background:rgba(255,255,255,.2)}
+@media(max-width:600px){.island .cards{grid-template-columns:1fr 1fr;height:auto}.island .music{grid-column:1/-1;height:150px}.island .c{min-height:110px}}
 
-/* ── Download ── */
-.dl{text-align:center;display:flex;flex-direction:column;align-items:center}
-.dl-card{margin-top:40px;padding:34px;width:min(720px,100%);display:flex;flex-direction:column;gap:18px;align-items:center}
-.dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
-.dl-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:18px 20px;border-radius:18px;text-align:left;transition:transform .35s var(--spring)}
-.dl-opt:hover{transform:translateY(-3px)}
-.dl-opt strong{font-size:16px}
-.dl-opt span{font-size:12.5px;color:var(--t3);font-family:var(--mono)}
-.note{font-size:12.5px;color:var(--t3);max-width:560px}
-.note code{font-family:var(--mono);font-size:12px;color:var(--t2)}
-@media(max-width:600px){.dl-grid{grid-template-columns:1fr}}
+/* music sleeve mock */
+.stage{border-radius:32px;overflow:hidden;position:relative;min-height:520px;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:20px;padding:56px;
+  background:radial-gradient(70% 90% at 20% 30%,#8f1d2c,transparent 70%),radial-gradient(60% 80% at 90% 80%,#3b0d1c,transparent 70%),#1a070c}
+@media(max-width:860px){.stage{grid-template-columns:1fr;padding:32px}}
+.sleeve{position:relative;width:min(380px,70vw);aspect-ratio:1.5/1}
+.sleeve .art{position:absolute;left:0;top:0;width:66.7%;aspect-ratio:1;border-radius:4px;z-index:2;box-shadow:12px 20px 40px rgba(0,0,0,.55);
+  background:conic-gradient(from 210deg at 35% 40%,#ff9a3c,#ff3d6e,#7b2ff7,#1fb5d6,#ff9a3c)}
+.sleeve .art::after{content:"NIGHT DRIVE";position:absolute;left:14px;bottom:12px;font-weight:900;letter-spacing:.08em;font-size:18px;color:rgba(255,255,255,.92)}
+.sleeve .rec{position:absolute;top:2%;left:32%;width:64%;aspect-ratio:1;border-radius:50%;z-index:1;animation:spin 6s linear infinite;
+  background:radial-gradient(circle,#0e0e10 0 18%,transparent 18.5%),repeating-radial-gradient(circle,rgba(0,0,0,.25) 0 1px,transparent 1px 4px),radial-gradient(circle,#ff3d6e 0 45%,#7a0f2b 70%,#120408 100%);
+  box-shadow:8px 10px 30px rgba(0,0,0,.5)}
+.sleeve .rec::after{content:"";position:absolute;inset:47%;border-radius:50%;background:#ddd}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sleeve .rec{animation:none}}
+.lyrics p{font-size:clamp(20px,2.4vw,30px);font-weight:800;letter-spacing:-.02em;color:rgba(255,255,255,.32);margin:10px 0;filter:blur(.6px)}
+.lyrics p.on{color:#fff;filter:none;text-shadow:0 0 18px rgba(255,255,255,.35);
+  background:linear-gradient(90deg,#fff 0 58%,rgba(255,255,255,.45) 62%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.ctrlbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 18px;border-radius:999px;
+  background:rgba(255,255,255,.12);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.18);font-size:13px;white-space:nowrap}
+.ctrlbar i{width:28px;height:28px;border-radius:7px;background:conic-gradient(from 210deg,#ff9a3c,#ff3d6e,#7b2ff7,#ff9a3c)}
+.ctrlbar .bar{width:150px;height:4px;border-radius:2px;background:rgba(255,255,255,.25)}
+.ctrlbar .bar b{display:block;width:40%;height:100%;background:#fff;border-radius:2px}
+@media(max-width:600px){.ctrlbar{display:none}}
+.styles{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.styles span{padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);font-size:13.5px;font-weight:600}
 
-footer{text-align:center;padding:40px 24px 150px;font-size:13px;color:var(--t3)}
+/* ⌘K */
+.kbd{white-space:nowrap;font-family:var(--sans);font-size:12.5px;font-weight:600;padding:3px 8px;border-radius:7px;background:rgba(255,255,255,.1);border:1px solid var(--line)}
+.cmds{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;margin-top:28px}
+.cmd{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-size:14.5px}
+.cmd code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:#fff;background:rgba(255,255,255,.08);padding:2px 7px;border-radius:6px;white-space:nowrap}
+.cmd span{color:var(--t2)}
 
-/* ── Dock (real magnification) ── */
-.dock{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60;display:flex;align-items:flex-end;gap:8px;padding:9px 11px;border-radius:26px}
-.dock a{position:relative;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px;
-  background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 14px rgba(0,0,0,.25);
-  transform-origin:bottom center;transition:transform .18s var(--out)}
-.dock a.dl-ic{background:linear-gradient(180deg,#fff,#dedee6);color:#111}
-.dock a::after{content:attr(data-l);position:absolute;bottom:calc(100% + 16px);left:50%;transform:translateX(-50%) translateY(4px);white-space:nowrap;font-size:12px;font-weight:500;color:#fff;
-  padding:4px 10px;border-radius:8px;background:rgba(30,30,38,.85);opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
-.dock a:hover::after{opacity:1;transform:translateX(-50%)}
-.dock .sep{width:1px;height:40px;background:rgba(255,255,255,.25);margin:0 4px;align-self:center}
-.dock .dot{position:absolute;bottom:-7px;left:50%;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 6px rgba(255,255,255,.7);transform:translateX(-50%) scale(0);opacity:0;transition:transform .35s var(--spring),opacity .2s}
-.dock a.active .dot{transform:translateX(-50%) scale(1);opacity:1}
-.dock a.app-ic{background:none;box-shadow:none;padding:0}
-.dock a.app-ic img{width:100%;height:100%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
-.menubar .logo{display:inline-flex;align-items:center;gap:7px}
-.menubar .logo img{width:16px;height:16px}
-.hero-icon{width:112px;height:112px;filter:drop-shadow(0 24px 40px rgba(0,0,0,.5));animation:materialize .9s var(--out) both}
-@media(max-width:600px){.dock a{width:42px;height:42px;font-size:19px}}
+/* lists */
+.ticks{list-style:none;display:grid;gap:10px;margin-top:18px}
+.ticks li{padding-left:26px;position:relative;color:var(--t2)}
+.ticks li::before{content:"";position:absolute;left:0;top:.55em;width:12px;height:7px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg)}
 
-.reveal{opacity:0;transform:translateY(30px);transition:opacity 1s var(--out),transform 1s var(--out)}
+/* download */
+.dl{text-align:center}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:40px auto 0;max-width:960px;text-align:left}
+@media(max-width:800px){.steps{grid-template-columns:1fr}}
+.steps div{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
+.steps div::before{content:counter(s);display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fff;color:#000;font-weight:800;font-size:14px;margin-bottom:12px}
+.steps code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px;background:rgba(255,255,255,.08);padding:2px 6px;border-radius:6px;word-break:break-all}
+details{max-width:760px;margin:12px auto 0;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 20px}
+details summary{cursor:pointer;font-weight:600}
+details p{color:var(--t2);margin-top:10px;font-size:15px}
+footer{padding:50px 0 70px;color:var(--t3);font-size:13.5px;border-top:1px solid var(--line)}
+footer .wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .9s var(--out),transform .9s var(--out)}
 .reveal.in{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 </style>
 </head>
 <body>
-<!-- Refraction map: Chromium bends the backdrop through this (html.refract). -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="lg" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="2" seed="7" result="noise"/>
-    <feGaussianBlur in="noise" stdDeviation="2" result="soft"/>
-    <feDisplacementMap in="SourceGraphic" in2="soft" scale="38" xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</svg>
-
-<div class="wall"><i></i><i></i><i></i></div>
-
-<nav class="menubar">
-  <div class="left"><b class="logo"><img src="cortex-icon.svg" alt="" />Cortex</b><span>File</span><span>Edit</span><span>View</span><span>Widgets</span><span>Dock</span></div>
-  <div class="r"><a href="https://github.com/rayanjainn/aio" target="_blank" rel="noopener">GitHub</a><span id="mb-clock"></span></div>
+<nav>
+  <a class="brand" href="#top"><img src="cortex-icon-256.png" alt="">Cortex</a>
+  <div class="links">
+    <a href="#launcher">Launcher</a><a href="#dock">Dock</a><a href="#notch">Notch</a><a href="#music">Music</a><a href="#command">⌘K</a><a href="#privacy">Privacy</a>
+  </div>
+  <a class="btn primary small cta" href="https://github.com/rayanjainn/aio/releases/latest">Download</a>
 </nav>
 
-<main>
-  <section class="hero" id="top">
-    <img class="hero-icon" src="cortex-icon.svg" alt="Cortex app icon" />
-    <div class="eyebrow">For macOS · Local-first · Free</div>
-    <h1>Everything,<span class="soft">one ⌘K away.</span></h1>
-    <p class="lede">A launcher that remembers what you did, Liquid Glass widgets for your desktop, and a dock you actually control — in one tiny native app.</p>
-    <div class="cta">
-      <a class="btn primary" href="#download"> Download for Mac <small id="hero-ver"></small></a>
-      <a class="btn glass" href="#palette-demo">Try it here <kbd>⌘K</kbd></a>
-    </div>
-
-    <div class="palette glass dark" id="palette-demo">
-      <div class="p-search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" placeholder="What was I working on before lunch?" autocomplete="off" spellcheck="false" />
-        <kbd>esc</kbd>
+<main id="top">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow"><i></i> Free · native · built for macOS 26</span>
+      <h1>The Launchpad replacement.<br><span>Dock. Notch. Music. ⌘K.</span></h1>
+      <p class="lede center" style="margin:0 auto">One Mac app brings together a full-screen launcher with widgets, a Dock you can actually customise, a live Island in the notch, a stunning full-screen music player with synced lyrics, and a command bar for everything else.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.6c.02 2.53 2.22 3.37 2.25 3.38-.02.06-.35 1.2-1.16 2.38-.7 1.02-1.42 2.04-2.57 2.06-1.12.02-1.48-.66-2.77-.66-1.28 0-1.69.64-2.75.68-1.1.04-1.95-1.11-2.65-2.13-1.44-2.08-2.54-5.88-1.06-8.44.73-1.27 2.04-2.08 3.47-2.1 1.08-.02 2.1.73 2.77.73.66 0 1.9-.9 3.2-.77.54.02 2.07.22 3.05 1.66-.08.05-1.82 1.06-1.8 3.17M14.3 4.15c.59-.71.98-1.7.87-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.61.95.07 1.92-.48 2.52-1.2"/></svg>
+          Download for macOS
+        </a>
+        <a class="btn ghost" href="#launcher">Take the tour</a>
       </div>
-      <div class="p-list" id="list"><div class="pill" id="pill"></div></div>
-      <div class="p-foot"><span class="rec"><i></i>REC · 48,213 indexed</span><span>Open <kbd>↵</kbd> &nbsp; Actions <kbd>→</kbd></span></div>
+      <p class="meta">macOS 14 or later · Apple silicon and Intel · Updates itself</p>
+      <div class="pills"><span>Launcher</span><span>Dock</span><span>Dynamic Notch</span><span>Widgets</span><span>Music</span><span>⌘K</span><span>Spaces</span></div>
+      <div class="mac reveal">
+        <div class="screen"><img src="shots/launcher.jpg" alt="The Cortex launcher: date, music, weather and calendar widgets beside every app, grouped into folders"></div>
+        <div class="base"></div>
+      </div>
     </div>
   </section>
 
-  <section id="widgets" class="reveal">
-    <div class="eyebrow">Desktop widgets</div>
-    <h2>Widgets that do more<br/>than tell the time.</h2>
-    <p class="lede">Seventeen of them — clock, calendar, weather, now playing, system, to-dos, focus timer, git, Docker, GitHub and more. Small, medium or large. Pinned to your desktop, or floating above everything.</p>
-
-    <div class="widgets">
-      <div class="w glass" data-tilt><svg class="clock" viewBox="0 0 100 100" id="aclock"></svg></div>
-      <div class="w glass" data-tilt>
-        <div class="lab" id="c-wd"></div>
-        <div class="big tn" id="c-d"></div>
-        <div style="margin-top:auto"><div style="font-size:13px;font-weight:600">Design review</div><div class="sub">in 30 min</div></div>
+  <!-- Launcher -->
+  <section id="launcher">
+    <div class="wrap feature">
+      <header class="reveal">
+        <span class="eyebrow">Launcher</span>
+        <h2>All your apps.<br>Plus your day.</h2>
+        <p class="lede">A full-screen launcher with search, folders that sort themselves, and widgets on the side: today's date, what's playing on a spinning record, the weather in big type, and this month's calendar.</p>
+      </header>
+      <div class="grid c3 reveal">
+        <div class="card"><span class="k">Folders</span><h3>Grouped for you</h3><p>One click sorts every app into Developer Tools, Productivity, Music and more. Rename, regroup, or hide what you never open.</p></div>
+        <div class="card"><span class="k">Widgets</span><h3>Your day at a glance</h3><p>Date, music with controls, weather, and a month calendar with your next events — right next to your apps.</p></div>
+        <div class="card"><span class="k">Wallpaper</span><h3>Song art as backdrop</h3><p>Pick any image, or let the colours of the song you're playing drift slowly behind your icons.</p></div>
       </div>
-      <div class="w m glass brand-spotify" data-tilt>
-        <div class="np">
-          <div class="art"></div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600">Midnight City</div><div class="sub">M83</div>
-            <div class="bar"><i></i></div>
-            <div class="ctl"><span>⏮</span><span>❚❚</span><span>⏭</span></div>
-          </div>
+      <p class="muted reveal">Open it with <span class="kbd">⌃⌥L</span>, a hot corner, or the menu bar. Uninstall apps (and their leftovers) from the right-click menu.</p>
+    </div>
+  </section>
+
+  <!-- Dock -->
+  <section id="dock">
+    <div class="wrap">
+      <div class="band sunset reveal">
+        <div class="grain"></div>
+        <span class="eyebrow" style="background:rgba(0,0,0,.2)">Dock</span>
+        <h2 style="margin:16px 0 14px">Truly your Dock.</h2>
+        <p class="lede" style="color:rgba(255,255,255,.82)">Widgets live right in the bar: Now Playing with a progress line, an analog clock, the date, weather over a rising sun, battery, CPU and memory rings, your next meeting, GitHub notifications, a focus timer. Window previews on hover, magnification, folders, badges, drag to reorder.</p>
+        <div class="shot" style="margin-top:34px;background:transparent;border-color:rgba(255,255,255,.18)"><img src="shots/dock.jpg" alt="The Cortex Dock with system rings, a Now Playing widget, a date tile, a clock and weather"></div>
+        <h3 style="margin-top:44px">Presets — a whole new Dock in one click</h3>
+        <div class="presets">
+          <div class="preset"><div class="bar"><i style="background:linear-gradient(135deg,#ffcc78,#f58c4c)"></i><i style="background:linear-gradient(135deg,#ffcc78,#f58c4c)"></i><i style="background:linear-gradient(135deg,#ffcc78,#f58c4c)"></i><i class="app"></i></div><b>Morning Tide</b><small>Clock · Weather · Date · Now Playing</small></div>
+          <div class="preset"><div class="bar"><i style="background:linear-gradient(135deg,#3d3379,#0f0f29)"></i><i style="background:linear-gradient(135deg,#3d3379,#0f0f29)"></i><i style="background:linear-gradient(135deg,#3d3379,#0f0f29)"></i><i class="app"></i></div><b>Midnight Focus</b><small>Clock · Focus timer · Music · System</small></div>
+          <div class="preset"><div class="bar"><i style="background:linear-gradient(135deg,#409efa,#1a40ad)"></i><i style="background:linear-gradient(135deg,#409efa,#1a40ad)"></i><i style="background:linear-gradient(135deg,#409efa,#1a40ad)"></i><i class="app"></i></div><b>Ocean Desk</b><small>Date · Weather · Next meeting · Music</small></div>
+          <div class="preset"><div class="bar"><i style="background:linear-gradient(135deg,#383838,#141414)"></i><i style="background:linear-gradient(135deg,#383838,#141414)"></i><i style="background:linear-gradient(135deg,#383838,#141414)"></i><i class="app"></i></div><b>Developer</b><small>GitHub · System · Timer · Clock</small></div>
+        </div>
+        <p style="margin-top:18px;color:rgba(255,255,255,.75);font-size:14.5px">Plus Studio, Paper and Minimal — and nine widget colour styles to mix your own. Save whole setups as Spaces and switch between them.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notch -->
+  <section id="notch">
+    <div class="wrap feature">
+      <header class="reveal center" style="margin:0 auto">
+        <span class="eyebrow">Dynamic Notch</span>
+        <h2>Hello, notch.<br>Better together.</h2>
+        <p class="lede">Hover the top of your screen and the Island opens: your song over its own artwork, the date, the weather and your timer, side by side. No notch on your Mac? Cortex draws one.</p>
+      </header>
+      <div class="island reveal" aria-label="The Island's Home page">
+        <div class="cards">
+          <div class="c music"><div><b>Night Drive</b><small>The Example Band</small><div class="p"><i></i></div><div class="ctl">⏮&nbsp;&nbsp;⏸&nbsp;&nbsp;⏭</div></div></div>
+          <div class="c date"><em>Sun</em><strong>8</strong><small>November</small></div>
+          <div class="c wx">27° <span>now in</span><br>your city<br><span>H</span> 31° <span>L</span> 24°<br>☾ Clear</div>
+        </div>
+        <div class="tabs"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="grid c3 reveal">
+        <div class="shot"><img src="shots/island-player.jpg" alt="The Island's player page with artwork, the current lyric line, progress and controls"></div>
+        <div class="shot"><img src="shots/island-tools.jpg" alt="The Island's Tools page: focus timer, camera mirror, Keep Awake, dark mode, capture and colour picker toggles, favourite apps"></div>
+        <div class="shot"><img src="shots/island-calendar.jpg" alt="The Island's Calendar page with a date tile and today's events"></div>
+      </div>
+      <div class="grid c4 reveal">
+        <div class="card"><h3>Live activities</h3><p>Volume and brightness HUDs, charging, AirPods, downloads, mic and camera in use, meeting countdowns.</p></div>
+        <div class="card"><h3>Shelf</h3><p>Drop files on the notch, AirDrop them, drag them back out later.</p></div>
+        <div class="card"><h3>Clipboard</h3><p>Recent copies one hover away, with icons for links, colours, paths and code.</p></div>
+        <div class="card"><h3>Calendar</h3><p>Today and tomorrow, with a Join button for Zoom, Meet and Teams links.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Music -->
+  <section id="music">
+    <div class="wrap feature">
+      <header class="reveal">
+        <span class="eyebrow">Music</span>
+        <h2>Stunning design.<br>Stunningly aesthetic.</h2>
+        <p class="lede">Press <span class="kbd">⌃⌥P</span> and your song takes the whole screen: the album sleeve with a coloured vinyl sliding out, the background moving in the artwork's colours, and time-synced lyrics that fill with light as they're sung. Works with Apple Music, Spotify, browsers — anything that plays.</p>
+      </header>
+      <div class="stage reveal" aria-label="The full-screen music player in Sleeve style with lyrics">
+        <div class="sleeve"><div class="rec"></div><div class="art"></div></div>
+        <div class="lyrics">
+          <p>Headlights on the open road</p>
+          <p>We don't need to know the way</p>
+          <p class="on">Turn it up and let it go</p>
+          <p>Every street light knows our name</p>
+          <p>Drive until the morning comes</p>
+        </div>
+        <div class="ctrlbar">⏮ ⏸ ⏭ <i></i> <b>Night Drive</b> <span class="muted">The Example Band</span> <span class="bar"><b></b></span> 🔊</div>
+      </div>
+      <div class="mac reveal" style="margin-top:28px">
+        <div class="screen"><img src="shots/music-lyrics.jpg" alt="The full-screen player in Vinyl style with time-synced lyrics"></div>
+        <div class="base"></div>
+      </div>
+      <div class="styles reveal"><span>Sleeve</span><span>Vinyl</span><span>Cover</span><span>Full-screen art</span><span>Waves</span></div>
+      <div class="grid c3 reveal">
+        <div class="card"><h3>Synced lyrics</h3><p>Lyrics scroll with the song; click any line to jump there. Plain lyrics when a song has no timing.</p></div>
+        <div class="card"><h3>Every control</h3><p>Scrub, volume, AirPlay and headphone output, a sleep timer, and a floating bar in full-screen art mode.</p></div>
+        <div class="card"><h3>All keyboard</h3><p><span class="kbd">Space</span> play · <span class="kbd">←→</span> seek · <span class="kbd">L</span> lyrics · <span class="kbd">1–5</span> styles · <span class="kbd">Esc</span> close.</p></div>
+      </div>
+      <p class="cap reveal">The Sleeve preview above is an illustration; the screenshot is the real app in Vinyl style.</p>
+    </div>
+  </section>
+
+  <!-- Command bar -->
+  <section id="command">
+    <div class="wrap feature">
+      <header class="reveal">
+        <span class="eyebrow">⌘K</span>
+        <h2>Type it.<br>It's done.</h2>
+        <p class="lede">Your running apps sit on top (<span class="kbd">⌘1</span>–<span class="kbd">⌘9</span> to switch). Below: apps, files, the front app's menus, maths, units, currency, emoji, clipboard history, snippets, browser tabs and AI — in one bar.</p>
+      </header>
+      <div class="grid c3 reveal" style="align-items:start">
+        <div class="shot"><img src="shots/palette-home.jpg" alt="The ⌘K bar with running apps on top, recent items and the front app's menu commands"></div>
+        <div class="shot"><img src="shots/palette-convert.jpg" alt="⌘K converting 10 km to miles"></div>
+        <div class="shot"><img src="shots/palette-emoji.jpg" alt="⌘K emoji search for hearts"></div>
+      </div>
+      <div class="cmds reveal">
+        <div class="cmd"><code>12*(3+4)</code><span>Calculator</span></div>
+        <div class="cmd"><code>100 usd to inr</code><span>Live currency</span></div>
+        <div class="cmd"><code>event lunch tomorrow 1pm</code><span>Adds to Calendar</span></div>
+        <div class="cmd"><code>remind call mom at 6pm</code><span>Adds a Reminder</span></div>
+        <div class="cmd"><code>tab docs</code><span>Find a browser tab</span></div>
+        <div class="cmd"><code>github</code><span>PRs, reviews, notifications</span></div>
+        <div class="cmd"><code>clip</code><span>Clipboard history</span></div>
+        <div class="cmd"><code>tr es good morning</code><span>Translate</span></div>
+        <div class="cmd"><code>m export</code><span>Search the app's menus</span></div>
+        <div class="cmd"><code>ai summarise</code><span>AI on your clipboard</span></div>
+        <div class="cmd"><code>kill zoom</code><span>Quit or force quit</span></div>
+        <div class="cmd"><code>space work</code><span>Switch your whole setup</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- More -->
+  <section>
+    <div class="wrap">
+      <div class="band ocean reveal">
+        <div class="grain"></div>
+        <h2 style="margin-bottom:28px">And everything in between.</h2>
+        <div class="grid c3">
+          <div class="card" style="background:rgba(0,0,0,.25)"><h3>Window snapping</h3><p>Halves, thirds, quarters and saved layouts from the keyboard. <span class="kbd">⌥⇥</span> switches windows, not just apps.</p></div>
+          <div class="card" style="background:rgba(0,0,0,.25)"><h3>Desktop widgets</h3><p>Clock, calendar, weather, system, notes, to-dos, GitHub — or ask AI to write a widget from a sentence.</p></div>
+          <div class="card" style="background:rgba(0,0,0,.25)"><h3>Connections</h3><p>GitHub notifications and reviews, AI through Ollama, Ollama Cloud or any OpenAI-compatible server, and your browser tabs.</p></div>
+          <div class="card" style="background:rgba(0,0,0,.25)"><h3>Act on this</h3><p>Select text anywhere, press <span class="kbd">⌃⌥A</span>: translate, summarise, fix, search, save as a snippet.</p></div>
+          <div class="card" style="background:rgba(0,0,0,.25)"><h3>Screen memory</h3><p>Optional. Scrub back through your day and search what you saw — stored only on your Mac, off until you turn it on.</p></div>
+          <div class="card" style="background:rgba(0,0,0,.25)"><h3>One click for permissions</h3><p>Grant everything in one pass, see what's on, and reset in one click if macOS gets confused after an update.</p></div>
         </div>
       </div>
-      <div class="w m glass" data-tilt>
-        <div class="lab">System</div>
-        <div class="rings">
-          <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".34" cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg><b class="rn">34%</b></div>
-          <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".71" cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg><b>71%</b></div>
-          <div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7"/><circle class="rv" data-v=".88" cx="32" cy="32" r="27" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg><b>88%</b></div>
-        </div>
-        <div class="sub" style="display:flex;justify-content:space-around"><span>CPU</span><span>Memory</span><span>Disk</span></div>
-      </div>
-      <div class="w glass" data-tilt>
-        <div class="lab">Weather</div>
-        <div style="font-size:13px;font-weight:600;margin-top:4px">Cupertino</div>
-        <div class="big tn">21°</div>
-        <div style="margin-top:auto" class="sub">☀︎ Sunny · H:24° L:13°</div>
-      </div>
-      <div class="w glass" data-tilt>
-        <div class="lab" id="cal-m"></div>
-        <div class="cal" id="cal" style="margin-top:8px"></div>
-      </div>
-      <div class="w m glass" data-tilt>
-        <div class="lab" style="display:flex;justify-content:space-between"><span>To-dos</span><span style="opacity:.6">2 left</span></div>
-        <div style="margin-top:8px">
-          <div class="todo"><i></i><span>Ship the dock</span></div>
-          <div class="todo d"><i>✓</i><span>Liquid Glass everywhere</span></div>
-          <div class="todo"><i></i><span>Water the plants</span></div>
-        </div>
-      </div>
-      <div class="w l glass" data-tilt>
-        <div class="lab" style="display:flex;justify-content:space-between"><span>GitHub</span><span style="opacity:.6">31 this week</span></div>
-        <div class="heat" id="heat"></div>
-        <div style="display:flex;justify-content:space-around;text-align:center;margin-top:14px">
-          <div><div style="font-size:24px;font-weight:600">812</div><div class="sub">commits</div></div>
-          <div><div style="font-size:24px;font-weight:600">24</div><div class="sub">repos</div></div>
-          <div><div style="font-size:24px;font-weight:600">14d</div><div class="sub">streak</div></div>
-        </div>
-      </div>
-      <div class="w m glass" data-tilt style="justify-content:center;align-items:center;gap:10px">
-        <div class="lab">Focus</div>
-        <div class="big tn" id="focus">25:00</div>
-        <div class="sub">Pomodoro with automatic breaks</div>
-      </div>
     </div>
   </section>
 
-  <section id="island" class="reveal">
-    <div class="eyebrow">New · The Island</div>
-    <h2>A Dynamic Island<br/>for your Mac.</h2>
-    <p class="lede">It lives around the notch. Music with controls, your focus timer, the next meeting, charging — and whether Claude Code or Codex is working right now, with today's tokens and your 5-hour block. Hover to open it.</p>
-    <div class="isl-stage">
-      <div class="isl" tabindex="0" aria-label="Island demo — hover to expand">
-        <div class="isl-compact"><span class="isl-art"></span><span class="isl-eq"><i></i><i></i><i></i><i></i></span></div>
-        <div class="isl-full">
-          <div class="isl-card isl-music">
-            <div class="isl-cover"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:650">Midnight City</div><div class="isl-sub">M83</div>
-              <div class="isl-bar"><i></i></div>
-              <div class="isl-ctl"><span>⏮</span><span class="big">❚❚</span><span>⏭</span></div>
-            </div>
-          </div>
-          <div class="isl-col">
-            <div class="isl-card"><div class="isl-lab"><span class="isl-spark"></span>Coding today</div>
-              <div style="display:flex;gap:20px"><div><div class="isl-big">1.8M</div><div class="isl-sub">Claude · Sonnet</div></div><div><div class="isl-big">420K</div><div class="isl-sub">Codex</div></div></div>
-              <div class="isl-sub">Claude is working in aio…</div></div>
-            <div class="isl-row"><div class="isl-card"><div class="isl-big">25:00</div><div class="isl-sub">Focus</div></div><div class="isl-card"><div class="isl-lab">Next</div><div style="font-weight:650">Design review</div><div class="isl-sub">in 12m</div></div></div>
-          </div>
-        </div>
+  <!-- Privacy -->
+  <section id="privacy">
+    <div class="wrap feature">
+      <header class="reveal">
+        <span class="eyebrow">Privacy</span>
+        <h2>Yours, and only yours.</h2>
+        <p class="lede">Cortex runs on your Mac. No account, no analytics, no servers of ours.</p>
+      </header>
+      <ul class="ticks reveal">
+        <li>Screen memory is off by default, pauses with <span class="kbd">⌘⇧P</span>, skips password fields and never records the apps you block.</li>
+        <li>API keys and tokens stay in files only you can read, and are never included when you export settings.</li>
+        <li>AI suggestions never run a command without you pressing Enter.</li>
+        <li>Lyrics come from lrclib.net and weather from Open-Meteo — only the song name or your rough location is sent.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section id="download" class="dl">
+    <div class="wrap">
+      <h2 class="reveal">Make your Mac yours.</h2>
+      <p class="lede center reveal" style="margin-top:16px">Free. Updates install themselves.</p>
+      <div class="reveal" style="margin-top:30px"><a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest">Download the latest release</a></div>
+      <div class="steps reveal">
+        <div><h3>Download</h3><p class="muted">Get the <code>.dmg</code> from the latest release and drag Cortex to Applications.</p></div>
+        <div><h3>Open</h3><p class="muted">If macOS says it can't check the developer, run <code>xattr -cr /Applications/Cortex.app</code> once, or use Open Anyway in Privacy &amp; Security.</p></div>
+        <div><h3>Grant</h3><p class="muted">Settings → Privacy &amp; Permissions → <b>Grant everything</b>. Accessibility and Screen Recording you switch on yourself.</p></div>
       </div>
-      <div class="isl-hint">hover the island</div>
-    </div>
-    <div class="k-list">
-      <span class="chip glass">⌃⌥ ← → halves</span><span class="chip glass">⌃⌥ U I J K quarters</span><span class="chip glass">⌃⌥ D F G thirds</span><span class="chip glass">⌃⌥ ↩ maximize</span><span class="chip glass">every shortcut re-bindable</span>
-    </div>
-  </section>
-
-  <section id="features" class="reveal">
-    <div class="eyebrow">All in one</div>
-    <h2>Your Mac, searchable<br/>and yours again.</h2>
-    <div class="grid">
-      <div class="card glass"><div class="glyph">⌘</div><h3>Command palette</h3><p>Apps, files, browser tabs, clipboard, snippets, calculator, conversions, window layouts and the menus of the app you're in — one keystroke away.</p></div>
-      <div class="card glass"><div class="glyph">⌥</div><h3>Act on anything</h3><p>Select text anywhere and press ⌃⌥A: summarise, fix grammar, translate, reply, search, pin or save it as a note.</p></div>
-      <div class="card glass"><div class="glyph">◖</div><h3>The Island</h3><p>A Dynamic Island for your notch — or a virtual one: Now Playing with lyrics, HUDs, meetings with Join, timers, clipboard, file shelf and a scrubbable Rewind.</p></div>
-      <div class="card glass"><div class="glyph">▭</div><h3>Cortex Dock</h3><p>A Liquid Glass Dock on any edge with window previews, Peek, live widget tiles, profiles per display and custom icons.</p></div>
-      <div class="card glass"><div class="glyph">▦</div><h3>Desktop widgets</h3><p>Clock, calendar, weather, system, music, notes, to-dos, coding usage — or describe one and AI writes it for you.</p></div>
-      <div class="card glass"><div class="glyph">✦</div><h3>AI, your way</h3><p>Ollama on your Mac, Ollama Cloud, or any OpenAI-compatible server. Nothing leaves your Mac unless you choose a cloud model.</p></div>
-    </div>
-    <div class="k-list">
-      <span class="chip glass">⌘K open</span><span class="chip glass">⌘⇧P pause capture</span><span class="chip glass">&gt; run command</span><span class="chip glass">? ask AI</span><span class="chip glass">: emoji</span><span class="chip glass">10 usd to inr</span>
+      <details class="reveal"><summary>Why does macOS warn me the first time?</summary><p>Cortex isn't notarized by Apple (that needs a paid developer account). Every release is signed with the same certificate, so once you allow it, updates and permissions carry over.</p></details>
+      <details class="reveal"><summary>Does it replace the macOS Dock?</summary><p>It hides the system Dock while Cortex runs and puts it back when you quit. You can turn the Cortex Dock off any time.</p></details>
+      <details class="reveal"><summary>Which music apps work?</summary><p>Anything that shows up in macOS's Now Playing: Apple Music, Spotify, YouTube in a browser, VLC and more.</p></details>
     </div>
   </section>
-
-  <section id="privacy" class="reveal">
-    <div class="eyebrow">Privacy</div>
-    <h2>Local. Paused in<br/>one keystroke.</h2>
-    <div class="grid">
-      <div class="card glass"><h3>Stays on your Mac</h3><p>Indexes live in <code style="font-family:var(--mono)">~/.cortex</code>. No account, no cloud sync. Weather only calls Open-Meteo for the city you choose.</p></div>
-      <div class="card glass"><h3>Never sees secrets</h3><p>Password fields, 1Password, Keychain, Signal and banking apps are never captured. Add your own blocklist.</p></div>
-      <div class="card glass"><h3>⌘⇧P, anywhere</h3><p>A global hotkey and menu-bar switch stop capture instantly — the REC dot tells you at a glance.</p></div>
-    </div>
-  </section>
-
-  <section id="download" class="dl reveal">
-    <div class="eyebrow">Download</div>
-    <h2>Get Cortex.</h2>
-    <p class="lede" id="dl-lede">Free and open source. Native for macOS 14 or later — real Liquid Glass on macOS 26. One download for Apple Silicon and Intel.</p>
-    <div class="dl-card glass">
-      <div class="dl-grid">
-        <a class="dl-opt glass" id="dl-arm" href="https://github.com/rayanjainn/aio/releases/latest" style="grid-column: 1 / -1"><strong> Download for Mac</strong><span id="dl-arm-s">Universal — Apple Silicon &amp; Intel · .dmg</span></a>
-      </div>
-      <p class="note">Cortex isn't notarized by Apple yet. After dragging it to Applications, open it once, then go to <b>System Settings → Privacy &amp; Security</b> and click <b>Open Anyway</b>. If macOS says the app is “damaged”, run <code>xattr -cr /Applications/Cortex.app</code> in Terminal and open it again.</p>
-      <a class="sub" href="https://github.com/rayanjainn/aio/releases" target="_blank" rel="noopener">All releases & changelog →</a>
-    </div>
-  </section>
-
-  <footer>Cortex · made by Rayan Jain · <a href="https://github.com/rayanjainn/aio" style="text-decoration:underline">Source on GitHub</a></footer>
 </main>
 
-<nav class="dock glass" id="dock" aria-label="Sections">
-  <a href="#top" class="app-ic active" data-l="Cortex" data-spy="top"><img src="cortex-icon.svg" alt="" /><span class="dot"></span></a>
-  <a href="#palette-demo" data-l="Command Palette" data-spy="palette-demo">⌕<span class="dot"></span></a>
-  <a href="#widgets" data-l="Widgets" data-spy="widgets">▦<span class="dot"></span></a>
-  <a href="#island" data-l="Island" data-spy="island"><svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="25" height="11" rx="5.5" fill="currentColor"/></svg><span class="dot"></span></a>
-  <a href="#features" data-l="Features" data-spy="features">✦<span class="dot"></span></a>
-  <a href="#privacy" data-l="Privacy" data-spy="privacy">⛨<span class="dot"></span></a>
-  <div class="sep"></div>
-  <a href="https://github.com/rayanjainn/aio" data-l="GitHub" target="_blank" rel="noopener">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
-  </a>
-  <a href="#download" class="dl-ic" data-l="Download" data-spy="download">↓<span class="dot" style="background:#111;box-shadow:none"></span></a>
-</nav>
+<footer>
+  <div class="wrap">
+    <span>© 2026 Cortex</span>
+    <span><a href="https://github.com/rayanjainn/aio">Source</a> · <a href="https://github.com/rayanjainn/aio/releases">Releases</a> · <a href="https://github.com/rayanjainn/aio/blob/main/USAGE.md">Guide</a></span>
+  </div>
+</footer>
 
 <script>
-const REPO = "rayanjainn/aio";
-const $ = s => document.querySelector(s);
-
-// Refraction only where backdrop-filter accepts SVG filters (Chromium). Safari
-// would drop the whole declaration and lose the blur, so it keeps the frosted base.
-if (/Chrome\//.test(navigator.userAgent) && !/Edg\/|OPR\//.test(navigator.userAgent) && CSS.supports("backdrop-filter", "blur(1px)")) {
-  document.documentElement.classList.add("refract");
-}
-
-// Pointer-tracked specular sheen on every glass surface.
-document.addEventListener("pointermove", e => {
-  for (const g of document.querySelectorAll(".glass")) {
-    const r = g.getBoundingClientRect();
-    if (e.clientY < r.top - 200 || e.clientY > r.bottom + 200) continue;
-    g.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    g.style.setProperty("--my", `${e.clientY - r.top}px`);
-  }
-}, { passive: true });
-
-// Menu-bar clock.
-const tick = () => { const d = new Date(); $("#mb-clock").textContent = d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + "  " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
-tick(); setInterval(tick, 15000);
-
-// ── Command palette demo ─────────────────────────────────
-const DATA = [
-  { s: "Rewind", ic: "⟲", t: "Before lunch: VS Code — dock.rs", sub: "11:42 · 3 files, 2 tabs, 1 commit", k: "Memory", q: "what was i working on before lunch rewind yesterday" },
-  { s: "Applications", ic: "◐", t: "Safari", sub: "/Applications", k: "Application", q: "safari browser app" },
-  { s: "Applications", ic: "▣", t: "Visual Studio Code", sub: "/Applications", k: "Application", q: "vscode code editor app" },
-  { s: "Files", ic: "▤", t: "roadmap-q4.md", sub: "~/Documents", k: "1h", q: "roadmap file document md" },
-  { s: "Files", ic: "▤", t: "widgets.rs", sub: "~/code/aio/src-tauri/src/desktop", k: "12m", q: "widgets rust file code" },
-  { s: "Browser", ic: "◎", t: "Liquid Glass — Apple Developer", sub: "developer.apple.com", k: "2h", q: "liquid glass apple browser tab" },
-  { s: "Git", ic: "⑂", t: "feat: magnifying glass dock", sub: "aio · 83197fe", k: "Commit", q: "git commit dock feat" },
-  { s: "Commands", ic: "⌘", t: "Widgets & Dock", sub: "Add widgets, customize your dock", k: "Command", q: "widgets dock studio customize" },
-  { s: "Commands", ic: "☾", t: "Toggle Dark Mode", sub: "System", k: "Command", q: "dark mode toggle system" },
-  { s: "Calculator", ic: "=", t: "₹8,352.40", sub: "100 usd to inr", k: "Copy", q: "100 usd to inr convert" },
-  { s: "Cortex AI", ic: "✦", t: "Ask Cortex AI", sub: "", k: "↵", q: "*" },
-];
-const list = $("#list"), pill = $("#pill"), input = $("#q");
-let rows = [], sel = 0;
-function render() {
-  const q = input.value.trim().toLowerCase();
-  const words = q.split(/\s+/).filter(Boolean);
-  // Keep rows matching at least half the words (whole-ish words, not "to" inside "editor").
-  const hit = (d, w) => new RegExp(`\\b${w.replace(/[^\w]/g, "")}`).test(d.q + " " + d.t.toLowerCase());
-  let hits = DATA.filter(d => d.q === "*" || !words.length || words.filter(w => hit(d, w)).length >= Math.ceil(words.length / 2));
-  if (!q) hits = hits.filter(d => ["Rewind", "Applications", "Commands", "Files"].includes(d.s)).slice(0, 7);
-  list.querySelectorAll(".p-sec,.p-row").forEach(n => n.remove());
-  rows = []; let last = "";
-  for (const h of hits.slice(0, 8)) {
-    if (h.s !== last) { const s = document.createElement("div"); s.className = "p-sec"; s.textContent = h.s; list.appendChild(s); last = h.s; }
-    const r = document.createElement("div"); r.className = "p-row";
-    r.innerHTML = `<div class="ic"></div><span class="t"></span><span class="s"></span><span class="k"></span>`;
-    r.children[0].textContent = h.ic; r.children[1].textContent = h.t;
-    r.children[2].textContent = h.q === "*" ? (q ? `“${input.value.trim()}”` : "Type a question") : h.sub; r.children[3].textContent = h.k;
-    const i = rows.length; r.onmouseenter = () => { sel = i; place(); };
-    list.appendChild(r); rows.push(r);
-  }
-  sel = Math.min(sel, rows.length - 1); if (sel < 0) sel = 0; place();
-}
-function place() {
-  const r = rows[sel]; if (!r) { pill.style.opacity = 0; return; }
-  pill.style.opacity = 1; pill.style.transform = `translateY(${r.offsetTop - 8}px)`; pill.style.top = "8px";
-}
-input.addEventListener("input", () => { sel = 0; render(); });
-input.addEventListener("keydown", e => {
-  if (e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(sel + 1, rows.length - 1); place(); }
-  if (e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(sel - 1, 0); place(); }
-  if (e.key === "Escape") { input.value = ""; render(); }
-});
-document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("#palette-demo").scrollIntoView({ behavior: "smooth", block: "center" }); input.focus(); } });
-render();
-// Self-typing demo until the visitor takes over.
-(async () => {
-  const demos = ["before lunch", "widgets", "100 usd to inr", "liquid glass"];
-  await new Promise(r => setTimeout(r, 1400));
-  for (let n = 0; ; n++) {
-    if (document.activeElement === input) return;
-    const text = demos[n % demos.length];
-    for (const ch of text) { if (document.activeElement === input) return; input.value += ch; render(); await new Promise(r => setTimeout(r, 70)); }
-    await new Promise(r => setTimeout(r, 1700));
-    for (let i = 1; i < 4 && rows.length > 1; i++) { sel = i % rows.length; place(); await new Promise(r => setTimeout(r, 380)); }
-    await new Promise(r => setTimeout(r, 700));
-    if (document.activeElement === input) return;
-    input.value = ""; sel = 0; render();
-    await new Promise(r => setTimeout(r, 500));
-  }
-})();
-
-// ── Widgets ───────────────────────────────────────────────
-function drawClock() {
-  const d = new Date(), h = d.getHours() % 12, m = d.getMinutes(), s = d.getSeconds();
-  const hand = (a, len, w, c) => `<line x1="50" y1="50" x2="${50 + Math.sin(a) * len}" y2="${50 - Math.cos(a) * len}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
-  let ticks = "";
-  for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6, big = i % 3 === 0; ticks += `<line x1="${50 + Math.sin(a) * (big ? 37 : 40)}" y1="${50 - Math.cos(a) * (big ? 37 : 40)}" x2="${50 + Math.sin(a) * 44}" y2="${50 - Math.cos(a) * 44}" stroke="rgba(20,20,28,.8)" stroke-width="${big ? 2.6 : 1.2}" stroke-linecap="round"/>`; }
-  $("#aclock").innerHTML = `<defs><radialGradient id="cf" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#dfe2ea"/></radialGradient></defs>
-    <circle cx="50" cy="50" r="48" fill="url(#cf)"/>${ticks}
-    ${hand((h + m / 60) * Math.PI / 6, 23, 4.4, "#15151b")}${hand((m + s / 60) * Math.PI / 30, 34, 3, "#15151b")}${hand(s * Math.PI / 30, 38, 1.2, "#6e6e76")}
-    <circle cx="50" cy="50" r="2.8" fill="#15151b"/>`;
-}
-drawClock(); setInterval(drawClock, 1000);
-const now = new Date();
-$("#c-wd").textContent = now.toLocaleDateString([], { weekday: "long" });
-$("#c-d").textContent = now.getDate();
-$("#cal-m").textContent = now.toLocaleDateString([], { month: "long" });
-(() => {
-  const first = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
-  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  let html = "MTWTFSS".split("").map(d => `<b>${d}</b>`).join("");
-  for (let i = 0; i < first; i++) html += "<span></span>";
-  for (let d = 1; d <= days; d++) html += `<span class="${d === now.getDate() ? "today" : ""}">${d}</span>`;
-  $("#cal").innerHTML = html;
-})();
-$("#heat").innerHTML = Array.from({ length: 140 }, (_, i) => { const v = ((i * 7919) % 11) / 10; return `<i style="background:rgba(255,255,255,${v < .3 ? .08 : .2 + v * .7})"></i>`; }).join("");
-// Rings animate in when visible; CPU ring wanders.
-const C = 2 * Math.PI * 27;
-document.querySelectorAll(".rv").forEach(c => { c.style.strokeDasharray = C; c.style.strokeDashoffset = C; });
-const ringIn = () => document.querySelectorAll(".rv").forEach(c => c.style.strokeDashoffset = C * (1 - +c.dataset.v));
-setInterval(() => { const c = document.querySelector(".rv"); const v = .2 + Math.random() * .4; c.dataset.v = v; c.style.strokeDashoffset = C * (1 - v); document.querySelector(".rn").textContent = Math.round(v * 100) + "%"; }, 2200);
-// Focus timer counts down while on screen.
-let left = 25 * 60; setInterval(() => { left = left > 0 ? left - 1 : 25 * 60; $("#focus").textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }, 1000);
-
-// Gentle 3D tilt on widgets.
-document.querySelectorAll("[data-tilt]").forEach(el => {
-  el.addEventListener("pointermove", e => { const r = el.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; el.style.transform = `perspective(700px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) translateY(-4px)`; });
-  el.addEventListener("pointerleave", () => { el.style.transform = ""; });
-});
-
-// Scroll reveals.
-const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); if (e.target.id === "widgets") ringIn(); } }), { threshold: .15 });
-document.querySelectorAll(".reveal").forEach(s => io.observe(s));
-
-// ── Dock: dot under the section you're looking at (like a running app) ──
-const spyLinks = [...document.querySelectorAll(".dock a[data-spy]")];
-const spyTargets = spyLinks.map(a => document.getElementById(a.dataset.spy)).filter(Boolean);
-let spyTick = 0;
-function spy() {
-  spyTick = 0;
-  const mid = innerHeight * 0.45;
-  let current = spyTargets[0];
-  for (const t of spyTargets) { if (t.getBoundingClientRect().top <= mid) current = t; }
-  // Palette demo sits inside the hero: prefer it once it's centred on screen.
-  const demo = document.getElementById("palette-demo");
-  if (current && current.id === "top" && demo) { const r = demo.getBoundingClientRect(); if (r.top < mid && r.bottom > mid) current = demo; }
-  if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) current = spyTargets[spyTargets.length - 1];
-  for (const a of spyLinks) a.classList.toggle("active", current && a.dataset.spy === current.id);
-}
-addEventListener("scroll", () => { if (!spyTick) spyTick = requestAnimationFrame(spy); }, { passive: true });
-addEventListener("resize", spy);
-spy();
-
-// ── Dock magnification (Gaussian falloff, like the real one) ──
-const dock = $("#dock"), icons = [...dock.querySelectorAll("a")];
-dock.addEventListener("pointermove", e => {
-  for (const a of icons) {
-    const r = a.getBoundingClientRect(); const d = e.clientX - (r.left + r.width / 2);
-    a.style.transform = `scale(${1 + .55 * Math.exp(-((d / 75) ** 2))})`;
-  }
-});
-dock.addEventListener("pointerleave", () => icons.forEach(a => a.style.transform = ""));
-icons.forEach(a => a.addEventListener("click", () => { a.animate([{ translate: "0 0" }, { translate: "0 -18px" }, { translate: "0 0" }, { translate: "0 -7px" }, { translate: "0 0" }], { duration: 700, easing: "ease-out" }); }));
-
-// ── Latest release → direct download links ──────────────
-fetch(`https://api.github.com/repos/${REPO}/releases/latest`).then(r => r.ok ? r.json() : null).then(rel => {
-  if (!rel || !rel.assets) return;
-  const find = re => rel.assets.find(a => re.test(a.name));
-  const set = (id, a, label) => { if (!a) return; $(id).href = a.browser_download_url; const s = $(id + "-s"); if (s) s.textContent = `${label} · ${(a.size / 1e6).toFixed(0)} MB`; };
-  set("#dl-arm", find(/\.dmg$/i), "Universal .dmg");
-  $("#hero-ver").textContent = rel.tag_name;
-  $("#dl-lede").textContent = `Version ${rel.tag_name.replace(/^v/, "")} · released ${new Date(rel.published_at).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}. Free and open source.`;
-}).catch(() => {});
+  // Fade sections in as they scroll into view.
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 </script>
 </body>
 </html>
