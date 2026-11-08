@@ -1,0 +1,18 @@
+Cortex
+Copyright (c) 2025-2026 Rayan Jain. All rights reserved.
+Created and owned by Rayan Jain — see LICENSE.
+
+Cortex includes or uses the following third-party material, each under its own license:
+
+- mediaremote-adapter (native/Resources/mediaremote/)
+  BSD 3-Clause License — see native/Resources/mediaremote/LICENSE-mediaremote-adapter.
+
+- Rust crates used by cortexd (cortexd/Cargo.toml) and Swift packages used by the
+  native app are linked under their own licenses (mostly MIT / Apache-2.0).
+
+- Launch film music (brag-output-*/, marketing/cortex-launch.mp4):
+  "Happy Beats / Business Moves Vol. 10" by Sascha Ende, https://ende.app — CC BY 4.0.
+
+- Launch film sound effects: Kenney (https://kenney.nl) — CC0 1.0.
+
+- GSAP (brag-output-*/composition*/assets/gsap.min.js): GreenSock standard license.

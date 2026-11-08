@@ -3,6 +3,9 @@ name = "cortexd"
 version = "0.3.0"
 description = "Cortex engine — headless search, memory and plugin daemon for the native app"
 edition = "2021"
+authors = ["Rayan Jain <rayansjain@gmail.com>"]
+license-file = "../LICENSE"
+publish = false
 
 [lib]
 name = "cortexd_lib"

@@ -8,6 +8,7 @@
   <key>CFBundleIconFile</key><string>icon.icns</string>
   <key>CFBundleIdentifier</key><string>dev.cortex.native</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>NSHumanReadableCopyright</key><string>© 2025–2026 Rayan Jain. All rights reserved.</string>
   <key>CFBundleName</key><string>Cortex</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>__VERSION__</string>

@@ -1,5 +1,7 @@
 # Cortex
 
+**Created by [Rayan Jain](https://github.com/rayanjainn).** © 2025–2026 Rayan Jain. All rights reserved — see [LICENSE](LICENSE).
+
 A native macOS launcher, Dock, notch and desktop-widget suite — one app, real Liquid Glass.
 Swift / SwiftUI / AppKit for everything you see, a Rust engine (`cortexd`) for search and memory.
 
@@ -41,3 +43,9 @@ CI (`.github/workflows/native.yml`) compiles and tests on every push to `native/
 ## Privacy
 
 Everything stays on your Mac. Screen memory is **off** until you turn it on, never captures password fields or blocked apps, and `⌘⇧P` pauses it. Logs: `~/.cortex/logs/`. Data: `~/.cortex/`.
+
+## License
+
+Cortex is **source-available, not open source**. © 2025–2026 Rayan Jain, all rights reserved.
+You can use the official releases for free and read the code, but you may not redistribute it, publish a product
+based on it, or remove the author's name. Full terms: [LICENSE](LICENSE). Third-party components: [NOTICE](NOTICE).

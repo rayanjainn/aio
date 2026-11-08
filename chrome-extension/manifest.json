@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Cortex Memory Bridge",
   "version": "0.1.0",
+  "author": "Rayan Jain",
   "description": "Sends tab lifecycle events to the Cortex daemon for live-tab search.",
 
   "permissions": [
