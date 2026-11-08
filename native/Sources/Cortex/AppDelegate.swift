@@ -160,6 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "clip.plain": ActOnThis.pastePlain()
         case "dictate": ActOnThis.dictate()
         case "app.diagnostics": showDiagnostics()
+        case "app.diagnostics.export": exportDiagnostics()
         case "app.timeline": showTimeline()
         case "app.settings": settings?.show()
         case "switcher", "app.switcher": switcher.showOrAdvance()
@@ -168,6 +169,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "timer.5": FocusTimer.shared.start(minutes: 5, label: "Break")
         case "timer.stop": FocusTimer.shared.reset()
         case "island.calendar": island?.openPage(.calendar)
+        case "island.collapse": island?.collapse()
         case "island.shelf": island?.openPage(.shelf)
         case "island.tools": island?.openPage(.tools)
         case "app.addWidget": widgets?.showGallery()
@@ -181,7 +183,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id.hasPrefix("space.save:") { Spaces.save(String(id.dropFirst(11)), dock: dock?.model) }
+            if id.hasPrefix("island.page:"), let page = IslandPage(rawValue: String(id.dropFirst(12))) { island?.openPage(page) }
+            else if id.hasPrefix("music.style:") { Prefs.shared.musicPlayerStyle = String(id.dropFirst(12)) }
+            else if id.hasPrefix("space.save:") { Spaces.save(String(id.dropFirst(11)), dock: dock?.model) }
             else if id.hasPrefix("space.use:") { Spaces.apply(String(id.dropFirst(10)), dock: dock?.model) }
             else if id.hasPrefix("widget.ai:"), let store = widgets?.store { AIWidgetMaker.make(String(id.dropFirst(10)), store: store) }
             else if id.hasPrefix("dock.save:") { let n = String(id.dropFirst(10)); dock?.model.saveProfile(n); Toast.show("dock.rectangle", "Saved Dock “\(n)”") }
@@ -362,6 +366,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.makeKeyAndOrderFront(nil)
         }
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Writes the Diagnostics report to ~/.cortex/logs/diagnostics.txt (used by the e2e test script).
+    private func exportDiagnostics() {
+        let text = Diagnostics.report(island: island, dock: dock, bridge: nowPlaying,
+                                      engineProcess: engineProcess.describe, engineConnected: engine.isConnected,
+                                      widgets: widgets?.describe() ?? "")
+            + "\n== Surfaces ==\nlauncher visible=\(launcher.isVisible) apps=\(launcher.store.apps.count) folders=\(launcher.store.layout.folders.count)"
+            + "\nmusic player visible=\(musicPlayer.isVisible) style=\(Prefs.shared.musicPlayerStyle)"
+            + "\nhyper key=\(HyperKey.isRunning) hot corner=\(Prefs.shared.launcherHotCorner)\n"
+        let url = Log.fileURL.deletingLastPathComponent().appendingPathComponent("diagnostics.txt")
+        try? text.write(to: url, atomically: true, encoding: .utf8)
     }
 
     @objc private func showDiagnostics() {

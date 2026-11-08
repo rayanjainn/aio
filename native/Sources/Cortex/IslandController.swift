@@ -319,6 +319,11 @@ final class IslandController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6, execute: work)
     }
 
+    func collapse() {
+        hoverWork?.cancel()
+        model.expanded = false
+    }
+
     func toggleExpanded() {
         hoverWork?.cancel()
         model.expanded.toggle()

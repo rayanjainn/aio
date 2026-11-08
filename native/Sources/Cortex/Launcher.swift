@@ -165,8 +165,11 @@ final class LauncherStore: ObservableObject {
         alert.addButton(withTitle: "Move to Trash")
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
+        alert.window.level = LauncherController.dialogLevel
         NSApp.activate(ignoringOtherApps: true)
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let go = alert.runModal() == .alertFirstButtonReturn
+        NotificationCenter.default.post(name: .launcherRefocus, object: nil)
+        guard go else { return }
         NSWorkspace.shared.recycle([app.url] + leftovers) { _, error in
             if let error { Toast.show("exclamationmark.triangle", error.localizedDescription) }
             else { Toast.show("trash", "\(app.name) moved to the Trash") }
@@ -194,6 +197,9 @@ final class LauncherController {
     weak var bridge: MediaRemoteBridge?
 
     var isVisible: Bool { panel?.isVisible ?? false }
+
+    /// Dialogs opened from the launcher (rename, uninstall) sit above it.
+    static let dialogLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 3)
 
     func toggle() { isVisible ? hide() : show() }
 
@@ -232,9 +238,16 @@ final class LauncherController {
         p.hidesOnDeactivate = false
         p.animationBehavior = .none
         let view = LauncherView(store: store, bridge: bridge, onClose: { [weak self] in self?.hide() })
+        NotificationCenter.default.addObserver(forName: .launcherRefocus, object: nil, queue: .main) { [weak self] _ in
+            DispatchQueue.main.async { if let p = self?.panel, p.isVisible { p.makeKeyAndOrderFront(nil) } }
+        }
         p.contentView = NSHostingView(rootView: view)
         NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: p, queue: .main) { [weak self] _ in
-            DispatchQueue.main.async { self?.hide() }
+            // A rename / uninstall dialog takes focus: keep the launcher open behind it, and take focus back after.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                if NSApp.modalWindow != nil || (NSApp.keyWindow?.level.rawValue ?? 0) == LauncherController.dialogLevel.rawValue { return }
+                self?.hide()
+            }
         }
         panel = p
         return p
@@ -273,6 +286,7 @@ final class LauncherController {
 
 extension Notification.Name {
     static let launcherShown = Notification.Name("cortex.launcher.shown")
+    static let launcherRefocus = Notification.Name("cortex.launcher.refocus")
 }
 
 // MARK: - Views
@@ -476,7 +490,10 @@ func askName(default value: String) -> String? {
     alert.addButton(withTitle: "OK")
     alert.addButton(withTitle: "Cancel")
     alert.window.initialFirstResponder = field
-    guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+    alert.window.level = LauncherController.dialogLevel   // above the full-screen launcher, not behind it
+    let ok = alert.runModal() == .alertFirstButtonReturn
+    NotificationCenter.default.post(name: .launcherRefocus, object: nil)
+    guard ok else { return nil }
     return field.stringValue.trimmingCharacters(in: .whitespaces)
 }
 

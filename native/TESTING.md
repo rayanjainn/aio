@@ -6,6 +6,19 @@ looks wrong, and I can fix from facts instead of guesses.
 
 ---
 
+## Part 0 — Full end-to-end test (recommended, ~4 minutes)
+
+```bash
+curl -fsSLo ~/Desktop/e2e.sh https://raw.githubusercontent.com/rayanjainn/aio/main/native/scripts/e2e.sh
+bash ~/Desktop/e2e.sh
+```
+
+It opens every surface (palette with ~30 queries, launcher, music player in each style, every Island page, Dock,
+Settings, Screen Memory, widget gallery, Diagnostics), checks each window really appears, screenshots everything,
+probes the engine, Now Playing, permissions and performance (with CPU profiles), collects logs and crash reports,
+and zips it all to `~/Desktop/cortex-e2e-<time>.zip`. Your Cortex settings are backed up and restored. Don't touch
+the mouse or keyboard while it runs. Send me the zip.
+
 ## Part A — Automatic self-test (3 minutes)
 
 ```bash
