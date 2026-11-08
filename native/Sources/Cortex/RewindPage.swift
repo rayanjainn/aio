@@ -39,8 +39,27 @@ struct RewindPage: View {
                 }
             } else {
                 Spacer()
-                Text(message ?? "Loading…").font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
-                    .frame(maxWidth: .infinity)
+                VStack(spacing: 8) {
+                    Image(systemName: message == nil ? "clock.arrow.circlepath" : "clock.badge.questionmark")
+                        .font(.system(size: 26, weight: .light)).foregroundStyle(.white.opacity(0.55))
+                        .symbolEffect(.pulse, isActive: message == nil)
+                    Text(message == nil ? "Loading your last two hours…" : "Rewind your screen")
+                        .font(.system(size: 14, weight: .semibold))
+                    if let message {
+                        Text(message).font(.system(size: 11.5)).foregroundStyle(.white.opacity(0.55))
+                            .multilineTextAlignment(.center).frame(maxWidth: 420)
+                        Button {
+                            (NSApp.delegate as? AppDelegate)?.openSettings()
+                        } label: {
+                            Text("Open Settings").font(.system(size: 11.5, weight: .semibold))
+                                .padding(.horizontal, 12).padding(.vertical, 5)
+                                .background(Color.white, in: Capsule()).foregroundStyle(.black)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 2)
+                    }
+                }
+                .frame(maxWidth: .infinity)
                 Spacer()
             }
         }

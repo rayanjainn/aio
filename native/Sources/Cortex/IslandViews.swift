@@ -337,36 +337,61 @@ struct NowPlayingCard: View {
     let bridge: MediaRemoteBridge
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            ArtworkView(image: track.artwork, size: 112, radius: 18)
-                .onTapGesture(count: 2) { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
-                .help("Double-click for the full-screen player")
-            VStack(alignment: .leading, spacing: 4) {
-                Text(track.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
-                Text(track.artist.isEmpty ? track.appName : track.artist)
-                    .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
-                if let lyric {
-                    Text(lyric).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
-                        .transition(.opacity).id(lyric)
+        // The artwork fills the page height so the text column's bottom (progress + controls) lines up with it.
+        GeometryReader { geo in
+            let side = max(72, min(geo.size.height - 16, 150))
+            HStack(alignment: .center, spacing: 16) {
+                ArtworkView(image: track.artwork, size: side, radius: side * 0.16)
+                    .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
+                    .scaleEffect(track.playing ? 1 : 0.94)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.7), value: track.playing)
+                    .onTapGesture(count: 2) { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
+                    .help("Double-click for the full-screen player")
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(track.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
+                            Text(track.artist.isEmpty ? track.appName : track.artist)
+                                .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                        }
+                        Spacer(minLength: 8)
+                        Button { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) } label: {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 11, weight: .semibold)).frame(width: 26, height: 26)
+                                .background(Circle().fill(.white.opacity(0.1))).contentShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .help("Full-screen player with lyrics")
+                    }
+                    if let lyric {
+                        Text(lyric).font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.9)).lineLimit(2)
+                            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 6)), removal: .opacity))
+                            .id(lyric)
+                    }
+                    Spacer(minLength: 4)
+                    ProgressRow(track: track, bridge: bridge)
+                    HStack(spacing: 28) {
+                        control("backward.fill", .previous, size: 16)
+                        control(track.playing ? "pause.fill" : "play.fill", .toggle, size: 22)
+                        control("forward.fill", .next, size: 16)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                Spacer(minLength: 2)
-                ProgressRow(track: track, bridge: bridge)
-                HStack(spacing: 28) {
-                    control("backward.fill", .previous, size: 16)
-                    control(track.playing ? "pause.fill" : "play.fill", .toggle, size: 22)
-                    control("forward.fill", .next, size: 16)
-                }
-                .frame(maxWidth: .infinity)
+                .frame(height: side)
             }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .animation(.easeInOut(duration: 0.3), value: lyric)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
     }
 
     private func control(_ symbol: String, _ command: MRCommand, size: CGFloat) -> some View {
         Button { bridge.send(command) } label: {
             Image(systemName: symbol).font(.system(size: size)).frame(width: 34, height: 28).contentShape(Rectangle())
+                .contentTransition(.symbolEffect(.replace))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressDipStyle())
         .foregroundStyle(.white)
     }
 }
@@ -424,38 +449,88 @@ struct CalendarPage: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if calendar.events.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle").font(.system(size: 26)).foregroundStyle(.white.opacity(0.5))
-                    Text("Nothing coming up").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(spacing: 8) {
-                    ForEach(calendar.events.prefix(3)) { e in
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(e.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
-                                Text(e.allDay ? "All day" : "\(e.start.formatted(date: .omitted, time: .shortened)) – \(e.end.formatted(date: .omitted, time: .shortened))")
-                                    .font(.system(size: 11)).foregroundStyle(.white.opacity(0.55))
-                            }
-                            Spacer()
-                            if let join = e.joinURL {
-                                Button { NSWorkspace.shared.open(join) } label: {
-                                    Label("Join", systemImage: "video.fill").font(.system(size: 11, weight: .semibold))
-                                        .padding(.horizontal, 10).padding(.vertical, 5)
-                                        .background(Color.white, in: Capsule()).foregroundStyle(.black)
-                                }.buttonStyle(.plain)
-                            }
+                HStack(spacing: 14) {
+                    dateTile
+                    if events.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Nothing coming up").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                            Text("Your day is clear.").font(.system(size: 11.5)).foregroundStyle(.white.opacity(0.55))
                         }
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        VStack(spacing: 6) {
+                            ForEach(events.prefix(3)) { e in row(e) }
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
                 .padding(.vertical, 8)
             }
         }
         .onAppear { CalendarService.shared.refresh() }
+    }
+
+    /// Holiday calendars often list the same day twice ("Diwali/Deepavali", "Diwali (Deepawali)"): keep one.
+    private var events: [MeetingEvent] {
+        var seen = Set<String>()
+        return calendar.events.filter { e in
+            guard e.allDay else { return true }
+            let first = e.title.lowercased().split(whereSeparator: { !$0.isLetter }).first.map(String.init) ?? e.title
+            let key = "\(Calendar.current.startOfDay(for: e.start).timeIntervalSince1970)|\(first)"
+            return seen.insert(key).inserted
+        }
+    }
+
+    private var dateTile: some View {
+        TimelineView(.everyMinute) { ctx in
+            VStack(spacing: 0) {
+                Text(ctx.date.formatted(.dateTime.weekday(.wide)))
+                    .font(.system(size: 12, weight: .bold)).foregroundStyle(Color(red: 1, green: 0.27, blue: 0.23))
+                Text(ctx.date.formatted(.dateTime.day()))
+                    .font(.system(size: 46, weight: .semibold, design: .rounded).monospacedDigit()).foregroundStyle(.white)
+                Text(ctx.date.formatted(.dateTime.month(.wide)))
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.55))
+            }
+            .frame(width: 104)
+            .frame(maxHeight: .infinity)
+            .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") { NSWorkspace.shared.open(url) }
+            }
+            .help("Open Calendar")
+        }
+    }
+
+    private func when(_ e: MeetingEvent) -> String {
+        let cal = Calendar.current
+        let day = cal.isDateInToday(e.start) ? "" : cal.isDateInTomorrow(e.start) ? "Tomorrow · " : e.start.formatted(.dateTime.weekday(.abbreviated)) + " · "
+        if e.allDay { return day + "All day" }
+        return day + "\(e.start.formatted(date: .omitted, time: .shortened)) – \(e.end.formatted(date: .omitted, time: .shortened))"
+    }
+
+    private func row(_ e: MeetingEvent) -> some View {
+        let now = Date()
+        let live = !e.allDay && e.start <= now && e.end > now
+        return HStack(spacing: 10) {
+            Capsule().fill(.white.opacity(live ? 1 : 0.35)).frame(width: 3, height: 26)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(e.title).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
+                Text(live ? "Now · until \(e.end.formatted(date: .omitted, time: .shortened))" : when(e))
+                    .font(.system(size: 10.5)).foregroundStyle(.white.opacity(0.55))
+            }
+            Spacer()
+            if let join = e.joinURL {
+                Button { NSWorkspace.shared.open(join) } label: {
+                    Label("Join", systemImage: "video.fill").font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Color.white, in: Capsule()).foregroundStyle(.black)
+                }.buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(Color.white.opacity(live ? 0.12 : 0.06), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 }
 
@@ -465,12 +540,15 @@ struct ShelfPage: View {
     var body: some View {
         if shelf.items.isEmpty {
             VStack(spacing: 8) {
-                Image(systemName: "tray.and.arrow.down").font(.system(size: 28)).foregroundStyle(.white.opacity(0.5))
+                Image(systemName: "tray.and.arrow.down").font(.system(size: 28, weight: .light)).foregroundStyle(.white.opacity(0.6))
                 Text("Drop files here").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
                 Text("Park them on the Island, then drag them out or AirDrop them.")
                     .font(.system(size: 11)).foregroundStyle(.white.opacity(0.5)).multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(.white.opacity(0.22), style: StrokeStyle(lineWidth: 1.2, dash: [6, 5])))
+            .padding(.vertical, 10)
         } else {
             VStack(spacing: 8) {
                 ScrollView(.horizontal) {
@@ -517,57 +595,77 @@ struct ToolsPage: View {
     @State private var mirror = false
     @ObservedObject private var prefs = Prefs.shared
 
+    @ObservedObject private var awake = KeepAwake.shared
+
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: 10) {
             // Focus timer
-            VStack(spacing: 8) {
-                TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
-                    ZStack {
-                        RingView(progress: timer.progress(at: ctx.date), size: 74)
-                        Text(clock(timer.remaining(at: ctx.date))).font(.system(size: 15, weight: .semibold).monospacedDigit())
+            card {
+                VStack(spacing: 7) {
+                    TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
+                        ZStack {
+                            RingView(progress: timer.progress(at: ctx.date), size: 70)
+                            Text(clock(timer.remaining(at: ctx.date))).font(.system(size: 15, weight: .semibold).monospacedDigit())
+                        }
                     }
+                    HStack(spacing: 5) {
+                        chip("25") { timer.start(minutes: 25) }
+                        chip("50") { timer.start(minutes: 50) }
+                        chip("5") { timer.start(minutes: 5, label: "Break") }
+                        Button { timer.toggle() } label: { Image(systemName: timer.isRunning ? "pause.fill" : "play.fill").frame(width: 20) }
+                        Button { timer.reset() } label: { Image(systemName: "arrow.counterclockwise").frame(width: 20) }
+                    }
+                    .buttonStyle(.plain).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.9))
                 }
-                HStack(spacing: 6) {
-                    chip("25") { timer.start(minutes: 25) }
-                    chip("50") { timer.start(minutes: 50) }
-                    chip("5") { timer.start(minutes: 5, label: "Break") }
-                }
-                HStack(spacing: 14) {
-                    Button { timer.toggle() } label: { Image(systemName: timer.isRunning ? "pause.fill" : "play.fill") }
-                    Button { timer.reset() } label: { Image(systemName: "arrow.counterclockwise") }
-                }
-                .buttonStyle(.plain).font(.system(size: 13)).foregroundStyle(.white.opacity(0.85))
             }
-            .frame(width: 150)
+            .frame(width: 176)
 
             // Mirror
-            VStack(spacing: 6) {
+            card {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.07))
-                    if mirror { CameraPreview().clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous)) }
-                    else { Image(systemName: "person.crop.square").font(.system(size: 28)).foregroundStyle(.white.opacity(0.4)) }
-                }
-                .frame(width: 150, height: 112)
-                Button(mirror ? "Turn mirror off" : "Mirror") { mirror.toggle() }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.white.opacity(0.75))
-            }
-
-            // Apps
-            VStack(alignment: .leading, spacing: 5) {
-                if !prefs.islandApps.isEmpty {
-                    Text("Apps").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6), count: 6), alignment: .leading, spacing: 6) {
-                        ForEach(prefs.islandApps, id: \.self) { bundle in
-                            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
-                                Button { NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in } } label: {
-                                    Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 30, height: 30)
-                                }.buttonStyle(.plain)
-                            }
+                    if mirror { CameraPreview().clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous)) }
+                    else {
+                        VStack(spacing: 6) {
+                            Image(systemName: "person.crop.square").font(.system(size: 24, weight: .light)).foregroundStyle(.white.opacity(0.6))
+                            Text("Mirror").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.75))
+                            Text("Check yourself before a call").font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.45))
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture { withAnimation(.easeInOut(duration: 0.25)) { mirror.toggle() } }
+                .help(mirror ? "Turn the camera off" : "Turn the camera on")
+            }
+            .frame(width: 150)
+
+            // Quick toggles + apps
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    toggle("cup.and.saucer.fill", "Awake", on: awake.on) { awake.toggle() }
+                    toggle("circle.lefthalf.filled", "Dark", on: false) {
+                        SystemCommands.osascript("tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode")
+                    }
+                    toggle("camera.viewfinder", "Capture", on: false) {
+                        withAnimation { model.expanded = false }
+                        DispatchQueue.global().async { _ = SystemCommands.shell("/usr/sbin/screencapture", ["-i", "-c"]) }
+                    }
+                    toggle("eyedropper", "Color", on: false) { withAnimation { model.expanded = false }; ColorPicker.pick() }
+                }
                 if prefs.islandApps.isEmpty {
-                    Text("Apps").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                    Text("Add apps for one-tap launching in Settings → Island.").font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
+                    Text("Add apps for one-tap launching in Settings → Island.").font(.system(size: 10.5)).foregroundStyle(.white.opacity(0.45))
+                } else {
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(34), spacing: 8), count: 6), alignment: .leading, spacing: 8) {
+                        ForEach(prefs.islandApps, id: \.self) { bundle in
+                            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
+                                Button { NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in } } label: {
+                                    Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 34, height: 34)
+                                }
+                                .buttonStyle(PressDipStyle())
+                                .help(FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: ""))
+                            }
+                        }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -575,6 +673,27 @@ struct ToolsPage: View {
         .foregroundStyle(.white)
         .padding(.vertical, 8)
         .onDisappear { mirror = false }
+    }
+
+    private func card<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        content()
+            .padding(8)
+            .frame(maxHeight: .infinity)
+            .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func toggle(_ symbol: String, _ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol).font(.system(size: 14, weight: .semibold))
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(on ? Color.white : Color.white.opacity(0.12)))
+                    .foregroundStyle(on ? Color.black : Color.white)
+                Text(title).font(.system(size: 9.5, weight: .medium)).foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .buttonStyle(PressDipStyle())
+        .help(title)
     }
 
     private func chip(_ text: String, _ action: @escaping () -> Void) -> some View {

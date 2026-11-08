@@ -1,4 +1,5 @@
 import AppKit
+import IOKit.pwr_mgt
 
 /// Built-in system actions for the palette. Each runs a short, permission-light command.
 struct SystemCommand {
@@ -96,6 +97,10 @@ enum SystemCommands {
                 }
             }
         },
+        SystemCommand(id: "sys.keepAwake", title: "Keep Mac Awake", subtitle: "Stop the display and Mac from sleeping until you turn it off", symbol: "cup.and.saucer",
+                      keywords: ["caffeinate", "awake", "amphetamine", "no sleep", "coffee"]) {
+            Task { @MainActor in KeepAwake.shared.toggle() }
+        },
         SystemCommand(id: "sys.hideOthers", title: "Hide All Other Apps", subtitle: "Clear the screen of everything but the front app", symbol: "eye.slash",
                       keywords: ["hide", "focus", "declutter"]) {
             let front = NSWorkspace.shared.frontmostApplication
@@ -117,5 +122,31 @@ enum SystemCommands {
         } catch {
             Log.warn("could not write terminal script: \(error.localizedDescription)")
         }
+    }
+}
+
+
+/// Keeps the Mac and display awake with a power assertion (what `caffeinate -d` does), until turned off.
+@MainActor
+final class KeepAwake: ObservableObject {
+    static let shared = KeepAwake()
+    @Published private(set) var on = false
+    private var assertion: IOPMAssertionID = 0
+
+    func toggle() { on ? stop() : start() }
+
+    func start() {
+        guard !on else { return }
+        let ok = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
+                                             IOPMAssertionLevel(kIOPMAssertionLevelOn), "Cortex: Keep awake" as CFString, &assertion)
+        on = ok == kIOReturnSuccess
+        Toast.show("cup.and.saucer.fill", on ? "Your Mac stays awake" : "Couldn't keep the Mac awake")
+    }
+
+    func stop() {
+        guard on else { return }
+        IOPMAssertionRelease(assertion)
+        on = false
+        Toast.show("cup.and.saucer", "Your Mac can sleep again")
     }
 }

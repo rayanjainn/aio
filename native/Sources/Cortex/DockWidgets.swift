@@ -12,6 +12,7 @@ struct DockWidgetKind: Identifiable, Equatable {
     static let all: [DockWidgetKind] = [
         DockWidgetKind(id: "music", title: "Now Playing", symbol: "music.note", span: 4.4),
         DockWidgetKind(id: "clock", title: "Clock", symbol: "clock", span: 1.9),
+        DockWidgetKind(id: "date", title: "Date", symbol: "calendar", span: 1.0),
         DockWidgetKind(id: "battery", title: "Battery", symbol: "battery.100", span: 1.0),
         DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 1.5),
         DockWidgetKind(id: "timer", title: "Focus Timer", symbol: "timer", span: 1.0),
@@ -45,6 +46,7 @@ struct DockWidgetTile: View {
         case "music":
             if let bridge = model.bridge { MusicDockWidget(bridge: bridge, size: size, compact: compact) } else { Image(systemName: "music.note") }
         case "clock": ClockDockWidget(size: size, compact: compact)
+        case "date": DateDockWidget(size: size)
         case "battery":
             if let power = model.power { BatteryDockWidget(power: power, size: size) } else { Image(systemName: "battery.100") }
         case "weather": WeatherDockWidget(size: size, compact: compact)
@@ -64,22 +66,38 @@ private struct MusicDockWidget: View {
 
     var body: some View {
         let art = size - 10
-        // Pick the richest layout that fits: artwork + title + controls, artwork + controls, artwork alone.
+        // Pick the richest layout that fits: artwork + title + progress + controls, then fewer controls,
+        // then artwork alone. The tile is tinted with the blurred artwork, like the Island.
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 7) {
                 artwork(art)
-                titles.frame(minWidth: 64, maxWidth: .infinity, alignment: .leading)
-                controls
+                titles.frame(minWidth: 52, maxWidth: .infinity, alignment: .leading)
+                controls(full: true)
             }
             HStack(spacing: 6) {
                 artwork(art)
-                Spacer(minLength: 0)
-                controls
+                titles.frame(minWidth: 36, maxWidth: .infinity, alignment: .leading)
+                controls(full: false)
+            }
+            HStack(spacing: 4) {
+                artwork(art)
+                controls(full: false)
             }
             artwork(art).overlay { playGlyph }
         }
         .padding(.horizontal, 5)
-        .animation(.easeInOut(duration: 0.2), value: bridge.info?.title)
+        .background {
+            if let image = bridge.info?.artwork {
+                Color.clear.overlay {
+                    Image(nsImage: image).resizable().aspectRatio(contentMode: .fill)
+                        .blur(radius: 18).opacity(0.55).scaleEffect(1.4)
+                }
+                .clipped()
+                .overlay(Color.black.opacity(0.18))
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: bridge.info?.title)
     }
 
     private func artwork(_ side: CGFloat) -> some View {
@@ -100,17 +118,31 @@ private struct MusicDockWidget: View {
     }
 
     private var titles: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(bridge.info?.title ?? "Not playing").font(.system(size: 11, weight: .semibold)).lineLimit(1)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(bridge.info?.title ?? "Not playing").font(.system(size: 10.5, weight: .semibold)).lineLimit(1)
             if let artist = bridge.info?.artist, !artist.isEmpty {
-                Text(artist).font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                Text(artist).font(.system(size: 9)).foregroundStyle(.white.opacity(0.65)).lineLimit(1)
+            }
+            if let t = bridge.info, t.duration > 0 {
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(.white.opacity(0.22))
+                            Capsule().fill(.white.opacity(0.9)).frame(width: geo.size.width * min(1, max(0, t.position(at: ctx.date) / t.duration)))
+                        }
+                    }
+                    .frame(height: 2)
+                }
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
+        .help("Open the full-screen player")
     }
 
-    private var controls: some View {
-        HStack(spacing: 2) {
-            control("backward.fill", .previous)
+    private func controls(full: Bool) -> some View {
+        HStack(spacing: 0) {
+            if full { control("backward.fill", .previous) }
             control(bridge.info?.playing == true ? "pause.fill" : "play.fill", .toggle)
             control("forward.fill", .next)
         }
@@ -119,8 +151,32 @@ private struct MusicDockWidget: View {
 
     private func control(_ symbol: String, _ command: MRCommand) -> some View {
         Button { bridge.send(command) } label: {
-            Image(systemName: symbol).font(.system(size: 11)).frame(width: 20, height: 24).contentShape(Rectangle())
+            Image(systemName: symbol).font(.system(size: 11)).frame(width: 19, height: 24).contentShape(Rectangle())
+                .contentTransition(.symbolEffect(.replace))
         }.buttonStyle(.plain)
+    }
+}
+
+/// A calendar-page tile: weekday in red, the day big underneath (like the Calendar icon). Click opens Calendar.
+private struct DateDockWidget: View {
+    let size: CGFloat
+
+    var body: some View {
+        TimelineView(.everyMinute) { ctx in
+            VStack(spacing: -size * 0.04) {
+                Text(ctx.date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
+                    .font(.system(size: size * 0.2, weight: .bold))
+                    .foregroundStyle(Color(red: 1, green: 0.27, blue: 0.23))
+                Text(ctx.date.formatted(.dateTime.day()))
+                    .font(.system(size: size * 0.5, weight: .semibold, design: .rounded).monospacedDigit())
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") { NSWorkspace.shared.open(url) }
+            }
+            .help(ctx.date.formatted(date: .complete, time: .omitted))
+        }
     }
 }
 
