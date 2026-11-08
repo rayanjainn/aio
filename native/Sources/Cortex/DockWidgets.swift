@@ -13,6 +13,7 @@ struct DockWidgetKind: Identifiable, Equatable {
         DockWidgetKind(id: "music", title: "Now Playing", symbol: "music.note", span: 4.4),
         DockWidgetKind(id: "clock", title: "Clock", symbol: "clock", span: 1.9),
         DockWidgetKind(id: "date", title: "Date", symbol: "calendar", span: 1.0),
+        DockWidgetKind(id: "analog", title: "Analog Clock", symbol: "clock.circle", span: 1.0),
         DockWidgetKind(id: "battery", title: "Battery", symbol: "battery.100", span: 1.0),
         DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 2.2),
         DockWidgetKind(id: "timer", title: "Focus Timer", symbol: "timer", span: 1.0),
@@ -46,6 +47,34 @@ struct DockWidgetTheme: Identifiable, Equatable {
     ]
 
     static func named(_ id: String) -> DockWidgetTheme { all.first { $0.id == id } ?? all[0] }
+}
+
+/// Ready-made Dock looks, LaunchMe-style: a set of widgets plus a colour style, applied in one click.
+struct DockPreset: Identifiable {
+    let id: String
+    let name: String
+    let detail: String
+    let theme: String
+    let widgets: [String]
+
+    static let all: [DockPreset] = [
+        DockPreset(id: "morning", name: "Morning Tide", detail: "Clock · Weather · Date · Now Playing", theme: "sunrise", widgets: ["clock", "weather", "date", "music"]),
+        DockPreset(id: "midnight", name: "Midnight Focus", detail: "Clock · Focus timer · Now Playing · System", theme: "midnight", widgets: ["clock", "timer", "music", "stats"]),
+        DockPreset(id: "studio", name: "Studio", detail: "Now Playing · System · Battery", theme: "graphite", widgets: ["music", "stats", "battery"]),
+        DockPreset(id: "ocean", name: "Ocean Desk", detail: "Date · Weather · Next meeting · Now Playing", theme: "ocean", widgets: ["date", "weather", "meeting", "music"]),
+        DockPreset(id: "developer", name: "Developer", detail: "GitHub · System · Focus timer · Clock", theme: "graphite", widgets: ["github", "stats", "timer", "clock"]),
+        DockPreset(id: "paper", name: "Paper", detail: "Date · Clock · Weather", theme: "paper", widgets: ["date", "clock", "weather"]),
+        DockPreset(id: "minimal", name: "Minimal", detail: "Just your apps, on glass", theme: "glass", widgets: []),
+    ]
+
+    @MainActor
+    func apply(to model: DockModel) {
+        for k in DockWidgetKind.all where model.hasWidget(k.id) { model.removeWidget(k.id) }
+        // Each new widget is inserted at the same spot, so add them back to front to keep the listed order.
+        for w in widgets.reversed() { model.addWidget(w) }
+        Prefs.shared.dockWidgetTheme = theme
+        Toast.show("dock.rectangle", "Dock: \(name)")
+    }
 }
 
 struct DockWidgetTile: View {
@@ -82,6 +111,7 @@ struct DockWidgetTile: View {
             if let bridge = model.bridge { MusicDockWidget(bridge: bridge, size: size, compact: compact) } else { Image(systemName: "music.note") }
         case "clock": ClockDockWidget(size: size, compact: compact)
         case "date": DateDockWidget(size: size)
+        case "analog": AnalogDockClock(size: size)
         case "battery":
             if let power = model.power { BatteryDockWidget(power: power, size: size) } else { Image(systemName: "battery.100") }
         case "weather": WeatherDockWidget(size: size, compact: compact)
@@ -218,6 +248,33 @@ private struct DateDockWidget: View {
     }
 }
 
+/// A watch face with big 12 · 3 · 6 · 9 numerals, like LaunchMe's Dock clock. Moves once a minute.
+private struct AnalogDockClock: View {
+    let size: CGFloat
+
+    var body: some View {
+        TimelineView(.everyMinute) { ctx in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: ctx.date)
+            let minute = Double(c.minute ?? 0)
+            let hour = Double((c.hour ?? 0) % 12) + minute / 60
+            ZStack {
+                ForEach([(12, 0.0), (3, 90.0), (6, 180.0), (9, 270.0)], id: \.0) { n, angle in
+                    Text("\(n)").font(.system(size: size * 0.2, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.primary.opacity(0.85))
+                        .offset(x: sin(angle * .pi / 180) * size * 0.3, y: -cos(angle * .pi / 180) * size * 0.3)
+                }
+                Capsule().fill(Color.primary).frame(width: size * 0.06, height: size * 0.24)
+                    .offset(y: -size * 0.1).rotationEffect(.degrees(hour * 30))
+                Capsule().fill(Color.primary).frame(width: size * 0.04, height: size * 0.34)
+                    .offset(y: -size * 0.15).rotationEffect(.degrees(minute * 6))
+                Circle().fill(Color(red: 1, green: 0.27, blue: 0.23)).frame(width: size * 0.08, height: size * 0.08)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .help(ctx.date.formatted(date: .abbreviated, time: .shortened))
+        }
+    }
+}
+
 private struct ClockDockWidget: View {
     let size: CGFloat
     let compact: Bool
@@ -242,17 +299,25 @@ private struct BatteryDockWidget: View {
 
     var body: some View {
         let p = power.percent ?? 0
+        let low = p <= 20 && !power.charging
+        let ring: Color = power.charging ? Color(red: 0.3, green: 0.85, blue: 0.45) : low ? Color(red: 1, green: 0.3, blue: 0.25) : .primary
         ZStack {
             Circle().stroke(Color.primary.opacity(0.18), lineWidth: 3.5)
             Circle().trim(from: 0, to: max(0.02, Double(p) / 100))
-                .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .stroke(ring, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 0.6), value: p)
             VStack(spacing: -1) {
-                if power.charging { Image(systemName: "bolt.fill").font(.system(size: size * 0.16)) }
-                Text(power.percent.map(String.init) ?? "–").font(.system(size: size * 0.28, weight: .semibold, design: .rounded).monospacedDigit())
+                Image(systemName: power.charging ? "bolt.fill" : low ? "battery.25" : "battery.100")
+                    .font(.system(size: size * 0.15, weight: .semibold))
+                    .foregroundStyle(power.charging || low ? ring : Color.primary.opacity(0.6))
+                Text(power.percent.map { "\($0)%" } ?? "–")
+                    .font(.system(size: size * 0.2, weight: .semibold, design: .rounded).monospacedDigit())
+                    .minimumScaleFactor(0.7)
             }
         }
-        .padding(size * 0.14)
+        .padding(size * 0.12)
+        .help(power.charging ? "Charging — \(p)%" : "Battery \(p)%")
     }
 }
 
@@ -394,10 +459,28 @@ private struct MeetingDockWidget: View {
                     }
                     .buttonStyle(.plain)
                 }
+            } else if !compact, let e = calendar.events.first(where: { $0.end > Date() }) {
+                // No timed meeting left: show what's next anyway (an all-day item or tomorrow's first event).
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar").font(.system(size: size * 0.26))
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(e.title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                        Text(Calendar.current.isDateInToday(e.start) ? (e.allDay ? "Today" : e.start.formatted(date: .omitted, time: .shortened))
+                             : "Tomorrow" + (e.allDay ? "" : " · " + e.start.formatted(date: .omitted, time: .shortened)))
+                            .font(.system(size: 9.5)).foregroundStyle(.primary.opacity(0.6))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 8)
             } else {
-                VStack(spacing: 0) {
-                    Image(systemName: "calendar").font(.system(size: size * 0.3))
-                    if !compact { Text("No meetings").font(.system(size: 9.5)).foregroundStyle(.primary.opacity(0.55)) }
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle").font(.system(size: size * 0.28))
+                    if !compact {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Day is clear").font(.system(size: 11, weight: .semibold))
+                            Text("No more meetings").font(.system(size: 9.5)).foregroundStyle(.primary.opacity(0.55))
+                        }
+                    }
                 }
             }
         }

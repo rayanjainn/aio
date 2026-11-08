@@ -56,6 +56,11 @@ struct DockRootView: View {
                 Button(k.title) { if model.hasWidget(k.id) { model.removeWidget(k.id) } else { model.addWidget(k.id) } }
             }
         }
+        Menu("Presets") {
+            ForEach(DockPreset.all) { preset in
+                Button("\(preset.name) — \(preset.detail)") { preset.apply(to: model) }
+            }
+        }
         Menu("Widget style") {
             ForEach(DockWidgetTheme.all) { t in
                 Button((Prefs.shared.dockWidgetTheme == t.id ? "✓ " : "") + t.name) { Prefs.shared.dockWidgetTheme = t.id }

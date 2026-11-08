@@ -14,6 +14,7 @@ struct SettingsActions {
     var addDockFolder: () -> Void
     var dockHasWidget: (String) -> Bool
     var dockSetWidget: (String, Bool) -> Void
+    var dockModel: () -> DockModel? = { nil }
     var engine: EngineClient
 }
 
@@ -386,6 +387,32 @@ struct DockPane: View {
                 Toggle("Bounce while an app launches", isOn: $prefs.dockBounce)
                 Toggle("Show running apps that aren't pinned", isOn: $prefs.dockShowRunning)
                 Toggle("Gather them into one Active Apps tile", isOn: $prefs.dockGroupRunning)
+                if let dock = actions.dockModel() {
+                    LabeledContent("Presets") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(DockPreset.all) { preset in
+                                    let theme = DockWidgetTheme.named(preset.theme)
+                                    Button { preset.apply(to: dock) } label: {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                                .fill(theme.colors.isEmpty ? AnyShapeStyle(Color.white.opacity(0.15)) : AnyShapeStyle(LinearGradient(colors: theme.colors, startPoint: .topLeading, endPoint: .bottomTrailing)))
+                                                .frame(width: 120, height: 34)
+                                                .overlay(HStack(spacing: 5) {
+                                                    ForEach(preset.widgets, id: \.self) { w in
+                                                        Image(systemName: DockWidgetKind.find(w)?.symbol ?? "square").font(.system(size: 11, weight: .semibold))
+                                                    }
+                                                }.foregroundStyle(theme.ink))
+                                            Text(preset.name).font(.caption.weight(.semibold))
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help(preset.detail)
+                                }
+                            }
+                        }
+                    }
+                }
                 LabeledContent("Widget style") {
                     HStack(spacing: 8) {
                         ForEach(DockWidgetTheme.all) { t in

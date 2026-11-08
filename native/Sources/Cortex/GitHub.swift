@@ -318,11 +318,22 @@ struct GitHubDockWidget: View {
 
     var body: some View {
         Button { NSWorkspace.shared.open(URL(string: gh.reviewRequests.isEmpty ? "https://github.com/notifications" : "https://github.com/pulls/review-requested")!) } label: {
-            VStack(spacing: 1) {
-                Image(systemName: gh.notifications.isEmpty ? "bell" : "bell.badge.fill").font(.system(size: size * 0.3, weight: .medium))
+            VStack(spacing: 2) {
+                Image(systemName: "bell.fill").font(.system(size: size * 0.3, weight: .medium))
                     .symbolEffect(.bounce, value: gh.notifications.count)
-                Text(gh.connected ? "\(gh.notifications.count)·\(gh.reviewRequests.count)" : "—")
-                    .font(.system(size: size * 0.2, weight: .semibold, design: .rounded).monospacedDigit())
+                    .overlay(alignment: .topTrailing) {
+                        if gh.connected, !gh.notifications.isEmpty {
+                            Text(gh.notifications.count > 99 ? "99+" : "\(gh.notifications.count)")
+                                .font(.system(size: size * 0.17, weight: .bold).monospacedDigit()).foregroundStyle(.white)
+                                .padding(.horizontal, 3).frame(minWidth: size * 0.3, minHeight: size * 0.3)
+                                .background(Capsule().fill(Color(red: 1, green: 0.27, blue: 0.23)))
+                                .fixedSize()
+                                .offset(x: size * 0.2, y: -size * 0.12)
+                        }
+                    }
+                Text(gh.connected ? (gh.reviewRequests.isEmpty ? "GitHub" : "\(gh.reviewRequests.count) review\(gh.reviewRequests.count == 1 ? "" : "s")") : "Connect")
+                    .font(.system(size: size * 0.16, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                    .foregroundStyle(.primary.opacity(0.75))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())

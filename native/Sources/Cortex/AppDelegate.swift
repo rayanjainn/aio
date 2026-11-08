@@ -109,6 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             addDockFolder: { [weak self] in self?.addDockFolder() },
             dockHasWidget: { [weak self] id in self?.dock?.model.hasWidget(id) ?? false },
             dockSetWidget: { [weak self] id, on in if on { self?.dock?.model.addWidget(id) } else { self?.dock?.model.removeWidget(id) } },
+            dockModel: { [weak self] in self?.dock?.model },
             engine: engine))
         setUpStatusItem()
         if !Prefs.shared.onboardingDone { onboarding.show() }
