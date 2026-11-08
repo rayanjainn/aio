@@ -16,6 +16,8 @@ final class SystemStats: ObservableObject {
     private var watchers = 0
     private var previous: (busy: UInt64, total: UInt64)?
 
+    private var diskTicks = 0
+
     func watch() {
         watchers += 1
         if timer == nil {
@@ -32,7 +34,9 @@ final class SystemStats: ObservableObject {
     private func sample() {
         if let c = readCPU() { cpu = c }
         if let m = readMemory() { memoryUsed = m }
-        if let values = try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey]) {
+        // Free disk space is slow to ask for (tens of ms): once a minute is plenty.
+        diskTicks += 1
+        if diskTicks % 30 == 1, let values = try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey]) {
             diskFree = Double(values.volumeAvailableCapacityForImportantUsage ?? 0)
             diskTotal = Double(values.volumeTotalCapacity ?? 0)
         }

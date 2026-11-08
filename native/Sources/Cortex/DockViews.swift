@@ -164,11 +164,19 @@ struct DockIcon: View {
     }
 
     @ViewBuilder private var badge: some View {
-        if let text = item.badge, !text.isEmpty {
-            Text(text).font(.system(size: 11, weight: .bold)).foregroundStyle(.black)
-                .padding(.horizontal, 5).frame(minWidth: 18, minHeight: 18)
-                .background(Capsule().fill(Color.white))
-                .offset(x: 6, y: -6)
+        if let raw = item.badge, let text = DockBadge.display(raw) {
+            Group {
+                if text.isEmpty {
+                    Circle().fill(Color.white).frame(width: 10, height: 10)      // long labels become a dot
+                } else {
+                    Text(text).font(.system(size: 10.5, weight: .bold).monospacedDigit()).foregroundStyle(.black)
+                        .lineLimit(1).fixedSize()
+                        .padding(.horizontal, 5).frame(minWidth: 18, minHeight: 18)
+                        .background(Capsule().fill(Color.white))
+                }
+            }
+            .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
+            .offset(x: 6, y: -6)
         }
     }
 
@@ -225,5 +233,17 @@ struct DockIcon: View {
         case .trash:
             Button("Open Trash") { model.activate(item) }
         }
+    }
+}
+
+
+enum DockBadge {
+    /// What to draw for an app's badge: numbers (capped at 99+), short labels as-is, anything longer as a dot ("").
+    /// nil means no badge.
+    static func display(_ raw: String) -> String? {
+        let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return nil }
+        if let n = Int(t) { return n <= 0 ? nil : (n > 99 ? "99+" : String(n)) }
+        return t.count <= 3 ? t : ""
     }
 }

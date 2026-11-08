@@ -219,6 +219,15 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertEqual(tabs.last?.index, 2)
     }
 
+    func testDockBadgeDisplay() {
+        XCTAssertEqual(DockBadge.display("3"), "3")
+        XCTAssertEqual(DockBadge.display("250"), "99+")
+        XCTAssertNil(DockBadge.display("0"))
+        XCTAssertNil(DockBadge.display("  "))
+        XCTAssertEqual(DockBadge.display("!"), "!")
+        XCTAssertEqual(DockBadge.display("com.apple.something"), "")
+    }
+
     func testSnippetPlaceholders() {
         let out = SnippetExpander.expand("Hi {clipboard} on {day}, id {uuid}", clipboard: "Sam")
         XCTAssertTrue(out.hasPrefix("Hi Sam on "))

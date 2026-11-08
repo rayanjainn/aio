@@ -34,7 +34,9 @@ final class MusicPlayerController {
             p.hasShadow = false
             p.animationBehavior = .none
             p.acceptsMouseMovedEvents = true
-            p.contentView = NSHostingView(rootView: MusicPlayerView(bridge: bridge, model: model, onClose: { [weak self] in self?.hide() }))
+            let host = NSHostingView(rootView: MusicPlayerView(bridge: bridge, model: model, onClose: { [weak self] in self?.hide() }))
+            host.sizingOptions = []
+            p.contentView = host
             NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: p, queue: .main) { [weak self] _ in
                 DispatchQueue.main.async {
                     // Menus (output, sleep timer) and alerts don't count as leaving.
@@ -63,13 +65,15 @@ final class MusicPlayerController {
 
     func hide() {
         guard let panel, panel.isVisible else { return }
-        model.visible = false
         LyricsService.shared.playerWants = false
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
         NSCursor.unhide()
         NSAnimationContext.runAnimationGroup({ ctx in ctx.duration = 0.18; panel.animator().alphaValue = 0 },
-                                             completionHandler: { panel.orderOut(nil) })
+                                             completionHandler: { [weak self] in
+            panel.orderOut(nil)
+            self?.model.visible = false
+        })
         // Hand focus back to where the user was, unless they already moved on to another app.
         if NSApp.isActive, let prev = previousApp, !prev.isTerminated { prev.activate() }
         previousApp = nil
@@ -186,7 +190,8 @@ enum AudioOutputs {
 @MainActor
 final class MusicPlayerModel: ObservableObject {
     weak var bridge: MediaRemoteBridge?
-    var visible = false
+    /// False while the player is closed: the view renders nothing, so its clock-driven animations stop.
+    @Published var visible = false
 
     @Published private(set) var lyricIndex: Int?
     @Published var volume: Double = HUDService.shared.volume() ?? 0.5
@@ -347,6 +352,10 @@ struct MusicPlayerView: View {
     private var trackKey: String { "\(bridge.info?.title ?? "")|\(bridge.info?.artist ?? "")" }
 
     var body: some View {
+        if model.visible { content } else { Color.clear }
+    }
+
+    private var content: some View {
         GeometryReader { geo in
             let showLyrics = prefs.musicPlayerLyrics && geo.size.width > 900
             ZStack {

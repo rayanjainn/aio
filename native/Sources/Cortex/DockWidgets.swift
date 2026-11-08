@@ -107,12 +107,12 @@ private struct MusicDockWidget: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 7) {
                 artwork(art)
-                titles.frame(minWidth: 44, maxWidth: .infinity, alignment: .leading)
+                titles.frame(minWidth: 44, idealWidth: 60, maxWidth: .infinity, alignment: .leading)
                 controls(full: true)
             }
             HStack(spacing: 6) {
                 artwork(art)
-                titles.frame(minWidth: 30, maxWidth: .infinity, alignment: .leading)
+                titles.frame(minWidth: 30, idealWidth: 40, maxWidth: .infinity, alignment: .leading)
                 controls(full: false)
             }
             HStack(spacing: 4) {

@@ -607,16 +607,18 @@ struct ToolsPage: View {
                 VStack(spacing: 7) {
                     TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
                         ZStack {
-                            RingView(progress: timer.progress(at: ctx.date), size: 70)
+                            RingView(progress: timer.progress(at: ctx.date), size: 62)
                             Text(clock(timer.remaining(at: ctx.date))).font(.system(size: 15, weight: .semibold).monospacedDigit())
                         }
                     }
-                    HStack(spacing: 5) {
+                    HStack(spacing: 4) {
                         chip("25") { timer.start(minutes: 25) }
                         chip("50") { timer.start(minutes: 50) }
                         chip("5") { timer.start(minutes: 5, label: "Break") }
-                        Button { timer.toggle() } label: { Image(systemName: timer.isRunning ? "pause.fill" : "play.fill").frame(width: 20) }
-                        Button { timer.reset() } label: { Image(systemName: "arrow.counterclockwise").frame(width: 20) }
+                    }
+                    HStack(spacing: 18) {
+                        Button { timer.toggle() } label: { Image(systemName: timer.isRunning ? "pause.fill" : "play.fill").frame(width: 20, height: 18) }
+                        Button { timer.reset() } label: { Image(systemName: "arrow.counterclockwise").frame(width: 20, height: 18) }
                     }
                     .buttonStyle(.plain).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.9))
                 }
@@ -703,7 +705,7 @@ struct ToolsPage: View {
 
     private func chip(_ text: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(text).font(.system(size: 11, weight: .semibold)).padding(.horizontal, 9).padding(.vertical, 3)
+            Text(text).font(.system(size: 11, weight: .semibold)).lineLimit(1).fixedSize().padding(.horizontal, 9).padding(.vertical, 3)
                 .background(Color.white.opacity(0.14), in: Capsule())
         }.buttonStyle(.plain)
     }

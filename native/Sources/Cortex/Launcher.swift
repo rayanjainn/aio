@@ -32,6 +32,8 @@ final class LauncherStore: ObservableObject {
     @Published var query = ""
     @Published var openFolder: String?
     @Published var showHidden = false
+    /// False while the launcher is closed: its view renders nothing, so no animation or timer runs behind the scenes.
+    @Published var visible = false
 
     private static var url: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/launcher.json")
@@ -239,6 +241,7 @@ final class LauncherController {
         let panel = self.panel ?? build()
         store.query = ""
         store.openFolder = nil
+        store.visible = true
         store.reload()
         panel.setFrame(screen.frame, display: true)
         panel.alphaValue = 0
@@ -255,7 +258,10 @@ final class LauncherController {
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.14
             panel.animator().alphaValue = 0
-        }, completionHandler: { panel.orderOut(nil) })
+        }, completionHandler: { [weak self] in
+            panel.orderOut(nil)
+            self?.store.visible = false
+        })
     }
 
     private func build() -> LauncherPanel {
@@ -271,7 +277,9 @@ final class LauncherController {
         NotificationCenter.default.addObserver(forName: .launcherRefocus, object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.async { if let p = self?.panel, p.isVisible { p.makeKeyAndOrderFront(nil) } }
         }
-        p.contentView = NSHostingView(rootView: view)
+        let host = NSHostingView(rootView: view)
+        host.sizingOptions = []
+        p.contentView = host
         NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: p, queue: .main) { [weak self] _ in
             // A rename / uninstall dialog takes focus: keep the launcher open behind it, and take focus back after.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -332,6 +340,10 @@ struct LauncherView: View {
     private var iconSize: CGFloat { CGFloat(prefs.launcherIconSize) }
 
     var body: some View {
+        if store.visible { content } else { Color.clear }
+    }
+
+    private var content: some View {
         ZStack {
             background
                 .onTapGesture { if store.openFolder != nil { withAnimation(.spring(response: 0.3)) { store.openFolder = nil } } else { onClose() } }
@@ -604,10 +616,12 @@ struct LauncherMusicCard: View {
     var body: some View {
         if let t = bridge.info {
             VStack(spacing: 10) {
-                ArtworkView(image: t.artwork, size: 120, radius: 60)
-                    .rotationEffect(.degrees(t.playing ? 360 : 0))
-                    .animation(t.playing ? .linear(duration: 12).repeatForever(autoreverses: false) : .default, value: t.playing)
-                    .overlay(Circle().fill(Color.black.opacity(0.6)).frame(width: 18, height: 18))
+                // A clock-driven spin (not a repeatForever animation, which can keep running after the launcher closes).
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !t.playing)) { ctx in
+                    ArtworkView(image: t.artwork, size: 120, radius: 60)
+                        .rotationEffect(.degrees(t.playing ? ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 12) / 12 * 360 : 0))
+                        .overlay(Circle().fill(Color.black.opacity(0.6)).frame(width: 18, height: 18))
+                }
                 Text(t.title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
                     .onTapGesture { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
                 Text(t.artist).font(.system(size: 11)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
