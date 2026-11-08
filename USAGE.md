@@ -40,7 +40,7 @@
 | *(nothing typed)* | your last five commands come first |
 
 | `⌃⌥L` | **Launcher** — every app full screen, with folders, search, widgets and your wallpaper |
-| `⌃⌥P` | **Music player** — full screen over the artwork's colours, with time-synced lyrics (click a line to jump), vinyl / cover / waves, volume, output picker and sleep timer. Keys: Space play/pause · ←/→ 10 s · ⌘←/⌘→ track · ↑/↓ volume · M mute · L lyrics · 1/2/3 style · Esc close. Also from the Island's ⤢ button or the Dock music tile's title |
+| `⌃⌥P` | **Music player** — full screen over the artwork's colours, with time-synced lyrics (click a line to jump), five styles (Sleeve — a coloured vinyl sliding out of the album sleeve, Vinyl, Cover, Full-screen art with a floating control bar, Waves), karaoke-style lyric fill, volume, output picker and sleep timer. Keys: Space play/pause · ←/→ 10 s · ⌘←/⌘→ track · ↑/↓ volume · M mute · L lyrics · 1–5 style · Esc close. Also from the Island's ⤢ button or the Dock music tile's title |
 | `space work` | save your whole setup as a Space (Dock, windows, tabs, wallpaper, glass) — `space work` again switches back |
 
 Snippets can ask for values: `Hi {ask:Name}, see you {ask:When}`.
@@ -69,3 +69,12 @@ provider, browser-tab access and the search engine.
 **Permissions** (Settings → Privacy & Permissions): every permission with its live status. *Grant everything* asks for all of them
 in a row (macOS has no single switch; Accessibility and Screen Recording you switch on yourself). If a switch is on in System
 Settings but Cortex still says off — common after an update — use *Reset and ask again*.
+
+**Events and reminders** from ⌘K: `event lunch with Sam tomorrow 1pm` or `remind call mom at 6pm`, then Enter.
+
+**Dock presets** (right-click the Dock → Presets, or Settings → Dock): Morning Tide, Midnight Focus, Studio, Ocean Desk, Developer,
+Paper, Minimal — each sets the widgets and a colour style in one click. New tiles: Date, Analog Clock, GitHub.
+
+**Island Home page**: music over its artwork, the date, the weather and your focus timer side by side.
+
+**Updates** install themselves when you've been away for a minute (Settings → About & Updates to turn off).
