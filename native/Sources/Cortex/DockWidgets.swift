@@ -17,6 +17,7 @@ struct DockWidgetKind: Identifiable, Equatable {
         DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 1.5),
         DockWidgetKind(id: "timer", title: "Focus Timer", symbol: "timer", span: 1.0),
         DockWidgetKind(id: "stats", title: "System", symbol: "cpu", span: 1.7),
+        DockWidgetKind(id: "github", title: "GitHub", symbol: "bell", span: 1.0),
         DockWidgetKind(id: "meeting", title: "Next Meeting", symbol: "calendar", span: 2.8),
     ]
     /// Not offered in "Add widget": the Dock adds it itself when running apps are grouped.
@@ -54,6 +55,7 @@ struct DockWidgetTile: View {
         case "stats": StatsDockWidget(size: size, compact: compact)
         case "meeting": MeetingDockWidget(size: size, compact: compact)
         case "running": RunningAppsTile(model: model, size: size)
+        case "github": GitHubDockWidget(size: size)
         default: Image(systemName: "questionmark")
         }
     }

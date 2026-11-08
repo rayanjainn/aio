@@ -26,7 +26,11 @@
   <string>Cortex shows your next meeting in the Island and offers a Join button.</string>
   <key>NSCalendarsUsageDescription</key>
   <string>Cortex shows your next meeting in the Island and offers a Join button.</string>
-  <key>NSCameraUsageDescription</key>
+  <key>NSMicrophoneUsageDescription</key>
+	<string>Cortex listens only while you dictate.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Cortex shows the weather where you are.</string>
+	<key>NSCameraUsageDescription</key>
   <string>Cortex can show a mirror in the Island so you can check yourself before a call.</string>
   <key>NSBluetoothAlwaysUsageDescription</key>
   <string>Cortex shows when AirPods and other devices connect, with their battery level.</string>

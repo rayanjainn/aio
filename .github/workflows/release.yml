@@ -28,6 +28,7 @@ jobs:
           CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
         run: |
+          # MACOS_CERT_P12 may hold a Developer ID certificate (signed + notarized) or a self-signed one (stable grants).
           if [ -z "$CERT_P12" ]; then echo "No signing certificate configured: building ad-hoc."; exit 0; fi
           KC="$RUNNER_TEMP/sign.keychain-db"
           security create-keychain -p cortex "$KC"
@@ -38,7 +39,15 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k cortex "$KC"
           security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
           ID=$(security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
-          echo "SIGN_IDENTITY=$ID" >> "$GITHUB_ENV"
+          if [ -n "$ID" ]; then
+            echo "SIGN_IDENTITY=$ID" >> "$GITHUB_ENV"
+          else
+            # A self-signed certificate (native/scripts/make-signing-cert.sh): no notarization, but every release
+            # has the same signature identity, so macOS keeps Accessibility / Screen Recording grants across updates.
+            ID=$(security find-identity -p codesigning "$KC" | grep -m1 -E '[0-9A-F]{40}' | sed -E 's/.*"(.*)"/\1/')
+            echo "SELF_SIGN_IDENTITY=$ID" >> "$GITHUB_ENV"
+          fi
+          echo "Signing identity: $ID"
       - name: Build universal app + dmg
         env:
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}

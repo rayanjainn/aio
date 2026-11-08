@@ -538,6 +538,35 @@ final class PaletteModel: ObservableObject {
             }
             return out
         }
+        if lower == "gh" || lower == "github" || lower.hasPrefix("github ") {
+            let gh = GitHubService.shared
+            let rest = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces).lowercased()
+            if !gh.connected {
+                out.append(PaletteRow(id: "gh.connect", title: "Connect GitHub", subtitle: "Settings → Connections: your notifications, PRs and reviews right here",
+                                      symbol: "link.circle", iconPath: nil, tag: "", kind: .command("app.settings"), section: "GitHub"))
+            } else {
+                gh.refresh()
+                let groups: [(String, [GHItem])] = [("Waiting for your review", gh.reviewRequests), ("Notifications", gh.notifications),
+                                                    ("Your pull requests", gh.myPRs), ("Assigned to you", gh.assigned)]
+                for (section, items) in groups {
+                    for item in items where rest.isEmpty || item.title.lowercased().contains(rest) || item.repo.lowercased().contains(rest) {
+                        let symbol = item.kind == "review" ? "eye" : item.kind == "pr" ? "arrow.triangle.pull" : item.kind == "issue" ? "smallcircle.filled.circle" : "bell"
+                        out.append(PaletteRow(id: "gh:\(item.id)", title: item.title,
+                                              subtitle: item.repo + (item.number > 0 ? " #\(item.number)" : "") + (item.updated.map { " · " + $0.formatted(.relative(presentation: .named)) } ?? ""),
+                                              symbol: symbol, iconPath: nil, tag: "", kind: .web(item.url.absoluteString), section: section))
+                    }
+                }
+                if !rest.isEmpty, let q = rest.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                    out.append(PaletteRow(id: "gh.search", title: "Search GitHub for “\(rest)”", subtitle: "github.com", symbol: "magnifyingglass",
+                                          iconPath: nil, tag: "", kind: .web("https://github.com/search?q=\(q)"), section: "GitHub"))
+                }
+                if out.isEmpty {
+                    out.append(PaletteRow(id: "gh.empty", title: "All clear on GitHub", subtitle: "No notifications, reviews or open PRs" + (rest.isEmpty ? "" : " matching “\(rest)”"),
+                                          symbol: "checkmark.circle", iconPath: nil, tag: "", kind: .web("https://github.com"), section: "GitHub"))
+                }
+            }
+            return out
+        }
         if lower == "pin" || lower == "pins" || lower.hasPrefix("pin ") || lower.hasPrefix("pins ") {
             let rest = String(q.drop(while: { $0 != " " })).trimmingCharacters(in: .whitespaces).lowercased()
             out.append(PaletteRow(id: "pin.add", title: "Pin the current clipboard", subtitle: String((NSPasteboard.general.string(forType: .string) ?? (NSImage(pasteboard: NSPasteboard.general) != nil ? "Image" : "Clipboard is empty")).prefix(70)),

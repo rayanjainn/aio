@@ -41,6 +41,7 @@ struct WidgetHostView: View {
         case .notes: NotesWidget(config: config, store: store)
         case .todos: TodosWidget(config: config, store: store)
         case .weather: WeatherWidget(size: config.size)
+        case .github: GitHubWidget(size: config.size)
         case .claude: CodingWidget(name: "Claude Code", symbol: "sparkles", size: config.size, claude: true)
         case .codex: CodingWidget(name: "Codex", symbol: "chevron.left.forwardslash.chevron.right", size: config.size, claude: false)
         case .script: ScriptWidget(config: config, store: store)

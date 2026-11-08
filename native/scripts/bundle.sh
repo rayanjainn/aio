@@ -40,6 +40,12 @@ if [ -n "${SIGN_IDENTITY:-}" ]; then
   done
   codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$APP/Contents/Helpers/cortexd"
   codesign --force --timestamp --options runtime --entitlements Entitlements.plist --sign "$SIGN_IDENTITY" "$APP"
+elif [ -n "${SELF_SIGN_IDENTITY:-}" ]; then
+  # Self-signed, not hardened (Apple Events keep working). The signature's identity is the same for every
+  # release, so privacy grants survive updates — unlike ad-hoc, whose identity is a hash of each build.
+  echo "Self-signing with: $SELF_SIGN_IDENTITY"
+  codesign --force --sign "$SELF_SIGN_IDENTITY" "$APP/Contents/Helpers/cortexd"
+  codesign --force --sign "$SELF_SIGN_IDENTITY" --entitlements Entitlements.plist "$APP"
 else
   # Ad-hoc signed, NOT hardened: a hardened runtime without entitlements makes
   # macOS silently refuse Apple Events.

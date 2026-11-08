@@ -94,6 +94,14 @@ struct OnboardingView: View {
         VStack(spacing: 14) {
             Text("Optional permissions").font(.system(size: 24, weight: .semibold, design: .rounded))
             Text("Cortex works without them; each one unlocks a feature.").font(.system(size: 13)).foregroundStyle(.secondary)
+            Button {
+                Permissions.shared.refresh()
+                Permissions.shared.grantEverything()
+            } label: {
+                Label("Grant everything", systemImage: "checkmark.shield").padding(.horizontal, 6)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             VStack(spacing: 10) {
                 PermissionRow(title: "Accessibility", detail: "Window snapping, volume keys in the notch, pasting from the clipboard, menu search.",
                               granted: accessibility, button: "Grant…") { WindowManager.requestAccess() }

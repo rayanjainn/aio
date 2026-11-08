@@ -18,7 +18,7 @@ struct SettingsActions {
 }
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, shortcuts, snippets, quicklinks, launcher, island, dock, appearance, ai, memory, privacy, about
+    case general, shortcuts, snippets, quicklinks, launcher, island, dock, appearance, ai, connections, memory, privacy, about
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -32,6 +32,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .dock: "Dock"
         case .appearance: "Appearance"
         case .ai: "AI"
+        case .connections: "Connections"
         case .privacy: "Privacy & Permissions"
         case .about: "About & Updates"
         }
@@ -48,6 +49,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .dock: "dock.rectangle"
         case .appearance: "paintbrush"
         case .ai: "sparkles"
+        case .connections: "link.circle"
         case .privacy: "hand.raised"
         case .about: "info.circle"
         }
@@ -79,6 +81,7 @@ struct SettingsView: View {
                 case .appearance: AppearancePane(prefs: prefs)
                 case .ai: AIPane()
                 case .privacy: PrivacyPane(prefs: prefs, actions: actions)
+                case .connections: ConnectionsPane(engine: actions.engine)
                 case .about: AboutPane(actions: actions)
                 }
             }
@@ -484,10 +487,6 @@ struct PermissionRow: View {
 struct PrivacyPane: View {
     @ObservedObject var prefs: Prefs
     let actions: SettingsActions
-    @State private var accessibility = WindowManager.isTrusted
-    @State private var screen = CGPreflightScreenCaptureAccess()
-    private let timer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
-
     var body: some View {
         Form {
             if !prefs.onboardingDone {
@@ -496,24 +495,13 @@ struct PrivacyPane: View {
                     Button("Done") { prefs.onboardingDone = true }
                 }
             }
-            Section("Permissions") {
-                PermissionRow(title: "Accessibility", detail: "Lets Cortex move and resize windows with the keyboard.",
-                              granted: accessibility, button: "Grant…") { WindowManager.requestAccess() }
-                PermissionRow(title: "Screen Recording", detail: "Only needed for screen memory and Dock window previews.",
-                              granted: screen, button: "Grant…") { _ = CGRequestScreenCaptureAccess() }
-                Button("Open Privacy & Security settings") {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy")!)
-                }
-            }
+            PermissionsCenter()
             Section("Now Playing") {
                 Text("Cortex reads what's playing from macOS itself, so Apple Music, Spotify, browsers and more need no permission.")
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
-        .onReceive(timer) { _ in
-            accessibility = WindowManager.isTrusted
-            screen = CGPreflightScreenCaptureAccess()
-        }
+        .formStyle(.grouped)
     }
 }
 

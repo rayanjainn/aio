@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 enum WidgetKind: String, CaseIterable, Codable, Identifiable {
-    case clock, calendar, system, nowPlaying, notes, todos, weather, claude, codex, script
+    case clock, calendar, system, nowPlaying, notes, todos, weather, github, claude, codex, script
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -13,6 +13,7 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .notes: "Sticky Note"
         case .todos: "To-Do"
         case .weather: "Weather"
+        case .github: "GitHub"
         case .claude: "Claude Code Usage"
         case .codex: "Codex Usage"
         case .script: "Command Output"
@@ -27,6 +28,7 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .notes: "A note that stays on your desktop"
         case .todos: "A small checklist"
         case .weather: "Right now and today's range"
+        case .github: "Notifications, reviews waiting, your PRs and the contribution graph"
         case .claude: "Tokens today, the 5-hour block, last 7 days"
         case .codex: "Tokens today and the last 7 days"
         case .script: "Any shell command, refreshed every minute (or ask AI to write one: ⌘K, widget …)"
@@ -41,6 +43,7 @@ enum WidgetKind: String, CaseIterable, Codable, Identifiable {
         case .notes: "note.text"
         case .todos: "checklist"
         case .weather: "cloud.sun"
+        case .github: "chevron.left.forwardslash.chevron.right"
         case .claude: "sparkles"
         case .codex: "chevron.left.forwardslash.chevron.right"
         case .script: "terminal"

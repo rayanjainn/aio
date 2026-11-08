@@ -1,11 +1,11 @@
 import AppKit
 
-/// Export / import ~/.cortex/native to a folder of your choice. Secrets (ai.json) stay on this Mac.
+/// Export / import ~/.cortex/native to a folder of your choice. Secrets (ai.json, connections.json) stay on this Mac.
 enum SettingsTransfer {
     private static var source: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native", isDirectory: true)
     }
-    private static let skip: Set<String> = ["ai.json", "run", "icons", "pins"]
+    private static let skip: Set<String> = ["ai.json", "connections.json", "run", "icons", "pins"]
 
     @MainActor
     static func export() {
