@@ -260,7 +260,7 @@ final class LauncherController {
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
             panel.orderOut(nil)
-            self?.store.visible = false
+            MainActor.assumeIsolated { self?.store.visible = false }
         })
     }
 

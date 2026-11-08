@@ -72,7 +72,7 @@ final class MusicPlayerController {
         NSAnimationContext.runAnimationGroup({ ctx in ctx.duration = 0.18; panel.animator().alphaValue = 0 },
                                              completionHandler: { [weak self] in
             panel.orderOut(nil)
-            self?.model.visible = false
+            MainActor.assumeIsolated { self?.model.visible = false }
         })
         // Hand focus back to where the user was, unless they already moved on to another app.
         if NSApp.isActive, let prev = previousApp, !prev.isTerminated { prev.activate() }
