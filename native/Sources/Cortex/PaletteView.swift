@@ -81,6 +81,14 @@ struct PaletteView: View {
     var body: some View {
         VStack(spacing: 0) {
             searchBar
+            if model.showsApps {
+                Divider().opacity(0.35)
+                RunningAppsStrip(apps: model.runningApps) { i in
+                    if model.switchToApp(at: i) { onClose() }
+                }
+                .frame(height: PaletteModel.appsStripHeight)
+                .transition(.opacity)
+            }
             if model.chat != nil {
                 Divider().opacity(0.35)
                 ChatPane(model: model)
@@ -297,5 +305,53 @@ enum IconCache {
         if cache.count > 400 { cache.removeAll() }
         cache[path] = image
         return image
+    }
+}
+
+
+/// Running apps as large icons above the results: click (or ⌘1…⌘9) to switch.
+struct RunningAppsStrip: View {
+    let apps: [RunningApp]
+    let onPick: (Int) -> Void
+    @State private var hovered: pid_t?
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(Array(apps.enumerated()), id: \.element.id) { i, app in
+                    Button { onPick(i) } label: {
+                        VStack(spacing: 3) {
+                            ZStack(alignment: .bottomTrailing) {
+                                Image(nsImage: IconCache.icon(forPath: app.path)).resizable().interpolation(.high)
+                                    .frame(width: 40, height: 40)
+                                    .opacity(app.isHidden ? 0.55 : 1)
+                                    .shadow(color: .black.opacity(0.3), radius: 3, y: 1.5)
+                                if i < 9 {
+                                    Text("\(i + 1)").font(.system(size: 8.5, weight: .bold).monospacedDigit())
+                                        .foregroundStyle(.white.opacity(0.85))
+                                        .frame(width: 13, height: 13)
+                                        .background(Circle().fill(.black.opacity(0.55)))
+                                        .offset(x: 3, y: 3)
+                                        .opacity(hovered == app.pid || i < 3 ? 1 : 0.0)
+                                }
+                            }
+                            Text(app.name).font(.system(size: 10, weight: .medium)).lineLimit(1)
+                                .foregroundStyle(.white.opacity(hovered == app.pid ? 0.95 : 0.6))
+                                .frame(width: 62)
+                        }
+                        .frame(width: 66, height: 70)
+                        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(Color.white.opacity(hovered == app.pid ? 0.12 : 0)))
+                        .scaleEffect(hovered == app.pid ? 1.04 : 1)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { h in withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { hovered = h ? app.pid : (hovered == app.pid ? nil : hovered) } }
+                    .help(i < 9 ? "\(app.name)  ·  ⌘\(i + 1)" : app.name)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+        }
     }
 }

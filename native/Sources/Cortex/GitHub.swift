@@ -398,10 +398,12 @@ struct ConnectionsPane: View {
                                 let name = NSWorkspace.shared.urlForApplication(withBundleIdentifier: key).map { FileManager.default.displayName(atPath: $0.path).replacingOccurrences(of: ".app", with: "") } ?? key
                                 return "\(name): \(list.count)"
                             }.sorted()
-                            tabsResult = tabs.isEmpty ? "No tabs found — open a browser and allow Automation for it (Privacy & Permissions)." : "\(tabs.count) tabs · " + by.joined(separator: ", ")
+                            let errors = BrowserTabs.lastErrors.map { "\($0.key): \($0.value)" }.sorted()
+                            tabsResult = (tabs.isEmpty ? "No tabs found — open a browser and allow Automation for it (Privacy & Permissions)." : "\(tabs.count) tabs · " + by.joined(separator: ", "))
+                                + (errors.isEmpty ? "" : "\n" + errors.joined(separator: "\n"))
                         }
                     }
-                    Text(tabsResult).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(tabsResult).font(.caption).foregroundStyle(.secondary).lineLimit(6).textSelection(.enabled)
                 }
                 Text("Safari, Chrome, Brave, Arc and Edge. Each browser asks once for Automation; type  tab  in ⌘K to search them.")
                     .font(.caption).foregroundStyle(.secondary)

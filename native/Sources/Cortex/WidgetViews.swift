@@ -76,10 +76,11 @@ struct ClockWidget: View {
     }
 }
 
-/// A watch-face clock: 60 ticks, three hands, a smooth sweeping second hand.
+/// A watch-face clock: 60 ticks, three hands, a second hand that ticks once a second (a sweeping hand
+/// redrew the widget 24 times a second, all day — the biggest idle-CPU cost Cortex had).
 struct AnalogClock: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24)) { ctx in
+        TimelineView(.periodic(from: .now, by: 1)) { ctx in
             Canvas { context, canvas in
                 let cal = Calendar.current
                 let c = cal.dateComponents([.hour, .minute, .second, .nanosecond], from: ctx.date)

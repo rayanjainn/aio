@@ -190,6 +190,32 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertEqual(out.map { $0.path ?? "" }, ["/Users/a/projects/x/browser.rs", "/Users/a/old/browser.rs"])
     }
 
+    func testIrrelevantClipboardRowsAreDropped() {
+        let input = [result("apps", "Safari"), result("clipboard", "mkdir -p ~/photo_tracker"), result("clipboard", "open safari docs"),
+                     result("apps", "Visual Studio Code"), result("shell", "ls")]
+        XCTAssertEqual(PaletteModel.curate(input, forEmptyQuery: false, query: "safari").map(\.title), ["Safari", "open safari docs"])
+        XCTAssertEqual(PaletteModel.curate(input, forEmptyQuery: false, query: "vsc").map(\.title), ["Visual Studio Code"])
+        XCTAssertTrue(PaletteModel.isSubsequence("sfr", of: "safari"))
+        XCTAssertFalse(PaletteModel.isSubsequence("xyz", of: "safari"))
+    }
+
+    func testClipboardIsCappedAndAppsComeFirst() {
+        let clips = (0..<8).map { result("clipboard", "note \($0)") }
+        let out = PaletteModel.curate(clips + [result("apps", "Notes")], forEmptyQuery: false, query: "note")
+        XCTAssertEqual(out.first?.title, "Notes")
+        XCTAssertEqual(out.filter { $0.pluginId == "clipboard" }.count, 3)
+    }
+
+    func testBrowserTabScriptAndParsing() {
+        let script = BrowserTabs.script(bundle: "com.brave.Browser", safari: false)
+        XCTAssertTrue(script.contains("application id \"com.brave.Browser\""))
+        XCTAssertTrue(script.contains("character id 9"))
+        XCTAssertFalse(script.contains("& tab &"))          // `tab` is the browser's tab class inside tell
+        let tabs = BrowserTabs.parse("1\t1\tInbox\thttps://mail.example\n1\t2\tDocs\thttps://docs.example\nbad line\n", bundle: "b")
+        XCTAssertEqual(tabs.map(\.title), ["Inbox", "Docs"])
+        XCTAssertEqual(tabs.last?.index, 2)
+    }
+
     func testSnippetPlaceholders() {
         let out = SnippetExpander.expand("Hi {clipboard} on {day}, id {uuid}", clipboard: "Sam")
         XCTAssertTrue(out.hasPrefix("Hi Sam on "))

@@ -38,6 +38,10 @@ final class Permissions: ObservableObject {
         ("com.brave.Browser", "Brave Browser", "Search and switch tabs"),
         ("company.thebrowser.Browser", "Arc", "Search and switch tabs"),
         ("com.microsoft.edgemac", "Microsoft Edge", "Search and switch tabs"),
+        ("org.chromium.Chromium", "Chromium", "Search and switch tabs"),
+        ("com.vivaldi.Vivaldi", "Vivaldi", "Search and switch tabs"),
+        ("com.operasoftware.Opera", "Opera", "Search and switch tabs"),
+        ("com.kagi.kagimacOS", "Orion", "Search and switch tabs"),
     ]
 
     func refresh() {

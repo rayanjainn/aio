@@ -187,7 +187,7 @@ private struct ClockDockWidget: View {
     let compact: Bool
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+        TimelineView(.everyMinute) { ctx in
             VStack(spacing: 0) {
                 Text(ctx.date.formatted(.dateTime.hour().minute()))
                     .font(.system(size: size * (compact ? 0.26 : 0.34), weight: .semibold, design: .rounded).monospacedDigit())

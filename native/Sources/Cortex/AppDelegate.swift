@@ -126,6 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         GitHubService.shared.start()
+        AppRecency.shared.start()
         if CommandLine.arguments.contains("--grant-permissions") {
             // Relaunched by "Reset and ask again": go straight to the permissions list and ask for all of them.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in

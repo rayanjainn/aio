@@ -30,6 +30,7 @@ final class PaletteController {
         let front = NSWorkspace.shared.frontmostApplication
         model.frontPID = (front?.processIdentifier == ProcessInfo.processInfo.processIdentifier) ? nil : front?.processIdentifier
         model.reset()
+        installAppKeys()
         place(panel)
         panel.alphaValue = 0
         panel.makeKeyAndOrderFront(nil)
@@ -45,7 +46,25 @@ final class PaletteController {
         DispatchQueue.main.async { self.model.query = query }
     }
 
+    private var appKeys: Any?
+
+    /// ⌘1…⌘9 switch to the apps in the strip while nothing is typed.
+    private func installAppKeys() {
+        guard appKeys == nil else { return }
+        appKeys = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            guard flags == .command, let ch = event.charactersIgnoringModifiers, let n = Int(ch), (1...9).contains(n) else { return event }
+            let handled = MainActor.assumeIsolated { () -> Bool in
+                guard let self, let p = self.panel, p.isKeyWindow else { return false }
+                if self.model.switchToApp(at: n - 1) { self.hide(); return true }
+                return false
+            }
+            return handled ? nil : event
+        }
+    }
+
     func hide() {
+        if let appKeys { NSEvent.removeMonitor(appKeys); self.appKeys = nil }
         guard let panel, panel.isVisible else { return }
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.1

@@ -14,51 +14,86 @@ enum BrowserTabs {
     private struct Browser { let bundle: String; let name: String; let safari: Bool }
     private static let browsers = [
         Browser(bundle: "com.apple.Safari", name: "Safari", safari: true),
+        Browser(bundle: "com.apple.SafariTechnologyPreview", name: "Safari Technology Preview", safari: true),
+        Browser(bundle: "com.kagi.kagimacOS", name: "Orion", safari: true),
         Browser(bundle: "com.google.Chrome", name: "Google Chrome", safari: false),
+        Browser(bundle: "com.google.Chrome.canary", name: "Google Chrome Canary", safari: false),
         Browser(bundle: "com.brave.Browser", name: "Brave Browser", safari: false),
+        Browser(bundle: "com.brave.Browser.beta", name: "Brave Browser Beta", safari: false),
         Browser(bundle: "company.thebrowser.Browser", name: "Arc", safari: false),
         Browser(bundle: "com.microsoft.edgemac", name: "Microsoft Edge", safari: false),
+        Browser(bundle: "org.chromium.Chromium", name: "Chromium", safari: false),
+        Browser(bundle: "com.vivaldi.Vivaldi", name: "Vivaldi", safari: false),
+        Browser(bundle: "com.operasoftware.Opera", name: "Opera", safari: false),
+        Browser(bundle: "ai.perplexity.comet", name: "Comet", safari: false),
+        Browser(bundle: "app.ferrite.browser", name: "Ferrite", safari: false),
     ]
 
-    private static func osascript(_ source: String) -> String {
+    private static func osascript(_ source: String) -> (out: String, err: String) {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         p.arguments = ["-e", source]
-        let out = Pipe()
+        let out = Pipe(), err = Pipe()
         p.standardOutput = out
-        p.standardError = Pipe()
-        do { try p.run() } catch { return "" }
+        p.standardError = err
+        do { try p.run() } catch { return ("", error.localizedDescription) }
+        let o = out.fileHandleForReading.readDataToEndOfFile()
+        let e = err.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
-        return String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return (String(decoding: o, as: UTF8.self), String(decoding: e, as: UTF8.self))
+    }
+
+    /// Last problem per browser (shown by Settings → Connections → Browser tabs → Test).
+    nonisolated(unsafe) static var lastErrors: [String: String] = [:]
+
+    /// The AppleScript that lists every tab as "window<TAB>index<TAB>title<TAB>url" lines.
+    /// Note: inside `tell application`, the word `tab` means the browser's tab class, not a tab character —
+    /// so separators are written as `character id 9`.
+    static func script(bundle: String, safari: Bool) -> String {
+        let titleKey = safari ? "name" : "title"
+        return """
+        tell application id "\(bundle)"
+          set sep to character id 9
+          set out to ""
+          set w to 0
+          repeat with win in windows
+            set w to w + 1
+            set i to 0
+            try
+              repeat with t in tabs of win
+                set i to i + 1
+                set out to out & w & sep & i & sep & (\(titleKey) of t) & sep & (URL of t) & linefeed
+              end repeat
+            end try
+          end repeat
+          return out
+        end tell
+        """
     }
 
     /// Blocking: call off the main thread. Only asks browsers that are already running.
     static func list() -> [BrowserTab] {
         var tabs: [BrowserTab] = []
+        var errors: [String: String] = [:]
         for b in browsers where !NSRunningApplication.runningApplications(withBundleIdentifier: b.bundle).isEmpty {
-            let titleKey = b.safari ? "name" : "title"
-            let script = """
-            tell application "\(b.name)"
-              set out to ""
-              set w to 0
-              repeat with win in windows
-                set w to w + 1
-                set i to 0
-                repeat with t in tabs of win
-                  set i to i + 1
-                  set out to out & w & tab & i & tab & (\(titleKey) of t) & tab & (URL of t) & linefeed
-                end repeat
-              end repeat
-              return out
-            end tell
-            """
-            for line in osascript(script).split(separator: "\n") {
-                let f = line.split(separator: "\t", maxSplits: 3, omittingEmptySubsequences: false).map(String.init)
-                guard f.count == 4, let w = Int(f[0]), let i = Int(f[1]) else { continue }
-                tabs.append(BrowserTab(bundle: b.bundle, window: w, index: i, title: f[2], url: f[3]))
+            let result = osascript(script(bundle: b.bundle, safari: b.safari))
+            if !result.err.isEmpty {
+                let e = result.err.trimmingCharacters(in: .whitespacesAndNewlines)
+                errors[b.name] = e.contains("-1743") ? "Automation not allowed for \(b.name)" : e
+                Log.warn("tabs: \(b.name): \(e)")
             }
+            tabs += parse(result.out, bundle: b.bundle)
         }
+        lastErrors = errors
         return tabs
+    }
+
+    static func parse(_ output: String, bundle: String) -> [BrowserTab] {
+        output.split(separator: "\n").compactMap { line in
+            let f = line.split(separator: "\t", maxSplits: 3, omittingEmptySubsequences: false).map(String.init)
+            guard f.count == 4, let w = Int(f[0]), let i = Int(f[1]) else { return nil }
+            return BrowserTab(bundle: bundle, window: w, index: i, title: f[2], url: f[3])
+        }
     }
 
     static func matching(_ tabs: [BrowserTab], _ query: String) -> [BrowserTab] {
@@ -75,7 +110,7 @@ enum BrowserTabs {
         let script: String
         if b.safari {
             script = """
-            tell application "\(b.name)"
+            tell application id "\(b.bundle)"
               activate
               set current tab of window \(tab.window) to tab \(tab.index) of window \(tab.window)
               set index of window \(tab.window) to 1
@@ -83,7 +118,7 @@ enum BrowserTabs {
             """
         } else {
             script = """
-            tell application "\(b.name)"
+            tell application id "\(b.bundle)"
               activate
               set active tab index of window \(tab.window) to \(tab.index)
               set index of window \(tab.window) to 1

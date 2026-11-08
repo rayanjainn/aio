@@ -54,6 +54,8 @@ final class PaletteModel: ObservableObject {
     @Published private(set) var message: String?
     @Published private(set) var chat: ChatState?
     @Published var focusToken = 0
+    /// Running apps, most recently used first — shown as an icon strip above the results when nothing is typed.
+    @Published private(set) var runningApps: [RunningApp] = []
 
     var frontPID: pid_t?
     private var menuCache: [String: MenuEntry] = [:]
@@ -106,6 +108,7 @@ final class PaletteModel: ObservableObject {
 
     func reset() {
         endChat()
+        runningApps = AppRecency.shared.ordered(excludingFront: frontPID)
         query = ""
         selection = 0
         focusToken += 1
@@ -125,10 +128,14 @@ final class PaletteModel: ObservableObject {
     static let footerHeight: CGFloat = 38
     static let maxBody: CGFloat = 8 * 52 + 3 * 28
     static let chatBody: CGFloat = 270
+    static let appsStripHeight: CGFloat = 86
+
+    var showsApps: Bool { query.isEmpty && chat == nil && !runningApps.isEmpty }
 
     var totalHeight: CGFloat {
         if chat != nil { return Self.searchHeight + Self.chatBody + Self.footerHeight }
-        if rows.isEmpty { return Self.searchHeight + (message != nil || !query.isEmpty ? 56 + Self.footerHeight : 0) }
+        let strip = showsApps ? Self.appsStripHeight : 0
+        if rows.isEmpty { return Self.searchHeight + strip + (message != nil || !query.isEmpty ? 56 + Self.footerHeight : 0) }
         var body: CGFloat = 8
         var last = ""
         for r in rows {
@@ -136,7 +143,18 @@ final class PaletteModel: ObservableObject {
             last = r.section
             body += Self.rowHeight
         }
-        return Self.searchHeight + min(body, Self.maxBody + 8) + Self.footerHeight
+        return Self.searchHeight + strip + min(body, Self.maxBody + 8 - strip) + Self.footerHeight
+    }
+
+    /// ⌘1…⌘9 and clicks on the strip: bring that app forward.
+    func switchToApp(at index: Int) -> Bool {
+        guard showsApps, runningApps.indices.contains(index) else { return false }
+        let app = runningApps[index]
+        if let running = NSRunningApplication(processIdentifier: app.pid) {
+            if running.isHidden { running.unhide() }
+            running.activate()
+        }
+        return true
     }
 
     // MARK: searching
@@ -279,7 +297,7 @@ final class PaletteModel: ObservableObject {
                 await MainActor.run {
                     guard let self, self.generation == gen else { return }
                     self.message = nil
-                    let engineRows = Self.grouped(Self.curate(response.results, forEmptyQuery: q.isEmpty).map(Self.row(from:)))
+                    let engineRows = Self.grouped(Self.curate(response.results, forEmptyQuery: q.isEmpty, query: text).map(Self.row(from:)))
                     self.rows = local + engineRows + tail
                     self.selection = min(self.selection, max(self.rows.count - 1, 0))
                 }
@@ -707,22 +725,84 @@ final class PaletteModel: ObservableObject {
 
     /// Cleans an engine result list: drops blanks, files that no longer exist, and repeats
     /// (the same file indexed twice, or under a different letter-case of its path).
-    static func curate(_ results: [EngineResult], forEmptyQuery empty: Bool,
+    static func curate(_ results: [EngineResult], forEmptyQuery empty: Bool, query: String = "",
                        fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> [EngineResult] {
         var seen = Set<String>()
         var cleaned: [EngineResult] = []
+        var perSource: [String: Int] = [:]
+        let tokens = searchTokens(query)
         for r in results {
+            if !empty, !tokens.isEmpty, !relevant(r, tokens: tokens) { continue }
+            if !empty, perSource[r.pluginId, default: 0] >= sourceLimit(r.pluginId) { continue }
             if r.pluginId == "browser", (r.url ?? "").hasPrefix("file://") { continue }
             if r.title.trimmingCharacters(in: .whitespaces).isEmpty { continue }
             if r.pluginId == "files" || r.sourceType == "file", let p = r.path, !fileExists(p) { continue }
             let identity = (r.path ?? r.url ?? (r.title + "|" + (r.subtitle ?? ""))).lowercased()
             guard seen.insert(r.pluginId + "|" + identity).inserted else { continue }
+            perSource[r.pluginId, default: 0] += 1
             cleaned.append(r)
         }
-        guard empty else { return cleaned }
+        guard empty else { return ranked(cleaned) }
         let wanted = ["apps", "commands", "clipboard"]
         let picked = cleaned.filter { wanted.contains($0.pluginId) }
         return Array((picked.isEmpty ? cleaned : picked).prefix(10))
+    }
+
+    static func searchTokens(_ q: String) -> [String] {
+        q.lowercased().split(whereSeparator: { $0 == " " }).map(String.init).filter { !$0.isEmpty }
+    }
+
+    /// The engine matches loosely (good for typos in app names, bad for clipboard and history, where it surfaces
+    /// rows that share no word with the query). Apps and commands keep fuzzy matching — their title must contain
+    /// the query's letters in order; everything else must contain every word typed.
+    static func relevant(_ r: EngineResult, tokens: [String]) -> Bool {
+        let hay = [r.title, r.subtitle ?? "", r.path ?? "", r.url ?? "", r.content ?? ""].joined(separator: " ").lowercased()
+        if r.pluginId == "apps" || r.pluginId == "commands" {
+            let title = r.title.lowercased()
+            let joined = tokens.joined()
+            return tokens.allSatisfy { hay.contains($0) } || isSubsequence(joined, of: title) || initials(of: title).hasPrefix(joined)
+        }
+        return tokens.allSatisfy { hay.contains($0) }
+    }
+
+    static func isSubsequence(_ needle: String, of hay: String) -> Bool {
+        var it = hay.makeIterator()
+        for c in needle where c != " " {
+            var found = false
+            while let h = it.next() { if h == c { found = true; break } }
+            if !found { return false }
+        }
+        return true
+    }
+
+    /// "visual studio code" → "vsc"
+    static func initials(of s: String) -> String {
+        String(s.split(whereSeparator: { $0 == " " || $0 == "-" || $0 == "." }).compactMap(\.first))
+    }
+
+    static func sourceLimit(_ plugin: String) -> Int {
+        switch plugin {
+        case "apps": 6
+        case "commands", "files": 5
+        case "clipboard", "shell", "git": 3
+        default: 4
+        }
+    }
+
+    /// Apps first (running ones before the rest), then commands, files and everything else in the engine's order.
+    static func ranked(_ results: [EngineResult]) -> [EngineResult] {
+        let order = ["apps", "commands", "files", "browser", "github", "calendar", "email", "clipboard", "shell", "git"]
+        let running = Set(NSWorkspace.shared.runningApplications.compactMap { $0.bundleURL?.path })
+        return results.enumerated().sorted { a, b in
+            let pa = order.firstIndex(of: a.element.pluginId) ?? order.count
+            let pb = order.firstIndex(of: b.element.pluginId) ?? order.count
+            if pa != pb { return pa < pb }
+            if a.element.pluginId == "apps" {
+                let ra = running.contains(a.element.path ?? ""), rb = running.contains(b.element.path ?? "")
+                if ra != rb { return ra }
+            }
+            return a.offset < b.offset
+        }.map(\.element)
     }
 
     /// Groups rows under their section header, keeping the engine's order of first appearance.
@@ -951,5 +1031,52 @@ final class PaletteModel: ObservableObject {
         if chat != nil { endChat(); return false }
         if !query.isEmpty { query = ""; return false }
         return true
+    }
+}
+
+
+struct RunningApp: Identifiable, Equatable {
+    let pid: pid_t
+    let name: String
+    let path: String
+    let isHidden: Bool
+    var id: pid_t { pid }
+}
+
+/// Remembers the order apps were last used in, so the palette can list them most-recent first.
+@MainActor
+final class AppRecency {
+    static let shared = AppRecency()
+    private var order: [pid_t] = []
+
+    private init() {
+        if let front = NSWorkspace.shared.frontmostApplication { order = [front.processIdentifier] }
+        NotificationCenter.default.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main,
+                                               using: { note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+            let pid = app.processIdentifier
+            MainActor.assumeIsolated { AppRecency.shared.touch(pid) }
+        })
+    }
+
+    func start() {}
+
+    private func touch(_ pid: pid_t) {
+        order.removeAll { $0 == pid }
+        order.insert(pid, at: 0)
+        if order.count > 60 { order.removeLast(order.count - 60) }
+    }
+
+    /// Regular apps, most recently used first; the app the palette was opened over goes last (you're already in it).
+    func ordered(excludingFront front: pid_t?) -> [RunningApp] {
+        let me = ProcessInfo.processInfo.processIdentifier
+        let apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular && $0.processIdentifier != me }
+        func rank(_ a: NSRunningApplication) -> Int {
+            if a.processIdentifier == front { return Int.max }
+            return order.firstIndex(of: a.processIdentifier) ?? (order.count + 1)
+        }
+        return apps.sorted { rank($0) == rank($1) ? ($0.localizedName ?? "") < ($1.localizedName ?? "") : rank($0) < rank($1) }
+            .prefix(14)
+            .map { RunningApp(pid: $0.processIdentifier, name: $0.localizedName ?? "App", path: $0.bundleURL?.path ?? "", isHidden: $0.isHidden) }
     }
 }
