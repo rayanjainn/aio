@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 import Carbon.HIToolbox
 @testable import Cortex
 
