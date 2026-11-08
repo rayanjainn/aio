@@ -196,16 +196,16 @@ cortex_windows | awk -v m=$((SW - 4)) '$3 >= m { f=1 } END { exit f ? 1 : 0 }' &
 section "6. Full-screen music player"
 for s in vinyl cover waves; do
   link "run/music.style:$s"; sleep 0.3
-  link "run/music"; sleep 2
+  link "run/music.open"; sleep 2
   has_window_wider_than $((SW - 4)) && ok "music player opens ($s)" || bad "music player not on screen ($s)"
   shot "music-$s"
-  link "run/music"; sleep 0.8
+  link "run/music.close"; sleep 0.8
 done
 link "run/music.style:vinyl"
 
 # Lyrics pane + keyboard: open the player, press 2 (cover) and L (lyrics), check prefs follow.
 link "run/music.lyrics:on"; sleep 0.3
-link "run/music"; sleep 2.5
+link "run/music.open"; sleep 2.5
 shot "music-lyrics"
 osascript -e 'tell application "System Events" to keystroke "2"' >/dev/null 2>&1; sleep 0.8
 grep -q '"musicPlayerStyle":"cover"' "$CORTEX/native/prefs.json" 2>/dev/null && ok "pressing 2 in the player switches to the cover style" || bad "pressing 2 did not change the player style"
@@ -215,6 +215,7 @@ grep -q '"musicPlayerLyrics":false' "$CORTEX/native/prefs.json" 2>/dev/null && o
 shot "music-no-lyrics"
 osascript -e 'tell application "System Events" to key code 53' >/dev/null 2>&1; sleep 0.8
 has_window_wider_than $((SW - 4)) && bad "Esc did not close the player" || ok "Esc closes the player"
+link "run/music.close"; sleep 0.6       # whatever happened above, never leave the player covering the next tests
 link "run/music.lyrics:on"; link "run/music.style:vinyl"
 
 # ---------------------------------------------------------------- 7. island
@@ -301,7 +302,11 @@ else bad "adapter output unexpected: \`$OUTJ\`"; fi
 # ---------------------------------------------------------------- 11. performance
 section "11. Performance"
 sleep 3
-CPU_IDLE=$(top -l 3 -s 3 -pid "$PID" -stats cpu 2>/dev/null | tail -1 | tr -d ' ')
+# Five 2-second samples after a settle; report them all and judge on the median (one busy moment isn't "idle CPU").
+sleep 4
+CPU_SAMPLES=$(top -l 6 -s 2 -pid "$PID" -stats cpu 2>/dev/null | grep -E '^[0-9.]+ *$' | tail -5 | tr -d ' ' | tr '\n' ' ')
+CPU_IDLE=$(echo "$CPU_SAMPLES" | tr ' ' '\n' | grep -v '^$' | sort -n | awk '{a[NR]=$1} END{ if (NR) print a[int((NR+1)/2)]; else print 0 }')
+say "- CPU samples (2 s each): $CPU_SAMPLES"
 say "- Cortex idle CPU: ${CPU_IDLE}% · memory $(rss_mb "$PID") MB · threads $(ps -M -p "$PID" | tail -n +2 | wc -l | tr -d ' ')"
 [ -n "$DPID" ] && say "- cortexd CPU: $(cpu_of "$DPID")% · memory $(rss_mb "$DPID") MB"
 awk -v c="${CPU_IDLE:-0}" 'BEGIN{ exit (c+0 > 10) ? 1 : 0 }' && ok "idle CPU is low" || bad "idle CPU is high (${CPU_IDLE}%)"

@@ -165,6 +165,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "palette": palette?.toggle()
         case "launcher": launcher.toggle()
         case "music": musicPlayer.toggle()
+        case "music.open": musicPlayer.show()
+        case "music.close": musicPlayer.hide()
         case "act": ActOnThis.captureSelection { [weak self] in self?.palette?.show(query: "ai ") }
         case "clip.plain": ActOnThis.pastePlain()
         case "dictate": ActOnThis.dictate()

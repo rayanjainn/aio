@@ -14,6 +14,7 @@ extension Notification.Name {
 final class MusicPlayerController {
     private var panel: LauncherPanel?
     private var keyMonitor: Any?
+    private var previousApp: NSRunningApplication?
     weak var bridge: MediaRemoteBridge? { didSet { model.bridge = bridge } }
     let model = MusicPlayerModel()
 
@@ -46,6 +47,11 @@ final class MusicPlayerController {
         }()
         p.setFrame(screen.frame, display: true)
         p.alphaValue = 0
+        // The player is a full-screen, keyboard-driven surface: make Cortex the active app so Space, arrows,
+        // L, 1/2/3 and Esc reach it (a non-activating panel gets clicks but keys go to the app in front).
+        let front = NSWorkspace.shared.frontmostApplication
+        if front?.bundleIdentifier != Bundle.main.bundleIdentifier { previousApp = front }
+        NSApp.activate(ignoringOtherApps: true)
         p.makeKeyAndOrderFront(nil)
         model.visible = true
         model.start()
@@ -64,6 +70,9 @@ final class MusicPlayerController {
         NSCursor.unhide()
         NSAnimationContext.runAnimationGroup({ ctx in ctx.duration = 0.18; panel.animator().alphaValue = 0 },
                                              completionHandler: { panel.orderOut(nil) })
+        // Hand focus back to where the user was, unless they already moved on to another app.
+        if NSApp.isActive, let prev = previousApp, !prev.isTerminated { prev.activate() }
+        previousApp = nil
     }
 
     private func installKeys() {
@@ -946,8 +955,9 @@ struct VinylView: View {
                 Circle().fill(AngularGradient(colors: [.clear, .white.opacity(0.10), .clear, .clear, .white.opacity(0.07), .clear], center: .center))
                     .frame(width: d, height: d)
                     .allowsHitTesting(false)
+                // On the record while playing, lifted off to the side when paused.
                 Tonearm(d: d)
-                    .rotationEffect(.degrees(playing ? 26 : 2), anchor: UnitPoint(x: 0.5, y: 0.06))
+                    .rotationEffect(.degrees(playing ? 24 : -16), anchor: UnitPoint(x: 0.5, y: 0.06))
                     .offset(x: d * 0.45, y: -d * 0.12)
                     .animation(.spring(response: 0.9, dampingFraction: 0.75), value: playing)
             }
