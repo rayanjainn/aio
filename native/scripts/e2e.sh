@@ -222,7 +222,7 @@ link "run/music.lyrics:on"; link "run/music.style:sleeve"
 section "7. Island"
 shot_region "island-00-compact" "$((SW/2 - 360)),0,720,60"
 cortex_windows | awk '$2 <= 2 && $3 < 1000 { f=1 } END { exit f ? 0 : 1 }' && ok "Island pill is at the top of the screen" || bad "Island pill not found at the top"
-for page in player calendar shelf clipboard rewind tools; do
+for page in home player calendar shelf clipboard rewind tools; do
   link "run/island.page:$page"; sleep 1.2
   shot_region "island-page-$page" "$((SW/2 - 360)),0,720,320"
   cortex_windows | awk '$2 <= 2 && $4 >= 150 { f=1 } END { exit f ? 0 : 1 }' && ok "Island expands to the $page page" || bad "Island did not expand for $page"

@@ -31,10 +31,11 @@ struct NotchGeometry: Equatable {
 }
 
 enum IslandPage: String, CaseIterable, Identifiable {
-    case player, calendar, shelf, clipboard, rewind, tools
+    case home, player, calendar, shelf, clipboard, rewind, tools
     var id: String { rawValue }
     var symbol: String {
         switch self {
+        case .home: "square.grid.2x2"
         case .player: "music.note"
         case .calendar: "calendar"
         case .shelf: "tray.full"
@@ -45,6 +46,7 @@ enum IslandPage: String, CaseIterable, Identifiable {
     }
     var title: String {
         switch self {
+        case .home: "Home"
         case .player: "Player"
         case .calendar: "Calendar"
         case .shelf: "Shelf"
@@ -78,7 +80,7 @@ final class IslandModel: ObservableObject {
 
     @Published var geometry = NotchGeometry.detect()
     @Published var expanded = false
-    @Published var page: IslandPage = .player
+    @Published var page: IslandPage = .home
     @Published var flash: Flash?
     @Published var hud: HUDEvent?
     @Published var track: NowPlayingInfo?

@@ -14,7 +14,7 @@ struct DockWidgetKind: Identifiable, Equatable {
         DockWidgetKind(id: "clock", title: "Clock", symbol: "clock", span: 1.9),
         DockWidgetKind(id: "date", title: "Date", symbol: "calendar", span: 1.0),
         DockWidgetKind(id: "battery", title: "Battery", symbol: "battery.100", span: 1.0),
-        DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 1.5),
+        DockWidgetKind(id: "weather", title: "Weather", symbol: "cloud.sun", span: 2.2),
         DockWidgetKind(id: "timer", title: "Focus Timer", symbol: "timer", span: 1.0),
         DockWidgetKind(id: "stats", title: "System", symbol: "cpu", span: 1.7),
         DockWidgetKind(id: "github", title: "GitHub", symbol: "bell", span: 1.0),
@@ -256,6 +256,7 @@ private struct BatteryDockWidget: View {
     }
 }
 
+/// LaunchMe-style weather tile: "Day · Clear" and the temperature over a horizon with the sun (or moon) rising.
 private struct WeatherDockWidget: View {
     @ObservedObject private var service = WeatherService.shared
     let size: CGFloat
@@ -264,10 +265,34 @@ private struct WeatherDockWidget: View {
     var body: some View {
         Group {
             if let w = service.weather {
-                HStack(spacing: 4) {
-                    Image(systemName: w.symbol).symbolRenderingMode(.hierarchical).font(.system(size: size * 0.34))
-                    Text("\(Int(w.temperature.rounded()))°").font(.system(size: size * 0.34, weight: .medium, design: .rounded))
+                ZStack(alignment: .bottom) {
+                    // Horizon glow: warm by day, cool by night.
+                    Circle()
+                        .fill(RadialGradient(colors: w.isDay ? [Color(red: 1, green: 0.45, blue: 0.2), Color(red: 1, green: 0.3, blue: 0.2).opacity(0)]
+                                                          : [Color(red: 0.55, green: 0.65, blue: 1), Color(red: 0.4, green: 0.5, blue: 1).opacity(0)],
+                                             center: .center, startRadius: 0, endRadius: size * 0.45))
+                        .frame(width: size * 0.9, height: size * 0.9)
+                        .offset(y: size * 0.55)
+                    Circle().fill(w.isDay ? Color(red: 1, green: 0.42, blue: 0.18) : Color(white: 0.92))
+                        .frame(width: size * 0.32, height: size * 0.32)
+                        .offset(y: size * 0.22)
+                    HStack(alignment: .top) {
+                        if !compact {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(w.isDay ? "Day" : "Night").font(.system(size: size * 0.2, weight: .semibold))
+                                Text(w.summary).font(.system(size: size * 0.15)).foregroundStyle(.primary.opacity(0.65)).lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: 2)
+                        Text("\(Int(w.temperature.rounded()))°").font(.system(size: size * 0.3, weight: .semibold, design: .rounded))
+                    }
+                    .padding(.horizontal, size * 0.12)
+                    .padding(.top, size * 0.1)
+                    .frame(maxHeight: .infinity, alignment: .top)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .help("\(w.place): \(Int(w.temperature.rounded()))°, \(w.summary), H \(Int(w.high.rounded()))° L \(Int(w.low.rounded()))°")
             } else {
                 Image(systemName: "cloud.sun").font(.system(size: size * 0.34)).foregroundStyle(.primary.opacity(0.6))
             }

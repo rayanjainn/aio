@@ -264,6 +264,7 @@ struct ExpandedView: View {
 
     @ViewBuilder private var page: some View {
         switch model.page {
+        case .home: HomePage(model: model, bridge: bridge)
         case .player: PlayerPage(model: model, bridge: bridge)
         case .calendar: CalendarPage(model: model)
         case .shelf: ShelfPage()
@@ -752,5 +753,192 @@ final class CameraView: NSView {
     override func layout() {
         super.layout()
         preview.frame = bounds
+    }
+}
+
+
+// MARK: Home — widget cards side by side (music, date, weather, timer)
+
+struct HomePage: View {
+    @ObservedObject var model: IslandModel
+    let bridge: MediaRemoteBridge
+    @ObservedObject private var timer = FocusTimer.shared
+    @ObservedObject private var weather = WeatherService.shared
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HomeMusicCard(model: model, bridge: bridge)
+                .frame(maxWidth: .infinity)
+            if timer.isActive {
+                HomeTimerCard(timer: timer).frame(width: 112)
+            } else {
+                HomeDateCard().frame(width: 100)
+            }
+            HomeWeatherCard(weather: weather).frame(width: 128)
+        }
+        .padding(.vertical, 8)
+        .onAppear { weather.watch() }
+        .onDisappear { weather.unwatch() }
+    }
+}
+
+private struct HomeCard<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+    var body: some View {
+        content()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 0.6))
+    }
+}
+
+/// The song over its own artwork, like LaunchMe's notch player.
+struct HomeMusicCard: View {
+    @ObservedObject var model: IslandModel
+    let bridge: MediaRemoteBridge
+
+    var body: some View {
+        HomeCard {
+            if let t = model.track {
+                ZStack(alignment: .bottomLeading) {
+                    if let art = t.artwork {
+                        Color.clear.overlay { Image(nsImage: art).resizable().interpolation(.high).aspectRatio(contentMode: .fill) }
+                            .clipped()
+                    }
+                    LinearGradient(colors: [.black.opacity(0.1), .black.opacity(0.35), .black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Spacer(minLength: 0)
+                        Text(t.title).font(.system(size: 14, weight: .bold)).lineLimit(1)
+                        Text(t.artist).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                            let f = t.duration > 0 ? min(1, t.position(at: ctx.date) / t.duration) : 0
+                            VStack(spacing: 2) {
+                                GeometryReader { g in
+                                    ZStack(alignment: .leading) {
+                                        Capsule().fill(.white.opacity(0.25))
+                                        Capsule().fill(.white).frame(width: max(3, g.size.width * f))
+                                    }
+                                }
+                                .frame(height: 3)
+                                HStack {
+                                    Text(clock(t.position(at: ctx.date))); Spacer(); Text("-" + clock(max(0, t.duration - t.position(at: ctx.date))))
+                                }
+                                .font(.system(size: 9, weight: .medium).monospacedDigit()).foregroundStyle(.white.opacity(0.6))
+                            }
+                        }
+                        HStack(spacing: 18) {
+                            Spacer()
+                            control("backward.fill", .previous, 13)
+                            control(t.playing ? "pause.fill" : "play.fill", .toggle, 17)
+                            control("forward.fill", .next, 13)
+                            Spacer()
+                        }
+                    }
+                    .padding(12)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
+                .help("Double-click for the full-screen player")
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "music.note").font(.system(size: 22, weight: .light)).foregroundStyle(.white.opacity(0.5))
+                    Text("Nothing playing").font(.system(size: 12, weight: .semibold))
+                    Text("Play something in any app").font(.system(size: 10)).foregroundStyle(.white.opacity(0.5))
+                }
+            }
+        }
+    }
+
+    private func control(_ symbol: String, _ cmd: MRCommand, _ size: CGFloat) -> some View {
+        Button { bridge.send(cmd) } label: {
+            Image(systemName: symbol).font(.system(size: size, weight: .semibold)).frame(width: 26, height: 22).contentShape(Rectangle())
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(PressDipStyle())
+    }
+}
+
+/// A calendar page: weekday in red, the day huge, the month under it.
+struct HomeDateCard: View {
+    var body: some View {
+        HomeCard {
+            TimelineView(.everyMinute) { ctx in
+                VStack(spacing: -4) {
+                    Text(ctx.date.formatted(.dateTime.weekday(.abbreviated)))
+                        .font(.system(size: 14, weight: .bold)).foregroundStyle(Color(red: 1, green: 0.27, blue: 0.23))
+                    Text(ctx.date.formatted(.dateTime.day()))
+                        .font(.system(size: 58, weight: .semibold, design: .rounded).monospacedDigit())
+                    Text(ctx.date.formatted(.dateTime.month(.wide)))
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.55))
+                        .padding(.top, 4)
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") { NSWorkspace.shared.open(url) }
+        }
+    }
+}
+
+/// Weather as a sentence in big type: "27° now in Mumbai, feels 30°, Clear".
+struct HomeWeatherCard: View {
+    @ObservedObject var weather: WeatherService
+
+    var body: some View {
+        HomeCard {
+            if let w = weather.weather {
+                VStack(alignment: .leading, spacing: 0) {
+                    (Text("\(Int(w.temperature.rounded()))°").foregroundStyle(.white) + Text(" now in").foregroundStyle(.white.opacity(0.5)))
+                    Text(w.place.isEmpty ? "your area" : w.place).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    (Text("H ").foregroundStyle(.white.opacity(0.5)) + Text("\(Int(w.high.rounded()))°").foregroundStyle(.white)
+                     + Text("  L ").foregroundStyle(.white.opacity(0.5)) + Text("\(Int(w.low.rounded()))°").foregroundStyle(.white))
+                    HStack(spacing: 5) {
+                        Image(systemName: w.symbol).symbolRenderingMode(.hierarchical)
+                        Text(w.summary).lineLimit(1).minimumScaleFactor(0.7)
+                    }
+                    .padding(.top, 2)
+                }
+                .font(.system(size: 17, weight: .bold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "cloud.sun").font(.system(size: 22, weight: .light)).symbolRenderingMode(.hierarchical)
+                    Text(weather.status).font(.system(size: 10)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center)
+                }
+                .padding(8)
+            }
+        }
+    }
+}
+
+/// The running focus timer, big and tappable.
+struct HomeTimerCard: View {
+    @ObservedObject var timer: FocusTimer
+
+    var body: some View {
+        HomeCard {
+            TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
+                VStack(spacing: 8) {
+                    Text(timer.label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
+                    Text(clock(timer.remaining(at: ctx.date))).font(.system(size: 28, weight: .semibold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(Color(red: 1, green: 0.62, blue: 0.2))
+                    HStack(spacing: 10) {
+                        Button { timer.toggle() } label: {
+                            Image(systemName: timer.isRunning ? "pause.fill" : "play.fill").font(.system(size: 11, weight: .bold))
+                                .frame(width: 26, height: 26).background(Circle().fill(Color(red: 1, green: 0.62, blue: 0.2)))
+                                .foregroundStyle(.black)
+                        }
+                        Button { timer.reset() } label: {
+                            Image(systemName: "xmark").font(.system(size: 10, weight: .bold))
+                                .frame(width: 26, height: 26).background(Circle().fill(.white.opacity(0.15)))
+                        }
+                    }
+                    .buttonStyle(PressDipStyle())
+                }
+            }
+        }
     }
 }
