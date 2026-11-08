@@ -21,20 +21,20 @@
 </div>
 <script>
   const tl = gsap.timeline({ paused: true });
-  const D = 2.455;
+  const D = 2.093;
 
   tl.fromTo("#cmdk-ga", { x: 0, y: 0 }, { x: 65, y: 77, duration: D, ease: "none" }, 0);
   tl.fromTo("#cmdk-gb", { x: 0, y: 0 }, { x: -54, y: 96, duration: D, ease: "none" }, 0);
   tl.fromTo("#cmdk-gc", { x: 0 }, { x: 54, duration: D, ease: "none" }, 0);  tl.fromTo("#ck-title", { opacity: 0, filter: "blur(10px)", scale: 1.1 }, { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.2, ease: "expo.out" }, 0);
   tl.fromTo("#ck-sub", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power4.out" }, 0.15);
   tl.fromTo("#ck0", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 0.05);
-  tl.to("#ck0", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 0.446);
-  tl.fromTo("#ck1", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 0.546);
-  tl.to("#ck1", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 0.991);
-  tl.fromTo("#ck2", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 1.091);
-  tl.to("#ck2", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 1.537);
-  tl.fromTo("#ck3", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 1.637);
-  tl.to("#ck-title, #ck-sub, #ck3", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 2.285);
+  tl.to("#ck0", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 0.365);
+  tl.fromTo("#ck1", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 0.465);
+  tl.to("#ck1", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 0.831);
+  tl.fromTo("#ck2", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 0.931);
+  tl.to("#ck2", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 1.296);
+  tl.fromTo("#ck3", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 1.396);
+  tl.to("#ck-title, #ck-sub, #ck3", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 1.923);
 
   window.__timelines["cmdk"] = tl;
 </script>

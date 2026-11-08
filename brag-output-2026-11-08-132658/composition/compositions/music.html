@@ -41,17 +41,17 @@
 </div>
 <script>
   const tl = gsap.timeline({ paused: true });
-  const D = 3.818;
+  const D = 3.255;
   tl.fromTo("#mt0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.05);
   tl.fromTo("#mt1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.12);
   tl.fromTo("#mt2", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.19);
   tl.fromTo("#mt3", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.26);
-  tl.fromTo("#mu-sleeve", { x: -700, scale: 1 }, { x: 0, scale: 1, duration: 0.6, ease: "expo.out" }, 0.273);
-  tl.fromTo("#mu-recw", { x: 0 }, { x: 300, duration: 0.9, ease: "power3.inOut" }, 0.818);
+  tl.fromTo("#mu-sleeve", { x: -700, scale: 1 }, { x: 0, scale: 1, duration: 0.6, ease: "expo.out" }, 0.232);
+  tl.fromTo("#mu-recw", { x: 0 }, { x: 300, duration: 0.9, ease: "power3.inOut" }, 0.697);
   tl.fromTo("#mu-rec", { rotation: 0 }, { rotation: 300, duration: D, ease: "none" }, 0);
-  tl.fromTo("#mu-lyr", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 1.091);
-  tl.fromTo("#ly1", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.6, ease: "none" }, 1.364);
-  tl.to("#mu-title, #mu-sleeve, #mu-lyr", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.648);
+  tl.fromTo("#mu-lyr", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 0.93);
+  tl.fromTo("#ly1", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.6, ease: "none" }, 1.162);
+  tl.to("#mu-title, #mu-sleeve, #mu-lyr", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.085);
 
   window.__timelines["music"] = tl;
 </script>

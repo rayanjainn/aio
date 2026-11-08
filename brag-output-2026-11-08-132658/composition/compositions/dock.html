@@ -35,19 +35,19 @@
 </div>
 <script>
   const tl = gsap.timeline({ paused: true });
-  const D = 4.091;
+  const D = 3.489;
   tl.fromTo("#dk-flood", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.inOut" }, 0);
   tl.fromTo("#dt0", { opacity: 0.15 }, { opacity: 1, duration: 0.12, ease: "none" }, 0.12);
   tl.fromTo("#dt1", { opacity: 0.15 }, { opacity: 1, duration: 0.12, ease: "none" }, 0.21);
   tl.fromTo("#dt2", { opacity: 0.15 }, { opacity: 1, duration: 0.12, ease: "none" }, 0.3);
-  tl.fromTo("#dk-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "power4.out" }, 0.818);
-  tl.fromTo("#dk-wrap", { y: 540, filter: "blur(14px)" }, { y: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 0.545);
-  tl.to("#dk-wrap", { scale: 1.9, x: -528, y: 60, duration: 0.6, ease: "power3.inOut" }, 1.364);
-  tl.to("#dk-wrap", { scale: 1, x: 0, y: -30, duration: 0.55, ease: "power3.inOut" }, 2.454);
-  tl.fromTo("#pc0", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.727);
-  tl.fromTo("#pc1", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.847);
-  tl.fromTo("#pc2", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.967);
-  tl.to("#dk-title, #dk-sub, #dk-wrap, #pc0, #pc1, #pc2", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.921);
+  tl.fromTo("#dk-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "power4.out" }, 0.698);
+  tl.fromTo("#dk-wrap", { y: 540, filter: "blur(14px)" }, { y: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 0.466);
+  tl.to("#dk-wrap", { scale: 1.9, x: -528, y: 60, duration: 0.6, ease: "power3.inOut" }, 1.163);
+  tl.to("#dk-wrap", { scale: 1, x: 0, y: -30, duration: 0.55, ease: "power3.inOut" }, 2.093);
+  tl.fromTo("#pc0", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.326);
+  tl.fromTo("#pc1", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.446);
+  tl.fromTo("#pc2", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.566);
+  tl.to("#dk-title, #dk-sub, #dk-wrap, #pc0, #pc1, #pc2", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.319);
 
   window.__timelines["dock"] = tl;
 </script>

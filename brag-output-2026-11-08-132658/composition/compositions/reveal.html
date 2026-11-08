@@ -34,22 +34,22 @@
 </div>
 <script>
   const tl = gsap.timeline({ paused: true });
-  const D = 3.818;
+  const D = 3.255;
 
   tl.fromTo("#reveal-ga", { x: 0, y: 0 }, { x: 115, y: 43, duration: D, ease: "none" }, 0);
   tl.fromTo("#reveal-gb", { x: 0, y: 0 }, { x: -96, y: 54, duration: D, ease: "none" }, 0);
   tl.fromTo("#reveal-gc", { x: 0 }, { x: 96, duration: D, ease: "none" }, 0);  tl.fromTo("#rv-icon", { opacity: 0, scale: 0.4, rotation: -12 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.55, ease: "back.out(1.6)" }, 0.02);
   tl.fromTo("#rv-name", { opacity: 0, x: -24, filter: "blur(8px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.3, ease: "expo.out" }, 0.12);
-  tl.fromTo("#rv-mac", { y: 648, rotationX: 38, scale: 0.9, transformOrigin: "50% 100%" }, { y: 0, rotationX: 0, scale: 1, duration: 1.0, ease: "expo.out" }, 0.545);
-  tl.fromTo("#rc0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.091);
-  tl.fromTo("#rc1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.161);
-  tl.fromTo("#rc2", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.231);
-  tl.fromTo("#rc3", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.301);
-  tl.fromTo("#rc4", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.371);
-  tl.fromTo("#rc5", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.441);
-  tl.to("#rv-mac", { scale: 1.7, x: 425, y: -60, duration: 0.7, ease: "power3.inOut", transformOrigin: "0% 30%" }, 2.454);
-  tl.to("#rv-brand, #rv-cap", { opacity: 0, y: -40, filter: "blur(8px)", duration: 0.25, ease: "power3.in" }, 2.404);
-  tl.to("#rv-stage", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.648);
+  tl.fromTo("#rv-mac", { y: 648, rotationX: 38, scale: 0.9, transformOrigin: "50% 100%" }, { y: 0, rotationX: 0, scale: 1, duration: 1.0, ease: "expo.out" }, 0.465);
+  tl.fromTo("#rc0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.93);
+  tl.fromTo("#rc1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.0);
+  tl.fromTo("#rc2", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.07);
+  tl.fromTo("#rc3", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.14);
+  tl.fromTo("#rc4", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.21);
+  tl.fromTo("#rc5", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.28);
+  tl.to("#rv-mac", { scale: 1.7, x: 425, y: -60, duration: 0.7, ease: "power3.inOut", transformOrigin: "0% 30%" }, 2.093);
+  tl.to("#rv-brand, #rv-cap", { opacity: 0, y: -40, filter: "blur(8px)", duration: 0.25, ease: "power3.in" }, 2.043);
+  tl.to("#rv-stage", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.085);
 
   window.__timelines["reveal"] = tl;
 </script>

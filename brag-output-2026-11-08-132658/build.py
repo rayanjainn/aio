@@ -10,10 +10,10 @@ OUT = sys.argv[2]
 V = MODE == "portrait"
 W, H = (1080, 1920) if V else (1920, 1080)
 
-B = float(os.environ.get("MUSIC_B", 60 / 110))   # seconds per beat of the music track
-T0 = float(os.environ.get("MUSIC_T0", 0.27))   # time of the first beat in the track
-MUSIC = os.environ.get("MUSIC_SRC", "assets/music.mp3")
-MUSIC_VOL = os.environ.get("MUSIC_VOL", "0.85")
+B = float(os.environ.get("MUSIC_B", 0.46511))   # seconds per beat: "Digital Clouds" (Mixkit), 129 BPM
+T0 = float(os.environ.get("MUSIC_T0", 0.2))   # first beat; the cut is trimmed so its drop lands on beat 6 (the reveal)
+MUSIC = os.environ.get("MUSIC_SRC", "assets/music.wav")
+MUSIC_VOL = os.environ.get("MUSIC_VOL", "0.8")
 def beat(n): return round(T0 + n * B, 3)
 
 SCENES = [  # id, start beat, end beat
