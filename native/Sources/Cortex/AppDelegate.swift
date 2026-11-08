@@ -286,18 +286,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openPalette() { palette?.show() }
 
-    /// A quiet check shortly after launch; if there's something newer the ✦ menu offers it.
+    /// Checks 20 s after launch and then every 6 hours. With automatic updates on (the default) a new
+    /// version installs itself once you've been away from the keyboard for a minute; otherwise the ✦ menu offers it.
     private func checkForUpdatesQuietly() {
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: 20_000_000_000)
-            guard let update = try? await UpdateChecker.check(current: AppInfo.version) else { return }
-            await MainActor.run {
-                guard let self else { return }
-                self.pendingUpdate = update
-                self.updateItem?.title = "Install Update \(update.tag)…"
-                self.updateItem?.isHidden = false
-                Toast.show("arrow.down.circle", "Update \(update.tag) available")
+            while !Task.isCancelled {
+                if let update = try? await UpdateChecker.check(current: AppInfo.version) {
+                    await MainActor.run { self?.offer(update) }
+                }
+                try? await Task.sleep(nanoseconds: 6 * 3600 * 1_000_000_000)
             }
+        }
+    }
+
+    private func offer(_ update: UpdateInfo) {
+        let isNew = pendingUpdate?.tag != update.tag
+        pendingUpdate = update
+        updateItem?.title = "Install Update \(update.tag)…"
+        updateItem?.isHidden = false
+        guard Prefs.shared.autoUpdate else {
+            if isNew { Toast.show("arrow.down.circle", "Update \(update.tag) available — ✦ menu → Install") }
+            return
+        }
+        if isNew { Toast.show("arrow.down.circle", "Cortex \(update.tag) will install when you're away for a minute") }
+        installWhenIdle()
+    }
+
+    private func installWhenIdle() {
+        let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+        if idle >= 60, let u = pendingUpdate, !SelfUpdater.shared.busy {
+            Log.info("auto-update: installing \(u.tag) after \(Int(idle)) s idle")
+            Task { await SelfUpdater.shared.install(u) }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in self?.installWhenIdle() }
         }
     }
 
@@ -389,6 +411,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let text = Diagnostics.report(island: island, dock: dock, bridge: nowPlaying,
                                       engineProcess: engineProcess.describe, engineConnected: engine.isConnected,
                                       widgets: widgets?.describe() ?? "")
+            + "\n== Signing ==\nsigned by: \(AppInfo.signer)  auto-update=\(Prefs.shared.autoUpdate)"
             + "\n== Surfaces ==\nlauncher visible=\(launcher.isVisible) apps=\(launcher.store.apps.count) folders=\(launcher.store.layout.folders.count)"
             + "\nmusic player visible=\(musicPlayer.isVisible) style=\(Prefs.shared.musicPlayerStyle) lyrics=\(Prefs.shared.musicPlayerLyrics) lyricsState=\(LyricsService.shared.state) lines=\(LyricsService.shared.lines.count)"
             + "\nhyper key=\(HyperKey.isRunning) hot corner=\(Prefs.shared.launcherHotCorner)\n"

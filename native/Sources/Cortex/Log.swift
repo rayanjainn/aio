@@ -1,3 +1,4 @@
+import Security
 import Foundation
 import os
 
@@ -39,5 +40,20 @@ enum Log {
 enum AppInfo {
     static var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+    }
+
+    /// Who signed this build: the certificate's name, or "ad-hoc". Ad-hoc builds lose privacy grants on every
+    /// update; a certificate-signed build keeps them.
+    static var signer: String {
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &code) == errSecSuccess, let code else { return "unknown" }
+        var info: CFDictionary?
+        guard SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+              let dict = info as? [String: Any] else { return "unknown" }
+        if let certs = dict[kSecCodeInfoCertificates as String] as? [SecCertificate], let leaf = certs.first,
+           let name = SecCertificateCopySubjectSummary(leaf) as String? {
+            return name
+        }
+        return "ad-hoc (permissions reset on each update)"
     }
 }

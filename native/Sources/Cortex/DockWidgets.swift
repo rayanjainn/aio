@@ -107,12 +107,12 @@ private struct MusicDockWidget: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 7) {
                 artwork(art)
-                titles.frame(minWidth: 52, maxWidth: .infinity, alignment: .leading)
+                titles.frame(minWidth: 44, maxWidth: .infinity, alignment: .leading)
                 controls(full: true)
             }
             HStack(spacing: 6) {
                 artwork(art)
-                titles.frame(minWidth: 36, maxWidth: .infinity, alignment: .leading)
+                titles.frame(minWidth: 30, maxWidth: .infinity, alignment: .leading)
                 controls(full: false)
             }
             HStack(spacing: 4) {
@@ -121,7 +121,9 @@ private struct MusicDockWidget: View {
             }
             artwork(art).overlay { playGlyph }
         }
-        .padding(.horizontal, 5)
+        .padding(.horizontal, 6)
+        // Fill the whole tile so the artwork tint reaches every edge (not just the box the content needs).
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background {
             if let image = bridge.info?.artwork {
                 Color.clear.overlay {
@@ -187,7 +189,7 @@ private struct MusicDockWidget: View {
 
     private func control(_ symbol: String, _ command: MRCommand) -> some View {
         Button { bridge.send(command) } label: {
-            Image(systemName: symbol).font(.system(size: 11)).frame(width: 19, height: 24).contentShape(Rectangle())
+            Image(systemName: symbol).font(.system(size: 11)).frame(width: 17, height: 24).contentShape(Rectangle())
                 .contentTransition(.symbolEffect(.replace))
         }.buttonStyle(.plain)
     }

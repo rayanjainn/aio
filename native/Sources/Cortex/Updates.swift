@@ -36,7 +36,8 @@ enum UpdateChecker {
         request.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: request)
         let releases = try JSONDecoder().decode([Release].self, from: data)
-        let native = releases.filter { !$0.draft && $0.assets.contains(where: { $0.name.hasSuffix(".dmg") && $0.name.lowercased().contains("native") }) }
+        // Any published release with a disk image (older previews were named "Cortex-native-…", releases are "Cortex-vX.Y.Z.dmg").
+        let native = releases.filter { !$0.draft && $0.assets.contains(where: { $0.name.lowercased().hasSuffix(".dmg") }) }
         guard let best = native.max(by: { !isNewer($0.tag_name, than: $1.tag_name) && $0.tag_name != $1.tag_name }),
               isNewer(best.tag_name, than: current) else { return nil }
         let dmg = best.assets.first(where: { $0.name.hasSuffix(".dmg") })?.browser_download_url
@@ -77,6 +78,8 @@ final class SelfUpdater: ObservableObject {
             let body = """
             #!/bin/bash
             PID="$1"; DMG="$2"; APP="$3"
+            exec >>"$HOME/.cortex/logs/update.log" 2>&1
+            echo "== $(date) updating $APP"
             while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done
             MNT=$(mktemp -d /tmp/cortex-mnt.XXXXXX)
             hdiutil attach -nobrowse -quiet -mountpoint "$MNT" "$DMG" || exit 1
@@ -88,7 +91,9 @@ final class SelfUpdater: ObservableObject {
             fi
             hdiutil detach "$MNT" -quiet
             rm -f "$DMG"
+            codesign -dv "$APP" 2>&1 | grep -E "Authority|Signature|Identifier"
             open "$APP"
+            echo "== done"
             """
             try body.write(to: script, atomically: true, encoding: .utf8)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)

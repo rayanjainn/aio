@@ -109,6 +109,9 @@ final class UpdateTests: XCTestCase {
         XCTAssertFalse(UpdateChecker.isNewer("v0.3.0-native.4", than: "v0.3.0-native.4"))
         XCTAssertTrue(UpdateChecker.isNewer("v0.4.0", than: "v0.3.9"))
         XCTAssertFalse(UpdateChecker.isNewer("0.2.1", than: "v0.3.0-native.1"))
+        XCTAssertTrue(UpdateChecker.isNewer("v0.4.0", than: "v0.3.9"))
+        XCTAssertTrue(UpdateChecker.isNewer("v0.3.10", than: "v0.3.9"))
+        XCTAssertFalse(UpdateChecker.isNewer("v0.3.0-native.8", than: "v0.3.9"))
     }
 }
 

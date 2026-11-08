@@ -499,6 +499,12 @@ struct MusicPlayerView: View {
                     if model.sleepEndsAt != nil || model.sleepAtTrackEnd { Button("Turn off") { model.sleep(minutes: nil) } }
                 }
                 Divider()
+                if let i = model.lyricIndex, LyricsService.shared.lines.indices.contains(i), !LyricsService.shared.lines[i].text.isEmpty {
+                    Button("Copy this lyric") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(LyricsService.shared.lines[i].text, forType: .string)
+                    }
+                }
                 Button("Copy song and artist") {
                     guard let t = bridge.info else { return }
                     NSPasteboard.general.clearContents()
@@ -840,7 +846,8 @@ struct LyricsPane: View {
                         }
                         ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { i, line in
                             LyricRow(text: line.text, index: i, current: model.lyricIndex, paneHovered: hovering,
-                                     playing: bridge.info?.playing ?? false) {
+                                     playing: bridge.info?.playing ?? false, track: bridge.info,
+                                     start: line.time, end: i + 1 < lyrics.lines.count ? lyrics.lines[i + 1].time : line.time + 5) {
                                 bridge.seek(to: line.time)
                                 Haptics.tap()
                             }
@@ -884,6 +891,9 @@ struct LyricRow: View {
     let current: Int?
     let paneHovered: Bool
     let playing: Bool
+    var track: NowPlayingInfo? = nil
+    var start: Double = 0
+    var end: Double = 0
     let onTap: () -> Void
     @State private var hovering = false
 
@@ -895,10 +905,14 @@ struct LyricRow: View {
             if text.isEmpty {
                 if isActive { InterludeDots(active: playing) } else { Text("♪").font(.system(size: 30, weight: .bold)) }
             } else {
-                Text(text)
-                    .font(.system(size: 34, weight: .bold))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                if isActive, let track {
+                    KaraokeLine(text: text, track: track, start: start, end: end, playing: playing)
+                } else {
+                    Text(text)
+                        .font(.system(size: 34, weight: .bold))
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .foregroundStyle(.white.opacity(isActive ? 1 : past ? 0.3 : 0.42))
@@ -914,6 +928,40 @@ struct LyricRow: View {
         .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hovering = h } }
         .animation(.spring(response: 0.5, dampingFraction: 0.82), value: isActive)
         .animation(.easeInOut(duration: 0.3), value: paneHovered)
+    }
+}
+
+/// The line being sung fills with light from left to right over its duration, like karaoke.
+struct KaraokeLine: View {
+    let text: String
+    let track: NowPlayingInfo
+    let start: Double
+    let end: Double
+    let playing: Bool
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing)) { ctx in
+            let p = min(1, max(0, (track.position(at: ctx.date) - start) / max(0.3, end - start)))
+            let label = Text(text).font(.system(size: 34, weight: .bold))
+            label
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(.white.opacity(0.45))
+                .overlay(alignment: .leading) {
+                    label
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(.white)
+                        .mask(alignment: .leading) {
+                            GeometryReader { g in
+                                LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: max(0, p - 0.04)),
+                                                       .init(color: .clear, location: min(1, p + 0.04))],
+                                               startPoint: .leading, endPoint: .trailing)
+                                    .frame(width: g.size.width)
+                            }
+                        }
+                }
+        }
     }
 }
 

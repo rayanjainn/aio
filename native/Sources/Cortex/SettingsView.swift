@@ -526,14 +526,19 @@ struct AboutPane: View {
     @State private var update: UpdateInfo?
     @State private var checking = false
     @ObservedObject private var updater = SelfUpdater.shared
+    @ObservedObject private var prefs = Prefs.shared
 
     var body: some View {
         Form {
             Section {
                 LabeledContent("Version", value: AppInfo.version)
+                LabeledContent("Signed by", value: AppInfo.signer)
                 LabeledContent("macOS", value: ProcessInfo.processInfo.operatingSystemVersionString)
             }
             Section("Updates") {
+                Toggle("Install updates automatically", isOn: $prefs.autoUpdate)
+                Text("Cortex checks every few hours and installs a new version when you've been away from the keyboard for a minute. Permissions carry over as long as releases are signed with the same certificate.")
+                    .font(.caption).foregroundStyle(.secondary)
                 LabeledContent("Status", value: updater.message.isEmpty ? status : updater.message)
                 HStack {
                     Button(checking ? "Checking…" : "Check for updates") { Task { await check() } }.disabled(checking)
