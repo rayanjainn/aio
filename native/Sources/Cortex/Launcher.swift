@@ -549,6 +549,7 @@ struct LauncherMusicCard: View {
                     .animation(t.playing ? .linear(duration: 12).repeatForever(autoreverses: false) : .default, value: t.playing)
                     .overlay(Circle().fill(Color.black.opacity(0.6)).frame(width: 18, height: 18))
                 Text(t.title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    .onTapGesture { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
                 Text(t.artist).font(.system(size: 11)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
                 HStack(spacing: 22) {
                     Button { bridge.send(.previous) } label: { Image(systemName: "backward.fill") }

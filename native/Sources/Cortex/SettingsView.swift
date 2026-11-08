@@ -382,6 +382,7 @@ struct DockPane: View {
                 Toggle("Running-app dots", isOn: $prefs.dockIndicators)
                 Toggle("Bounce while an app launches", isOn: $prefs.dockBounce)
                 Toggle("Show running apps that aren't pinned", isOn: $prefs.dockShowRunning)
+                Toggle("Gather them into one Active Apps tile", isOn: $prefs.dockGroupRunning)
                 Button("Reset Dock look to defaults") {
                     prefs.dockIconSize = 44; prefs.dockMagnification = 1.55; prefs.dockSpacing = 7; prefs.dockRoundness = 0.42
                     prefs.dockDarken = 0; prefs.dockIndicators = true; prefs.dockBounce = true; prefs.dockShowRunning = true

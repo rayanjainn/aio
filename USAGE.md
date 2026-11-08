@@ -39,6 +39,10 @@
 | `ip` | your local and public IP |
 | *(nothing typed)* | your last five commands come first |
 
+| `⌃⌥L` | **Launcher** — every app full screen, with folders, search, widgets and your wallpaper |
+| `⌃⌥P` | **Music player** — full screen, vinyl / cover / waves (or double-click the Island artwork, ⌥-click the Dock music tile) |
+| `space work` | save your whole setup as a Space (Dock, windows, tabs, wallpaper, glass) — `space work` again switches back |
+
 Snippets can ask for values: `Hi {ask:Name}, see you {ask:When}`.
 Scripts and Shortcuts can drive Cortex: `open "cortex://run/timer.25"`, `cortex://palette?q=tab`, `cortex://toast?text=Hello`, `cortex://layout?name=coding`.
 Window layouts now also remember and reopen your browser tabs.

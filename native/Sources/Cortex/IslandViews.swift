@@ -339,6 +339,8 @@ struct NowPlayingCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             ArtworkView(image: track.artwork, size: 112, radius: 18)
+                .onTapGesture(count: 2) { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
+                .help("Double-click for the full-screen player")
             VStack(alignment: .leading, spacing: 4) {
                 Text(track.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
                 Text(track.artist.isEmpty ? track.appName : track.artist)

@@ -18,8 +18,10 @@ struct DockWidgetKind: Identifiable, Equatable {
         DockWidgetKind(id: "stats", title: "System", symbol: "cpu", span: 1.7),
         DockWidgetKind(id: "meeting", title: "Next Meeting", symbol: "calendar", span: 2.8),
     ]
+    /// Not offered in "Add widget": the Dock adds it itself when running apps are grouped.
+    static let running = DockWidgetKind(id: "running", title: "Active Apps", symbol: "square.grid.2x2", span: 2.2)
 
-    static func find(_ id: String) -> DockWidgetKind? { all.first { $0.id == id } }
+    static func find(_ id: String) -> DockWidgetKind? { id == "running" ? running : all.first { $0.id == id } }
 }
 
 struct DockWidgetTile: View {
@@ -49,6 +51,7 @@ struct DockWidgetTile: View {
         case "timer": TimerDockWidget(size: size)
         case "stats": StatsDockWidget(size: size, compact: compact)
         case "meeting": MeetingDockWidget(size: size, compact: compact)
+        case "running": RunningAppsTile(model: model, size: size)
         default: Image(systemName: "questionmark")
         }
     }
@@ -80,7 +83,10 @@ private struct MusicDockWidget: View {
     }
 
     private func artwork(_ side: CGFloat) -> some View {
-        Button { bridge.send(.toggle) } label: {
+        Button {
+            if NSEvent.modifierFlags.contains(.option) { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
+            else { bridge.send(.toggle) }
+        } label: {
             ArtworkView(image: bridge.info?.artwork, size: side, radius: size * 0.16)
                 .overlay { if compact { playGlyph } }
                 .opacity(bridge.info == nil ? 0.55 : 1)
@@ -277,5 +283,30 @@ private struct MeetingDockWidget: View {
             }
         }
         .onAppear { calendar.start() }
+    }
+}
+
+
+/// Every running app that isn't pinned, gathered into one tile (like LaunchMe's Active Apps folder).
+private struct RunningAppsTile: View {
+    @ObservedObject var model: DockModel
+    let size: CGFloat
+
+    var body: some View {
+        let icon = size * 0.36
+        let apps = Array(model.runningGroup.prefix(8))
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(icon), spacing: 4), count: max(1, min(4, (apps.count + 1) / 2))), spacing: 4) {
+            ForEach(apps) { item in
+                Button { model.activate(item) } label: {
+                    Image(nsImage: model.icon(for: item)).resizable().interpolation(.high).frame(width: icon, height: icon)
+                }
+                .buttonStyle(.plain)
+                .help(item.name)
+            }
+        }
+        .padding(4)
+        .contextMenu {
+            ForEach(model.runningGroup) { item in Button(item.name) { model.activate(item) } }
+        }
     }
 }

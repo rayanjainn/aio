@@ -65,6 +65,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         syncSecondaryIslands()
         Coach.shared.start()
         launcher.bridge = nowPlaying
+        musicPlayer.bridge = nowPlaying
+        NotificationCenter.default.addObserver(forName: .openMusicPlayer, object: nil, queue: .main) { [weak self] _ in
+            DispatchQueue.main.async { self?.musicPlayer.show() }
+        }
         Prefs.shared.$launcherHotCorner.receive(on: DispatchQueue.main)
             .sink { [weak self] _ in DispatchQueue.main.async { self?.launcher.configureHotCorner() } }.store(in: &cancellables)
         menuBarDock.attach(dock.model)
@@ -151,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch id {
         case "palette": palette?.toggle()
         case "launcher": launcher.toggle()
+        case "music": musicPlayer.toggle()
         case "act": ActOnThis.captureSelection { [weak self] in self?.palette?.show(query: "ai ") }
         case "clip.plain": ActOnThis.pastePlain()
         case "dictate": ActOnThis.dictate()
@@ -176,7 +181,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "app.pause", "pause":
             Task { _ = try? await engine.call("recording_toggle") }
         default:
-            if id.hasPrefix("widget.ai:"), let store = widgets?.store { AIWidgetMaker.make(String(id.dropFirst(10)), store: store) }
+            if id.hasPrefix("space.save:") { Spaces.save(String(id.dropFirst(11)), dock: dock?.model) }
+            else if id.hasPrefix("space.use:") { Spaces.apply(String(id.dropFirst(10)), dock: dock?.model) }
+            else if id.hasPrefix("widget.ai:"), let store = widgets?.store { AIWidgetMaker.make(String(id.dropFirst(10)), store: store) }
             else if id.hasPrefix("dock.save:") { let n = String(id.dropFirst(10)); dock?.model.saveProfile(n); Toast.show("dock.rectangle", "Saved Dock “\(n)”") }
             else if id.hasPrefix("dock.use:") { dock?.model.applyProfile(String(id.dropFirst(9))) }
             else if id.hasPrefix("note.add:") { QuickNotes.add(String(id.dropFirst("note.add:".count))); Toast.show("square.and.pencil", "Note saved") }
@@ -314,6 +321,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var secondaryIslands: [String: IslandController] = [:]
     private let menuBarDock = MenuBarDock()
     private let launcher = LauncherController()
+    private let musicPlayer = MusicPlayerController()
 
     /// Uses the Dock profile chosen for "external display connected" / "built-in only", if any.
     private func applyDockProfileForDisplays() {

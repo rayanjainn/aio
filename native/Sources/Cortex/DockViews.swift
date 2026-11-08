@@ -50,6 +50,7 @@ struct DockRootView: View {
                 Button("\(s) pt") { Prefs.shared.dockIconSize = Double(s) }
             }
         }
+        Toggle("Group running apps", isOn: Binding(get: { Prefs.shared.dockGroupRunning }, set: { Prefs.shared.dockGroupRunning = $0 }))
         Menu("Add widget") {
             ForEach(DockWidgetKind.all) { k in
                 Button(k.title) { if model.hasWidget(k.id) { model.removeWidget(k.id) } else { model.addWidget(k.id) } }
@@ -209,7 +210,11 @@ struct DockIcon: View {
             if model.hasCustomIcon(item) { Button("Reset Icon") { model.resetIcon(for: item) } }
             Button("Remove from Dock") { model.unpin(item) }
         case .widget:
-            Button("Remove Widget") { model.removeWidget(item.value) }
+            if item.value == "running" {
+                Button("Show Running Apps Separately") { Prefs.shared.dockGroupRunning = false }
+            } else {
+                Button("Remove Widget") { model.removeWidget(item.value) }
+            }
         case .trash:
             Button("Open Trash") { model.activate(item) }
         }

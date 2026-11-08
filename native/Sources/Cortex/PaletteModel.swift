@@ -374,6 +374,9 @@ final class PaletteModel: ObservableObject {
             PaletteRow(id: "home:pins", title: "Pinned text", subtitle: "Type  pin  — keep snippets of the clipboard one command away", symbol: "pin", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:cal", title: "Today's schedule", subtitle: "Type  cal  — with Join buttons for calls", symbol: "calendar", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:note", title: "Quick note", subtitle: "Type  note <text>  to jot something down", symbol: "square.and.pencil", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:spaces", title: "Spaces", subtitle: "Type  space work  to save your whole setup and switch back any time", symbol: "square.stack.3d.up",
+                       iconPath: nil, tag: "", kind: .command("query:space "), section: "Quick actions"),
+            cmd("music", "Full-screen music player", "Vinyl, cover or waves  ·  ⌃⌥P", "record.circle"),
             cmd("launcher", "Open the launcher", "All your apps, full screen  ·  ⌃⌥L", "square.grid.3x3.fill"),
             cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
             sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
@@ -470,6 +473,22 @@ final class PaletteModel: ObservableObject {
             if !rest.isEmpty {
                 out.append(PaletteRow(id: "widget.ai", title: "Make a widget: \(rest)", subtitle: "AI writes a command; you approve it before it runs", symbol: "sparkles",
                                       iconPath: nil, tag: "AI", kind: .command("widget.ai:" + rest), section: "Widgets"))
+            }
+            return out
+        }
+        if lower == "space" || lower == "spaces" || lower.hasPrefix("space ") {
+            let rest = lower.hasPrefix("space ") ? String(q.dropFirst(6)).trimmingCharacters(in: .whitespaces) : ""
+            if !rest.isEmpty {
+                out.append(PaletteRow(id: "space.save", title: "Save everything as Space “\(rest)”", subtitle: "Dock, windows, browser tabs, wallpaper and glass", symbol: "square.stack.3d.up",
+                                      iconPath: nil, tag: "", kind: .command("space.save:" + rest), section: "Spaces"))
+            }
+            for name in Spaces.all().keys.sorted() where rest.isEmpty || name.lowercased().contains(rest.lowercased()) {
+                out.append(PaletteRow(id: "space.use.\(name)", title: "Switch to Space “\(name)”", subtitle: "Restores its Dock, windows, tabs and look", symbol: "square.stack.3d.up.fill",
+                                      iconPath: nil, tag: "", kind: .command("space.use:" + name), section: "Spaces"))
+            }
+            if out.isEmpty {
+                out.append(PaletteRow(id: "space.hint", title: "Type a name to save your whole setup", subtitle: "e.g.  space work  ·  later  space work  switches back", symbol: "square.stack.3d.up",
+                                      iconPath: nil, tag: "", kind: .copy(""), section: "Spaces"))
             }
             return out
         }

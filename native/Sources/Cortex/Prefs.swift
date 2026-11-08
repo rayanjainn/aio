@@ -41,6 +41,8 @@ final class Prefs: ObservableObject {
     @Published var launcherHotCorner = "none" { didSet { save() } }
     @Published var launcherWallpaper = "" { didSet { save() } }
     @Published var launcherDim = 0.25 { didSet { save() } }
+    @Published var musicPlayerStyle = "vinyl" { didSet { save() } }
+    @Published var dockGroupRunning = false { didSet { save() } }
     @Published var islandApps: [String] = [] { didSet { save() } }
     @Published var islandDisplay = "auto" { didSet { save() } }
     @Published var islandEnabled = true { didSet { save() } }
@@ -68,7 +70,7 @@ final class Prefs: ObservableObject {
         var dockIndicators: Bool?, dockBounce: Bool?, dockShowRunning: Bool?, dockDisplay: String?, islandDisplay: String?, dockClickHides: Bool?, islandApps: [String]?, islandHideFullscreen: Bool?, hyperKey: Bool?, islandAllDisplays: Bool?
         var islandHoverDelay: Double?, islandMusicFirst: Bool?, focusHideOthers: Bool?, batteryCoach: Bool?
         var dockProfileExternal: String?, dockProfileBuiltIn: String?, dockMenuBar: Bool?, shelfRules: String?, islandMeetingLead: Double?
-        var launcherIconSize: Double?, launcherShowTitles: Bool?, launcherWidgets: Bool?, launcherHotCorner: String?, launcherWallpaper: String?, launcherDim: Double?
+        var launcherIconSize: Double?, launcherShowTitles: Bool?, launcherWidgets: Bool?, launcherHotCorner: String?, launcherWallpaper: String?, launcherDim: Double?, musicPlayerStyle: String?, dockGroupRunning: Bool?
     }
 
     private static var url: URL {
@@ -112,6 +114,8 @@ final class Prefs: ObservableObject {
             launcherHotCorner = s.launcherHotCorner ?? "none"
             launcherWallpaper = s.launcherWallpaper ?? ""
             launcherDim = s.launcherDim ?? 0.25
+            musicPlayerStyle = s.musicPlayerStyle ?? "vinyl"
+            dockGroupRunning = s.dockGroupRunning ?? false
             islandApps = s.islandApps ?? []
             islandEnabled = s.islandEnabled ?? true
             islandMusic = s.islandMusic ?? true
@@ -142,7 +146,8 @@ final class Prefs: ObservableObject {
                        islandHoverDelay: islandHoverDelay, islandMusicFirst: islandMusicFirst, focusHideOthers: focusHideOthers, batteryCoach: batteryCoach,
                        dockProfileExternal: dockProfileExternal, dockProfileBuiltIn: dockProfileBuiltIn, dockMenuBar: dockMenuBar, shelfRules: shelfRules, islandMeetingLead: islandMeetingLead,
                        launcherIconSize: launcherIconSize, launcherShowTitles: launcherShowTitles, launcherWidgets: launcherWidgets,
-                       launcherHotCorner: launcherHotCorner, launcherWallpaper: launcherWallpaper, launcherDim: launcherDim)
+                       launcherHotCorner: launcherHotCorner, launcherWallpaper: launcherWallpaper, launcherDim: launcherDim,
+                       musicPlayerStyle: musicPlayerStyle, dockGroupRunning: dockGroupRunning)
         let url = Self.url
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let data = try? JSONEncoder().encode(s) { try? data.write(to: url, options: .atomic) }

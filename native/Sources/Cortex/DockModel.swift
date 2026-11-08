@@ -42,7 +42,9 @@ final class DockModel: ObservableObject {
     var power: PowerMonitor?
     @Published var pointer: CGFloat?
     /// Bundle id of the app in front, so its indicator can be drawn as a lit bar.
-    @Published private(set) var frontBundle: String?          // along the bar's axis, from the start of the content
+    @Published private(set) var frontBundle: String?
+    /// Running apps that aren't pinned, when they're gathered into one "Active Apps" tile.
+    @Published private(set) var runningGroup: [DockItem] = []          // along the bar's axis, from the start of the content
 
     /// Pointer from the window's own tracking area: `along` is measured from the content start,
     /// `across` is the distance from the screen edge the Dock sits on.
@@ -101,6 +103,7 @@ final class DockModel: ObservableObject {
         p.$dockDarken.dropFirst().sink { [weak self] in self?.darken = $0 }.store(in: &cancellables)
         p.$dockShowTrash.dropFirst().sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
         p.$dockShowRunning.dropFirst().sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
+        p.$dockGroupRunning.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.refresh() } }.store(in: &cancellables)
         // Layout-affecting options: the @Published values change just after the sink fires, so hop a turn.
         p.$dockMagnification.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
         p.$dockSpacing.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.objectWillChange.send() } }.store(in: &cancellables)
@@ -187,7 +190,15 @@ final class DockModel: ObservableObject {
         for item in extra { launching.remove(item.id) }
 
         var list: [DockSlot] = pinned.map { .item(applyBadge($0)) }
-        if Prefs.shared.dockShowRunning, !extra.isEmpty { list.append(.divider(1)); list += extra.map { .item(applyBadge($0)) } }
+        if Prefs.shared.dockGroupRunning {
+            if runningGroup != extra { runningGroup = extra }
+            if !extra.isEmpty {
+                list.append(.divider(1))
+                list.append(.item(DockItem(id: "widget:running", kind: .widget, value: "running", name: "Active Apps", url: URL(fileURLWithPath: "/"), pinned: false)))
+            }
+        } else if Prefs.shared.dockShowRunning, !extra.isEmpty {
+            list.append(.divider(1)); list += extra.map { .item(applyBadge($0)) }
+        }
         if Prefs.shared.dockShowTrash {
             list.append(.divider(2))
             list.append(.item(DockItem(id: "trash", kind: .trash, value: "", name: "Trash",
