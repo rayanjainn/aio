@@ -17,3 +17,11 @@ brag-output-*/render-*.log
 brag-output-*/preview-*.mp4
 brag-output-*/.preview-*/
 brag-output-*/work-*/
+film/*.mp3
+film/*/assets/music.wav
+film/*/.hyperframes/
+film/*-raw.mp4
+film/render-*.log
+brag-output-*/composition*/assets/music.wav
+film/work-*/
+film/.*hf-transaction*/
