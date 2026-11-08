@@ -162,7 +162,7 @@ Also: does the palette open instantly on the hotkey (target < 100 ms)? Does typi
 - **Real Dock stays hidden after a crash**:
   `defaults write com.apple.dock autohide -bool false; defaults delete com.apple.dock autohide-delay; killall Dock`
 - **Reset Cortex settings** (keeps nothing): quit Cortex, `mv ~/.cortex/native ~/Desktop/cortex-native-backup`, relaunch.
-- **Permissions stuck**: `tccutil reset Accessibility dev.cortex.native` and `tccutil reset ScreenCapture dev.cortex.native`, relaunch, grant again.
+- **Permissions stuck** (switch is on in System Settings but Cortex says off): Settings → Privacy & Permissions → **Reset and ask again**. It clears Cortex's entries and relaunches straight into *Grant everything*. By hand: `tccutil reset All dev.cortex.native`.
 - **Gatekeeper blocks launch**: `xattr -dr com.apple.quarantine /path/to/Cortex.app`
 
 ## Signing and notarization (optional)
@@ -177,4 +177,9 @@ Releases are ad-hoc signed until these repository secrets exist (Settings → Se
 | `NOTARY_TEAM_ID` | Your 10-character Team ID |
 | `NOTARY_PASSWORD` | An app-specific password from appleid.apple.com |
 
-With them set, the Release workflow signs with your Developer ID (hardened runtime), notarizes and staples the .dmg — no more `xattr -cr`.
+**No paid Apple account?** Run `bash native/scripts/make-signing-cert.sh` once on your Mac. It makes a self-signed
+certificate and stores it as `MACOS_CERT_P12` / `MACOS_CERT_PASSWORD` (with `gh`, or prints what to paste). Releases are
+then signed with the same identity every time, so macOS keeps your permission grants across updates — no more removing
+and re-adding Cortex. (It does not remove the first-launch Gatekeeper warning; only a Developer ID does.)
+
+With Developer ID secrets set, the Release workflow signs with your Developer ID (hardened runtime), notarizes and staples the .dmg — no more `xattr -cr`.

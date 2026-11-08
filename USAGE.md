@@ -40,7 +40,7 @@
 | *(nothing typed)* | your last five commands come first |
 
 | `⌃⌥L` | **Launcher** — every app full screen, with folders, search, widgets and your wallpaper |
-| `⌃⌥P` | **Music player** — full screen, vinyl / cover / waves (or double-click the Island artwork, ⌥-click the Dock music tile) |
+| `⌃⌥P` | **Music player** — full screen over the artwork's colours, with time-synced lyrics (click a line to jump), vinyl / cover / waves, volume, output picker and sleep timer. Keys: Space play/pause · ←/→ 10 s · ⌘←/⌘→ track · ↑/↓ volume · M mute · L lyrics · 1/2/3 style · Esc close. Also from the Island's ⤢ button or the Dock music tile's title |
 | `space work` | save your whole setup as a Space (Dock, windows, tabs, wallpaper, glass) — `space work` again switches back |
 
 Snippets can ask for values: `Hi {ask:Name}, see you {ask:When}`.
@@ -61,3 +61,11 @@ Snippets understand `{date}`, `{time}`, `{datetime}`, `{day}`, `{uuid}` and `{cl
 **Settings** — `⌘,` from the ✦ menu: shortcuts, Island, Dock, appearance, permissions, snippets, quicklinks, updates.
 
 Permissions (all optional): Accessibility (window snapping, volume keys, paste, menu search), Screen Recording (window previews), Calendar (meetings).
+
+**Connections** (Settings → Connections): paste a GitHub token to see notifications, reviews waiting on you, your PRs, assigned issues
+and your contribution graph — as a desktop widget, a Dock tile (bell) and in ⌘K (type `github`). The same pane tests your AI
+provider, browser-tab access and the search engine.
+
+**Permissions** (Settings → Privacy & Permissions): every permission with its live status. *Grant everything* asks for all of them
+in a row (macOS has no single switch; Accessibility and Screen Recording you switch on yourself). If a switch is on in System
+Settings but Cortex still says off — common after an update — use *Reset and ask again*.
