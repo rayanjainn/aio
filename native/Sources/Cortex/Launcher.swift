@@ -143,12 +143,24 @@ final class LauncherStore: ObservableObject {
         for app in apps {
             guard let info = Bundle(url: app.url)?.infoDictionary,
                   let cat = info["LSApplicationCategoryType"] as? String else { continue }
-            let label = cat.replacingOccurrences(of: "public.app-category.", with: "")
-                .split(separator: "-").map { $0.capitalized }.joined(separator: " ")
-            groups[label, default: []].append(app.path)
+            groups[Self.categoryName(cat), default: []].append(app.path)
         }
         layout.folders = groups.filter { $0.value.count >= 2 }.sorted { $0.key < $1.key }
             .map { LauncherFolder(name: $0.key, apps: $0.value) }
+    }
+
+    /// "public.app-category.graphics-design" → "Graphics & Design"; unknown or blank → "Other".
+    static func categoryName(_ raw: String) -> String {
+        let key = raw.replacingOccurrences(of: "public.app-category.", with: "").trimmingCharacters(in: .whitespaces).lowercased()
+        let names = ["developer-tools": "Developer Tools", "graphics-design": "Graphics & Design", "social-networking": "Social",
+                     "productivity": "Productivity", "utilities": "Utilities", "music": "Music", "video": "Video",
+                     "entertainment": "Entertainment", "education": "Education", "reference": "Reference", "games": "Games",
+                     "business": "Business", "finance": "Finance", "photography": "Photos", "news": "News",
+                     "lifestyle": "Lifestyle", "health-fitness": "Health", "travel": "Travel", "weather": "Weather"]
+        if let n = names[key] { return n }
+        if key.hasSuffix("-games") { return "Games" }
+        let words = key.split(separator: "-").map { $0.capitalized }
+        return words.isEmpty ? "Other" : words.joined(separator: " ")
     }
 
     func resetLayout() { layout.folders = [] }
@@ -526,16 +538,30 @@ struct FolderTile: View {
     var body: some View {
         VStack(spacing: 7) {
             let apps = store.apps(in: folder).prefix(9)
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(iconSize * 0.24), spacing: iconSize * 0.05), count: 3), spacing: iconSize * 0.05) {
-                ForEach(Array(apps)) { a in
-                    Image(nsImage: LauncherIcons.icon(a.path)).resizable().frame(width: iconSize * 0.24, height: iconSize * 0.24)
+            let mini = iconSize * 0.25
+            let gap = iconSize * 0.045
+            // A 3×3 grid laid out from the top-left, like a folder on iPad/Launchpad.
+            VStack(alignment: .leading, spacing: gap) {
+                ForEach(0..<3, id: \.self) { r in
+                    HStack(spacing: gap) {
+                        ForEach(0..<3, id: \.self) { c in
+                            let i = r * 3 + c
+                            if i < apps.count {
+                                Image(nsImage: LauncherIcons.icon(apps[apps.startIndex + i].path)).resizable().interpolation(.high)
+                                    .frame(width: mini, height: mini)
+                            } else {
+                                Color.clear.frame(width: mini, height: mini)
+                            }
+                        }
+                    }
                 }
             }
             .frame(width: iconSize, height: iconSize)
-            .background(RoundedRectangle(cornerRadius: iconSize * 0.24, style: .continuous).fill(Color.white.opacity(0.14)))
-            .overlay(RoundedRectangle(cornerRadius: iconSize * 0.24, style: .continuous).strokeBorder(Color.white.opacity(0.18), lineWidth: 0.6))
+            .background(RoundedRectangle(cornerRadius: iconSize * 0.24, style: .continuous)
+                .fill(LinearGradient(colors: [Color.white.opacity(0.20), Color.white.opacity(0.09)], startPoint: .top, endPoint: .bottom)))
+            .overlay(RoundedRectangle(cornerRadius: iconSize * 0.24, style: .continuous).strokeBorder(Color.white.opacity(0.22), lineWidth: 0.6))
             if showTitle {
-                Text(folder.name).font(.system(size: 12, weight: .medium)).foregroundStyle(.white).lineLimit(1)
+                Text(folder.name.isEmpty ? "Other" : folder.name).font(.system(size: 12, weight: .medium)).foregroundStyle(.white).lineLimit(1)
             }
         }
         .scaleEffect(hover ? 1.07 : 1)
