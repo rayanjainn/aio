@@ -185,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         default:
             if id.hasPrefix("island.page:"), let page = IslandPage(rawValue: String(id.dropFirst(12))) { island?.openPage(page) }
             else if id.hasPrefix("music.style:") { Prefs.shared.musicPlayerStyle = String(id.dropFirst(12)) }
+            else if id.hasPrefix("music.lyrics:") { Prefs.shared.musicPlayerLyrics = id.hasSuffix(":on") }
             else if id.hasPrefix("space.save:") { Spaces.save(String(id.dropFirst(11)), dock: dock?.model) }
             else if id.hasPrefix("space.use:") { Spaces.apply(String(id.dropFirst(10)), dock: dock?.model) }
             else if id.hasPrefix("widget.ai:"), let store = widgets?.store { AIWidgetMaker.make(String(id.dropFirst(10)), store: store) }
@@ -374,7 +375,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                       engineProcess: engineProcess.describe, engineConnected: engine.isConnected,
                                       widgets: widgets?.describe() ?? "")
             + "\n== Surfaces ==\nlauncher visible=\(launcher.isVisible) apps=\(launcher.store.apps.count) folders=\(launcher.store.layout.folders.count)"
-            + "\nmusic player visible=\(musicPlayer.isVisible) style=\(Prefs.shared.musicPlayerStyle)"
+            + "\nmusic player visible=\(musicPlayer.isVisible) style=\(Prefs.shared.musicPlayerStyle) lyrics=\(Prefs.shared.musicPlayerLyrics) lyricsState=\(LyricsService.shared.state) lines=\(LyricsService.shared.lines.count)"
             + "\nhyper key=\(HyperKey.isRunning) hot corner=\(Prefs.shared.launcherHotCorner)\n"
         let url = Log.fileURL.deletingLastPathComponent().appendingPathComponent("diagnostics.txt")
         try? text.write(to: url, atomically: true, encoding: .utf8)

@@ -183,59 +183,112 @@ final class PrivacyIndicators: ObservableObject {
 
 // MARK: Synced lyrics (lrclib.net)
 
-struct LyricLine { let time: Double; let text: String }
+struct LyricLine: Equatable { let time: Double; let text: String }
 
-/// Looks up time-synced lyrics for the playing track on lrclib.net (a free, open lyrics database).
+/// Looks up lyrics for the playing track on lrclib.net (a free, open lyrics database): time-synced when
+/// available, plain text otherwise. Only asks while the Island's lyrics or the full-screen player want them.
 @MainActor
 final class LyricsService: ObservableObject {
     static let shared = LyricsService()
 
+    enum State: Equatable { case idle, loading, synced, plain, none }
+
     @Published private(set) var lines: [LyricLine] = []
+    @Published private(set) var plain: [String] = []
+    @Published private(set) var state: State = .idle
+    var islandWants = false
+    var playerWants = false
     private var key = ""
     private var task: Task<Void, Never>?
 
+    /// Loads for `track` when someone wants lyrics, else clears.
+    func update(_ track: NowPlayingInfo?) { load(for: (islandWants || playerWants) ? track : nil) }
+
     func load(for track: NowPlayingInfo?) {
-        guard let t = track, !t.title.isEmpty else { key = ""; lines = []; return }
+        guard let t = track, !t.title.isEmpty else { key = ""; lines = []; plain = []; state = .idle; task?.cancel(); return }
         let k = "\(t.title)|\(t.artist)|\(Int(t.duration))"
         guard k != key else { return }
         key = k
         lines = []
+        plain = []
+        state = .loading
         task?.cancel()
         task = Task { [weak self] in
-            var c = URLComponents(string: "https://lrclib.net/api/get")!
-            c.queryItems = [URLQueryItem(name: "track_name", value: t.title), URLQueryItem(name: "artist_name", value: t.artist),
-                            URLQueryItem(name: "album_name", value: t.album), URLQueryItem(name: "duration", value: String(Int(t.duration)))]
-            guard let url = c.url else { return }
-            var req = URLRequest(url: url)
-            req.timeoutInterval = 8
-            req.setValue("Cortex (macOS launcher)", forHTTPHeaderField: "User-Agent")
-            guard let (data, resp) = try? await URLSession.shared.data(for: req), (resp as? HTTPURLResponse)?.statusCode == 200,
-                  let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-                  let lrc = obj["syncedLyrics"] as? String else { return }
-            let parsed = Self.parse(lrc)
+            let found = await Self.fetch(title: t.title, artist: t.artist, album: t.album, duration: t.duration)
             if Task.isCancelled { return }
-            await MainActor.run { if self?.key == k { self?.lines = parsed } }
+            await MainActor.run {
+                guard let self, self.key == k else { return }
+                if let synced = found.synced, !synced.isEmpty { self.lines = synced; self.state = .synced }
+                else if let text = found.plain, !text.isEmpty { self.plain = text; self.state = .plain }
+                else { self.state = .none }
+            }
         }
     }
 
-    static func parse(_ lrc: String) -> [LyricLine] {
+    nonisolated private static func fetch(title: String, artist: String, album: String, duration: Double) async -> (synced: [LyricLine]?, plain: [String]?) {
+        func request(_ url: URL) async -> Any? {
+            var req = URLRequest(url: url)
+            req.timeoutInterval = 8
+            req.setValue("Cortex (macOS launcher)", forHTTPHeaderField: "User-Agent")
+            guard let (data, resp) = try? await URLSession.shared.data(for: req), (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+            return try? JSONSerialization.jsonObject(with: data)
+        }
+        func unpack(_ obj: [String: Any]) -> (synced: [LyricLine]?, plain: [String]?) {
+            let synced = (obj["syncedLyrics"] as? String).map(parse)
+            let plain = (obj["plainLyrics"] as? String).map { $0.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) } }
+            return (synced, plain)
+        }
+        var c = URLComponents(string: "https://lrclib.net/api/get")!
+        c.queryItems = [URLQueryItem(name: "track_name", value: title), URLQueryItem(name: "artist_name", value: artist),
+                        URLQueryItem(name: "album_name", value: album), URLQueryItem(name: "duration", value: String(Int(duration)))]
+        if let url = c.url, let obj = await request(url) as? [String: Any] {
+            let r = unpack(obj)
+            if r.synced?.isEmpty == false || r.plain?.isEmpty == false { return r }
+        }
+        // Fallback: a looser search (album names and durations often differ between services).
+        var s = URLComponents(string: "https://lrclib.net/api/search")!
+        s.queryItems = [URLQueryItem(name: "track_name", value: title), URLQueryItem(name: "artist_name", value: artist)]
+        guard let url = s.url, let list = await request(url) as? [[String: Any]] else { return (nil, nil) }
+        let ranked = list.sorted { a, b in
+            let da = abs(((a["duration"] as? Double) ?? 0) - duration), db = abs(((b["duration"] as? Double) ?? 0) - duration)
+            let sa = (a["syncedLyrics"] as? String) != nil, sb = (b["syncedLyrics"] as? String) != nil
+            return sa != sb ? sa : da < db
+        }
+        return ranked.first.map(unpack) ?? (nil, nil)
+    }
+
+    nonisolated static func parse(_ lrc: String) -> [LyricLine] {
         var out: [LyricLine] = []
-        for raw in lrc.split(separator: "\n") {
-            let line = String(raw)
-            guard line.hasPrefix("["), let close = line.firstIndex(of: "]") else { continue }
-            let stamp = line[line.index(after: line.startIndex)..<close].split(separator: ":")
-            guard stamp.count == 2, let m = Double(stamp[0]), let s = Double(stamp[1]) else { continue }
-            let text = String(line[line.index(after: close)...]).trimmingCharacters(in: .whitespaces)
-            out.append(LyricLine(time: m * 60 + s, text: text))
+        for raw in lrc.split(separator: "\n", omittingEmptySubsequences: false) {
+            var line = Substring(raw)
+            var stamps: [Double] = []
+            // A line can carry several stamps: [00:12.00][01:30.00]text
+            while line.hasPrefix("["), let close = line.firstIndex(of: "]") {
+                let stamp = line[line.index(after: line.startIndex)..<close].split(separator: ":")
+                guard stamp.count == 2, let m = Double(stamp[0]), let s = Double(stamp[1]) else { break }
+                stamps.append(m * 60 + s)
+                line = line[line.index(after: close)...]
+            }
+            let text = line.trimmingCharacters(in: .whitespaces)
+            for t in stamps { out.append(LyricLine(time: t, text: text)) }
         }
         return out.sorted { $0.time < $1.time }
     }
 
+    /// Index of the line being sung at `position` (nil before the first line).
+    nonisolated static func index(in lines: [LyricLine], at position: Double) -> Int? {
+        var lo = 0, hi = lines.count - 1, found: Int?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            if lines[mid].time <= position + 0.25 { found = mid; lo = mid + 1 } else { hi = mid - 1 }
+        }
+        return found
+    }
+
     func current(at position: Double) -> String? {
-        guard !lines.isEmpty else { return nil }
-        var found: String?
-        for l in lines { if l.time <= position + 0.2 { found = l.text } else { break } }
-        return found.flatMap { $0.isEmpty ? nil : $0 }
+        guard let i = Self.index(in: lines, at: position) else { return nil }
+        let text = lines[i].text
+        return text.isEmpty ? nil : text
     }
 }
 

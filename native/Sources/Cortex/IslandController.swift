@@ -189,7 +189,7 @@ final class IslandController {
         // Lyrics: look up for the playing track, follow the playhead.
         model.$track.combineLatest(Prefs.shared.$islandLyrics)
             .receive(on: DispatchQueue.main)
-            .sink { track, on in LyricsService.shared.load(for: on ? track : nil) }
+            .sink { track, on in LyricsService.shared.islandWants = on; LyricsService.shared.update(track) }
             .store(in: &cancellables)
         Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
             .sink { [weak self] _ in
