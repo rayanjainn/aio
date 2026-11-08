@@ -69,7 +69,15 @@ struct ClipboardPage: View {
                                 PasteService.copy(text)
                                 PasteService.pasteIntoFront()
                             } label: {
-                                Text(text.replacingOccurrences(of: "\n", with: " ")).font(.system(size: 11.5)).lineLimit(2)
+                                HStack(spacing: 8) {
+                                    Image(systemName: Self.kindSymbol(text)).font(.system(size: 10.5, weight: .semibold))
+                                        .frame(width: 22, height: 22)
+                                        .background(Circle().fill(.white.opacity(0.1)))
+                                        .foregroundStyle(.white.opacity(0.75))
+                                    Text(text.replacingOccurrences(of: "\n", with: " ")).font(.system(size: 11.5)).lineLimit(2)
+                                    Spacer(minLength: 0)
+                                    Image(systemName: "return").font(.system(size: 9, weight: .semibold)).foregroundStyle(.white.opacity(0.35))
+                                }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 9).padding(.vertical, 5)
                                     .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -88,5 +96,17 @@ struct ClipboardPage: View {
         }
         .foregroundStyle(.white)
         .padding(.vertical, 8)
+    }
+
+    /// What the clip looks like it is: a link, a colour, a path, code or text.
+    static func kindSymbol(_ text: String) -> String {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.hasPrefix("http://") || t.hasPrefix("https://") { return "link" }
+        if t.hasPrefix("#"), t.count == 7 || t.count == 4, t.dropFirst().allSatisfy(\.isHexDigit) { return "paintpalette" }
+        if t.hasPrefix("/") || t.hasPrefix("~/") { return "folder" }
+        if t.contains("{") || t.contains(";") || t.hasPrefix("$ ") || t.contains("()") { return "chevron.left.forwardslash.chevron.right" }
+        if t.contains("@"), !t.contains(" "), t.contains(".") { return "envelope" }
+        if Double(t.replacingOccurrences(of: ",", with: "")) != nil { return "number" }
+        return "text.alignleft"
     }
 }
