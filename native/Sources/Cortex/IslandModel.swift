@@ -124,12 +124,17 @@ final class IslandModel: ObservableObject {
     }
 
     static let virtualNotchWidth: CGFloat = 150
+    /// Gap between a wing's content and the pill's outer edge.
+    static let wingInset: CGFloat = 12
+
+    /// Height reserved above the expanded pages: the notch on Macs that have one, a small margin otherwise.
+    var topBand: CGFloat { geometry.hasNotch ? geometry.menuBarHeight : 12 }
 
     /// Size of the black pill for the current state. `.zero` = nothing to show.
     func pillSize() -> CGSize {
         let g = geometry
         if expanded {
-            return CGSize(width: Self.expandedSize.width, height: g.menuBarHeight + Self.expandedSize.height)
+            return CGSize(width: Self.expandedSize.width, height: topBand + Self.expandedSize.height)
         }
         let gap: CGFloat = g.hasNotch ? g.notchWidth : Self.virtualNotchWidth
         if hasActivity { return CGSize(width: gap + wingWidth * 2, height: g.menuBarHeight) }

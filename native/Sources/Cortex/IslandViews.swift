@@ -147,10 +147,11 @@ struct CompactView: View {
     var body: some View {
         let g = model.geometry
         let wing = model.wingWidth
+        // Content hugs the outer edges with the same inset on both sides, so the pill reads balanced.
         HStack(spacing: 0) {
-            left.frame(width: wing)
+            left.padding(.leading, IslandModel.wingInset).frame(width: wing, alignment: .leading)
             Color.clear.frame(width: g.hasNotch ? g.notchWidth : IslandModel.virtualNotchWidth)
-            right.frame(width: wing)
+            right.padding(.trailing, IslandModel.wingInset).frame(width: wing, alignment: .trailing)
         }
         .frame(height: g.menuBarHeight)
     }
@@ -274,7 +275,7 @@ struct ExpandedView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Color.clear.frame(height: model.geometry.menuBarHeight)   // the hardware notch
+            Color.clear.frame(height: model.topBand)   // the hardware notch (a thin margin on Macs without one)
             page
                 .padding(.horizontal, 22)
                 .frame(maxHeight: .infinity)
@@ -460,9 +461,10 @@ struct CalendarPage: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         VStack(spacing: 6) {
+                            // Rows share the page height, so their top and bottom line up with the date tile.
                             ForEach(events.prefix(3)) { e in row(e) }
-                            Spacer(minLength: 0)
                         }
+                        .frame(maxHeight: .infinity)
                     }
                 }
                 .padding(.vertical, 8)
@@ -530,6 +532,7 @@ struct CalendarPage: View {
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
+        .frame(maxHeight: .infinity)
         .background(Color.white.opacity(live ? 0.12 : 0.06), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 }
@@ -618,7 +621,7 @@ struct ToolsPage: View {
                     .buttonStyle(.plain).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.9))
                 }
             }
-            .frame(width: 176)
+            .frame(width: 158)
 
             // Mirror
             card {
@@ -637,11 +640,11 @@ struct ToolsPage: View {
                 .onTapGesture { withAnimation(.easeInOut(duration: 0.25)) { mirror.toggle() } }
                 .help(mirror ? "Turn the camera off" : "Turn the camera on")
             }
-            .frame(width: 150)
+            .frame(width: 128)
 
             // Quick toggles + apps
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     toggle("cup.and.saucer.fill", "Awake", on: awake.on) { awake.toggle() }
                     toggle("circle.lefthalf.filled", "Dark", on: false) {
                         SystemCommands.osascript("tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode")
@@ -655,7 +658,7 @@ struct ToolsPage: View {
                 if prefs.islandApps.isEmpty {
                     Text("Add apps for one-tap launching in Settings → Island.").font(.system(size: 10.5)).foregroundStyle(.white.opacity(0.45))
                 } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(34), spacing: 8), count: 6), alignment: .leading, spacing: 8) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 34, maximum: 34), spacing: 8)], alignment: .leading, spacing: 8) {
                         ForEach(prefs.islandApps, id: \.self) { bundle in
                             if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
                                 Button { NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in } } label: {
@@ -690,7 +693,9 @@ struct ToolsPage: View {
                     .background(Circle().fill(on ? Color.white : Color.white.opacity(0.12)))
                     .foregroundStyle(on ? Color.black : Color.white)
                 Text(title).font(.system(size: 9.5, weight: .medium)).foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
+            .frame(width: 46)
         }
         .buttonStyle(PressDipStyle())
         .help(title)
