@@ -1,0 +1,56 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:972px; height:972px; border-radius:50%; left:-216px; top:-480px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:864px; height:864px; border-radius:50%; right:-216px; top:-192px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:756px; height:756px; border-radius:50%; left:162px; bottom:-576px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="reveal" data-width="1080" data-height="1920">
+<div class="full" id="reveal-bg" style="background:var(--color-ground)"></div><div class="glowA" id="reveal-ga"></div><div class="glowB" id="reveal-gb"></div><div class="glowC" id="reveal-gc"></div>
+<div class="cen" id="rv-brand" style="top:220px">
+  <img id="rv-icon" src="assets/img/cortex-icon-256.png" style="width:120px;height:120px;border-radius:26px;vertical-align:middle;display:inline-block">
+  <span class="hero" id="rv-name" style="font-size:110px;vertical-align:middle;margin-left:22px;display:inline-block">Cortex</span>
+</div>
+<div class="cen quiet" id="rv-cap" style="top:380px;font-size:50px;line-height:1.2"><span class="w" id="rc0">All</span> <span class="w" id="rc1">your</span> <span class="w" id="rc2">apps.</span><br><span class="w" id="rc3">Plus</span> <span class="w" id="rc4">your</span> <span class="w" id="rc5">day.</span></div>
+<div id="rv-stage" style="position:absolute;left:50px;top:620px;width:980px;perspective:1600px">
+  <div id="rv-mac">
+    <div style="border-radius:22px 22px 6px 6px;overflow:hidden;border:12px solid #1b1b20;border-bottom-width:16px;box-shadow:0 50px 140px rgba(0,0,0,.7);background:#000">
+      <img src="assets/img/launcher.jpg" style="width:100%;display:block">
+    </div>
+    <div style="height:20px;margin:0 -5%;background:linear-gradient(#cfd0d4,#8e8f94);border-radius:0 0 16px 16px"></div>
+  </div>
+</div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 3.818;
+
+  tl.fromTo("#reveal-ga", { x: 0, y: 0 }, { x: 65, y: 77, duration: D, ease: "none" }, 0);
+  tl.fromTo("#reveal-gb", { x: 0, y: 0 }, { x: -54, y: 96, duration: D, ease: "none" }, 0);
+  tl.fromTo("#reveal-gc", { x: 0 }, { x: 54, duration: D, ease: "none" }, 0);  tl.fromTo("#rv-icon", { opacity: 0, scale: 0.4, rotation: -12 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.55, ease: "back.out(1.6)" }, 0.02);
+  tl.fromTo("#rv-name", { opacity: 0, x: -24, filter: "blur(8px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.3, ease: "expo.out" }, 0.12);
+  tl.fromTo("#rv-mac", { y: 1152, rotationX: 38, scale: 0.9, transformOrigin: "50% 100%" }, { y: 0, rotationX: 0, scale: 1, duration: 1.0, ease: "expo.out" }, 0.545);
+  tl.fromTo("#rc0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.091);
+  tl.fromTo("#rc1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.161);
+  tl.fromTo("#rc2", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.231);
+  tl.fromTo("#rc3", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.301);
+  tl.fromTo("#rc4", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.371);
+  tl.fromTo("#rc5", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.441);
+  tl.to("#rv-mac", { scale: 1.7, x: 333, y: -120, duration: 0.7, ease: "power3.inOut", transformOrigin: "0% 30%" }, 2.454);
+  tl.to("#rv-brand, #rv-cap", { opacity: 0, y: -40, filter: "blur(8px)", duration: 0.25, ease: "power3.in" }, 2.404);
+  tl.to("#rv-stage", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.648);
+
+  window.__timelines["reveal"] = tl;
+</script>
+</template>

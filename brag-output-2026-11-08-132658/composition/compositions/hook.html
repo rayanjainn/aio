@@ -1,0 +1,48 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:1728px; height:1728px; border-radius:50%; left:-384px; top:-270px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:1536px; height:1536px; border-radius:50%; right:-384px; top:-108px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:1344px; height:1344px; border-radius:50%; left:288px; bottom:-324px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="hook" data-width="1920" data-height="1080">
+<div class="full" id="hook-bg" style="background:var(--color-ground)"></div><div class="glowA" id="hook-ga"></div><div class="glowB" id="hook-gb"></div><div class="glowC" id="hook-gc"></div><div class="cen hero" id="hk0" style="top:385px;font-size:230px;opacity:0">Launchpad.</div><div class="cen hero" id="hk1" style="top:385px;font-size:230px;opacity:0">Dock.</div><div class="cen hero" id="hk2" style="top:385px;font-size:230px;opacity:0">Notch.</div><div class="cen hero" id="hk3" style="top:385px;font-size:230px;opacity:0">Music.</div><div class="cen hero" id="hk-one" style="top:385px;font-size:230px"><span class="w" id="ol0" style="opacity:0">O</span><span class="w" id="ol1" style="opacity:0">n</span><span class="w" id="ol2" style="opacity:0">e</span><span class="w" id="ol3" style="opacity:0">&nbsp;</span><span class="w" id="ol4" style="opacity:0">a</span><span class="w" id="ol5" style="opacity:0">p</span><span class="w" id="ol6" style="opacity:0">p</span><span class="w" id="ol7" style="opacity:0">.</span></div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 3.543;
+
+  tl.fromTo("#hook-ga", { x: 0, y: 0 }, { x: 115, y: 43, duration: D, ease: "none" }, 0);
+  tl.fromTo("#hook-gb", { x: 0, y: 0 }, { x: -96, y: 54, duration: D, ease: "none" }, 0);
+  tl.fromTo("#hook-gc", { x: 0 }, { x: 96, duration: D, ease: "none" }, 0);  tl.fromTo("#hk0", { opacity: 0, scale: 1.14, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0.27);
+  tl.to("#hk0", { opacity: 0, filter: "blur(10px)", duration: 0.1, ease: "power3.in" }, 0.715);
+  tl.fromTo("#hk1", { opacity: 0, scale: 1.14, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0.815);
+  tl.to("#hk1", { opacity: 0, filter: "blur(10px)", duration: 0.1, ease: "power3.in" }, 1.261);
+  tl.fromTo("#hk2", { opacity: 0, scale: 1.14, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 1.361);
+  tl.to("#hk2", { opacity: 0, filter: "blur(10px)", duration: 0.1, ease: "power3.in" }, 1.806);
+  tl.fromTo("#hk3", { opacity: 0, scale: 1.14, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 1.906);
+  tl.to("#hk3", { opacity: 0, filter: "blur(10px)", duration: 0.1, ease: "power3.in" }, 2.352);
+  tl.fromTo("#ol0", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.452);
+  tl.fromTo("#ol1", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.487);
+  tl.fromTo("#ol2", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.522);
+  tl.fromTo("#ol3", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.557);
+  tl.fromTo("#ol4", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.592);
+  tl.fromTo("#ol5", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.627);
+  tl.fromTo("#ol6", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.662);
+  tl.fromTo("#ol7", { opacity: 0.0, y: 30, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 2.697);
+  tl.to("#hk-one", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.373);
+
+  window.__timelines["hook"] = tl;
+</script>
+</template>

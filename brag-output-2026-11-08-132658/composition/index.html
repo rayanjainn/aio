@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id": "color-ground", "type": "color", "label": "Background", "default": "#0b0b0f"}, {"id": "color-ink", "type": "color", "label": "Text", "default": "#f5f5f7"}]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      :root { --color-ground: #0b0b0f; --color-ink: #f5f5f7; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--color-ground); }
+      #root { width: 100%; height: 100%; font-family: Inter, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="24.815" data-width="1920" data-height="1080">
+      <div id="hook" data-composition-id="hook" data-composition-src="compositions/hook.html" data-start="0" data-duration="3.543" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="reveal" data-composition-id="reveal" data-composition-src="compositions/reveal.html" data-start="3.543" data-duration="3.818" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="dock" data-composition-id="dock" data-composition-src="compositions/dock.html" data-start="7.361" data-duration="4.091" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="notch" data-composition-id="notch" data-composition-src="compositions/notch.html" data-start="11.452" data-duration="3.818" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="music" data-composition-id="music" data-composition-src="compositions/music.html" data-start="15.27" data-duration="3.818" data-track-index="5" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="cmdk" data-composition-id="cmdk" data-composition-src="compositions/cmdk.html" data-start="19.088" data-duration="2.455" data-track-index="6" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="outro" data-composition-id="outro" data-composition-src="compositions/outro.html" data-start="21.543" data-duration="3.272" data-track-index="7" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <audio id="music" class="clip" src="assets/music.mp3" data-start="0" data-duration="24.815" data-volume="0.85" data-fade-out="1.4" data-track-index="20"></audio>
+      <audio id="sfx0" class="clip" src="assets/sfx/click.ogg" data-start="0.27" data-duration="0.01" data-volume="0.22" data-track-index="21"></audio>
+      <audio id="sfx1" class="clip" src="assets/sfx/click.ogg" data-start="0.815" data-duration="0.01" data-volume="0.22" data-track-index="22"></audio>
+      <audio id="sfx2" class="clip" src="assets/sfx/click.ogg" data-start="1.361" data-duration="0.01" data-volume="0.22" data-track-index="23"></audio>
+      <audio id="sfx3" class="clip" src="assets/sfx/click.ogg" data-start="1.906" data-duration="0.01" data-volume="0.22" data-track-index="24"></audio>
+      <audio id="sfx4" class="clip" src="assets/sfx/impact.ogg" data-start="2.452" data-duration="0.18" data-volume="0.32" data-track-index="25"></audio>
+      <audio id="sfx5" class="clip" src="assets/sfx/impact.ogg" data-start="3.543" data-duration="0.18" data-volume="0.3" data-track-index="26"></audio>
+      <audio id="sfx6" class="clip" src="assets/sfx/impact.ogg" data-start="7.361" data-duration="0.18" data-volume="0.3" data-track-index="27"></audio>
+      <audio id="sfx7" class="clip" src="assets/sfx/impact.ogg" data-start="11.452" data-duration="0.18" data-volume="0.3" data-track-index="28"></audio>
+      <audio id="sfx8" class="clip" src="assets/sfx/impact.ogg" data-start="15.27" data-duration="0.18" data-volume="0.3" data-track-index="29"></audio>
+      <audio id="sfx9" class="clip" src="assets/sfx/impact.ogg" data-start="21.543" data-duration="0.18" data-volume="0.3" data-track-index="30"></audio>
+      <audio id="sfx10" class="clip" src="assets/sfx/swish.ogg" data-start="7.906" data-duration="0.06" data-volume="0.3" data-track-index="31"></audio>
+      <audio id="sfx11" class="clip" src="assets/sfx/drop.ogg" data-start="10.088" data-duration="0.11" data-volume="0.25" data-track-index="32"></audio>
+      <audio id="sfx12" class="clip" src="assets/sfx/click.ogg" data-start="19.088" data-duration="0.01" data-volume="0.2" data-track-index="33"></audio>
+      <audio id="sfx13" class="clip" src="assets/sfx/click.ogg" data-start="19.634" data-duration="0.01" data-volume="0.2" data-track-index="34"></audio>
+      <audio id="sfx14" class="clip" src="assets/sfx/click.ogg" data-start="20.179" data-duration="0.01" data-volume="0.2" data-track-index="35"></audio>
+      <audio id="sfx15" class="clip" src="assets/sfx/click.ogg" data-start="20.725" data-duration="0.01" data-volume="0.2" data-track-index="36"></audio>
+      <audio id="sfx16" class="clip" src="assets/sfx/drop.ogg" data-start="21.593" data-duration="0.11" data-volume="0.3" data-track-index="37"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

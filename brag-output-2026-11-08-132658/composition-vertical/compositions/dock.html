@@ -1,0 +1,53 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:972px; height:972px; border-radius:50%; left:-216px; top:-480px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:864px; height:864px; border-radius:50%; right:-216px; top:-192px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:756px; height:756px; border-radius:50%; left:162px; bottom:-576px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="dock" data-width="1080" data-height="1920">
+
+<div class="full" style="background:var(--color-ground)"></div>
+<div class="full" id="dk-flood" style="opacity:0;background:radial-gradient(80% 90% at 10% 0%,#ff7a45,transparent 60%),radial-gradient(70% 80% at 100% 100%,#c2185b,transparent 60%),#5a1c2a"></div>
+<div class="cen hero" id="dk-title" style="top:260px;font-size:150px"><span class="w" id="dt0">Truly</span><br><span class="w" id="dt1">your</span> <span class="w" id="dt2">Dock.</span></div>
+<div class="cen quiet" id="dk-sub" style="top:600px;font-size:44px;color:rgba(255,255,255,.85);opacity:0">Widgets right in the bar · one-click presets</div>
+<div id="dk-wrap" style="position:absolute;left:30px;top:820px;width:1020px">
+  <img id="dk-img" src="assets/img/dock-widgets.jpg" style="width:100%;display:block;border-radius:26px;box-shadow:0 30px 80px rgba(0,0,0,.45)">
+</div>
+<div id="pc0" style="position:absolute;left:390px;top:1180px;width:300px;opacity:0">
+      <div style="display:flex;gap:8px;padding:10px;border-radius:20px;background:rgba(255,255,255,.14)"><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#ffcc78,#f58c4c)"></i><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#ffcc78,#f58c4c)"></i><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#ffcc78,#f58c4c)"></i><i style="display:block;width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.9)"></i></div>
+      <div style="text-align:center;font-weight:700;font-size:34px;margin-top:12px">Morning Tide</div></div><div id="pc1" style="position:absolute;left:390px;top:1370px;width:300px;opacity:0">
+      <div style="display:flex;gap:8px;padding:10px;border-radius:20px;background:rgba(255,255,255,.14)"><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#3d3379,#0f0f29)"></i><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#3d3379,#0f0f29)"></i><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#3d3379,#0f0f29)"></i><i style="display:block;width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.9)"></i></div>
+      <div style="text-align:center;font-weight:700;font-size:34px;margin-top:12px">Midnight Focus</div></div><div id="pc2" style="position:absolute;left:390px;top:1560px;width:300px;opacity:0">
+      <div style="display:flex;gap:8px;padding:10px;border-radius:20px;background:rgba(255,255,255,.14)"><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#409efa,#1a40ad)"></i><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#409efa,#1a40ad)"></i><i style="display:block;flex:1;height:62px;border-radius:14px;background:linear-gradient(135deg,#409efa,#1a40ad)"></i><i style="display:block;width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.9)"></i></div>
+      <div style="text-align:center;font-weight:700;font-size:34px;margin-top:12px">Ocean Desk</div></div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 4.091;
+  tl.fromTo("#dk-flood", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.inOut" }, 0);
+  tl.fromTo("#dt0", { opacity: 0.15 }, { opacity: 1, duration: 0.12, ease: "none" }, 0.12);
+  tl.fromTo("#dt1", { opacity: 0.15 }, { opacity: 1, duration: 0.12, ease: "none" }, 0.21);
+  tl.fromTo("#dt2", { opacity: 0.15 }, { opacity: 1, duration: 0.12, ease: "none" }, 0.3);
+  tl.fromTo("#dk-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "power4.out" }, 0.818);
+  tl.fromTo("#dk-wrap", { y: 960, filter: "blur(14px)" }, { y: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 0.545);
+  tl.fromTo("#dk-wrap", { scale: 1 }, { scale: 1.06, duration: 0.6, ease: "power3.inOut" }, 1.364);
+  tl.fromTo("#pc0", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.727);
+  tl.fromTo("#pc1", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.847);
+  tl.fromTo("#pc2", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, 2.967);
+  tl.to("#dk-title, #dk-sub, #dk-wrap, #pc0, #pc1, #pc2", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.921);
+
+  window.__timelines["dock"] = tl;
+</script>
+</template>

@@ -10,3 +10,5 @@ native/.build
 native/build
 cortexd/target
 brag-output/work/
+brag-output-*/composition*/.hyperframes/
+brag-output-*/*-raw.mp4

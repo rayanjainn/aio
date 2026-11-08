@@ -1,0 +1,41 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:972px; height:972px; border-radius:50%; left:-216px; top:-480px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:864px; height:864px; border-radius:50%; right:-216px; top:-192px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:756px; height:756px; border-radius:50%; left:162px; bottom:-576px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="cmdk" data-width="1080" data-height="1920">
+<div class="full" id="cmdk-bg" style="background:var(--color-ground)"></div><div class="glowA" id="cmdk-ga"></div><div class="glowB" id="cmdk-gb"></div><div class="glowC" id="cmdk-gc"></div><div class="cen hero" id="ck-title" style="top:230px;font-size:140px">⌘K</div><div class="cen quiet" id="ck-sub" style="top:400px;font-size:46px">Type it. It's done.</div><div id="ck0" style="position:absolute;left:90px;top:560px;width:900px;opacity:0"><img src="assets/img/palette-home.jpg" style="width:100%;display:block;border-radius:28px;box-shadow:0 40px 100px rgba(0,0,0,.6)"></div><div id="ck1" style="position:absolute;left:90px;top:560px;width:900px;opacity:0"><img src="assets/img/palette-convert.jpg" style="width:100%;display:block;border-radius:28px;box-shadow:0 40px 100px rgba(0,0,0,.6)"></div><div id="ck2" style="position:absolute;left:90px;top:560px;width:900px;opacity:0"><img src="assets/img/palette-emoji.jpg" style="width:100%;display:block;border-radius:28px;box-shadow:0 40px 100px rgba(0,0,0,.6)"></div><div id="ck3" style="position:absolute;left:90px;top:560px;width:900px;opacity:0"><img src="assets/img/palette-calc.jpg" style="width:100%;display:block;border-radius:28px;box-shadow:0 40px 100px rgba(0,0,0,.6)"></div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 2.455;
+
+  tl.fromTo("#cmdk-ga", { x: 0, y: 0 }, { x: 65, y: 77, duration: D, ease: "none" }, 0);
+  tl.fromTo("#cmdk-gb", { x: 0, y: 0 }, { x: -54, y: 96, duration: D, ease: "none" }, 0);
+  tl.fromTo("#cmdk-gc", { x: 0 }, { x: 54, duration: D, ease: "none" }, 0);  tl.fromTo("#ck-title", { opacity: 0, filter: "blur(10px)", scale: 1.1 }, { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.2, ease: "expo.out" }, 0);
+  tl.fromTo("#ck-sub", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power4.out" }, 0.15);
+  tl.fromTo("#ck0", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 0.05);
+  tl.to("#ck0", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 0.446);
+  tl.fromTo("#ck1", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 0.546);
+  tl.to("#ck1", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 0.991);
+  tl.fromTo("#ck2", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 1.091);
+  tl.to("#ck2", { opacity: 0, filter: "blur(8px)", duration: 0.12, ease: "power3.in" }, 1.537);
+  tl.fromTo("#ck3", { opacity: 0, scale: 1.05, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.16, ease: "expo.out" }, 1.637);
+  tl.to("#ck-title, #ck-sub, #ck3", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 2.285);
+
+  window.__timelines["cmdk"] = tl;
+</script>
+</template>

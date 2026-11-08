@@ -1,0 +1,58 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:972px; height:972px; border-radius:50%; left:-216px; top:-480px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:864px; height:864px; border-radius:50%; right:-216px; top:-192px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:756px; height:756px; border-radius:50%; left:162px; bottom:-576px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="music" data-width="1080" data-height="1920">
+
+<div class="full" style="background:radial-gradient(70% 90% at 20% 30%,#8f1d2c,transparent 70%),radial-gradient(60% 80% at 90% 80%,#3b0d1c,transparent 70%),#1a070c"></div>
+<div class="cen hero" id="mu-title" style="top:170px;font-size:120px"><span class="w" id="mt0">Your</span> <span class="w" id="mt1">song,</span><br><span class="w" id="mt2">full</span> <span class="w" id="mt3">screen.</span></div>
+<div id="mu-sleeve" style="position:absolute;left:60px;top:470px;width:840px;height:560px;transform-origin:0 0">
+  <div id="mu-recw" style="position:absolute;top:14px;left:0;width:530px;height:530px">
+    <div id="mu-rec" style="width:530px;height:530px;border-radius:50%;box-shadow:12px 16px 50px rgba(0,0,0,.5);
+      background:radial-gradient(circle,#ddd 0 3%,#0e0e10 3.2% 18%,transparent 18.5%),repeating-radial-gradient(circle,rgba(0,0,0,.25) 0 1px,transparent 1px 5px),radial-gradient(circle,#ff3d6e 0 45%,#7a0f2b 70%,#120408 100%)"></div>
+  </div>
+  <div id="mu-art" style="position:absolute;left:0;top:0;width:560px;height:560px;border-radius:6px;box-shadow:20px 30px 70px rgba(0,0,0,.6);
+    background:conic-gradient(from 210deg at 35% 40%,#ff9a3c,#ff3d6e,#7b2ff7,#1fb5d6,#ff9a3c)">
+    <div style="position:absolute;left:26px;bottom:22px;font-weight:900;letter-spacing:.08em;font-size:36px">NIGHT DRIVE</div>
+  </div>
+</div>
+<div id="mu-lyr" style="position:absolute;left:80px;top:1180px;width:920px;font-weight:900;letter-spacing:-.02em;font-size:56px;line-height:1.15">
+  <div id="ly0" style="color:rgba(255,255,255,.3);margin:18px 0">Headlights on the open road</div>
+  <div style="position:relative;margin:18px 0">
+    <div style="color:rgba(255,255,255,.3)">Turn it up and let it go</div>
+    <div id="ly1" style="position:absolute;inset:0;color:#fff;clip-path:inset(0 100% 0 0);text-shadow:0 0 22px rgba(255,255,255,.35)">Turn it up and let it go</div>
+  </div>
+  <div id="ly2" style="color:rgba(255,255,255,.3);margin:18px 0">Every street light knows our name</div>
+</div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 3.818;
+  tl.fromTo("#mt0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.05);
+  tl.fromTo("#mt1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.12);
+  tl.fromTo("#mt2", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.19);
+  tl.fromTo("#mt3", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.26);
+  tl.fromTo("#mu-sleeve", { x: -700, scale: 0.95 }, { x: 0, scale: 0.95, duration: 0.6, ease: "expo.out" }, 0.273);
+  tl.fromTo("#mu-recw", { x: 0 }, { x: 300, duration: 0.9, ease: "power3.inOut" }, 0.818);
+  tl.fromTo("#mu-rec", { rotation: 0 }, { rotation: 300, duration: D, ease: "none" }, 0);
+  tl.fromTo("#mu-lyr", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 1.091);
+  tl.fromTo("#ly1", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.6, ease: "none" }, 1.364);
+  tl.to("#mu-title, #mu-sleeve, #mu-lyr", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.648);
+
+  window.__timelines["music"] = tl;
+</script>
+</template>

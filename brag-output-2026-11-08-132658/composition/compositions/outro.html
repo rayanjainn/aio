@@ -1,0 +1,54 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:1728px; height:1728px; border-radius:50%; left:-384px; top:-270px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:1536px; height:1536px; border-radius:50%; right:-384px; top:-108px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:1344px; height:1344px; border-radius:50%; left:288px; bottom:-324px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="outro" data-width="1920" data-height="1080">
+<div class="full" id="outro-bg" style="background:var(--color-ground)"></div><div class="glowA" id="outro-ga"></div><div class="glowB" id="outro-gb"></div><div class="glowC" id="outro-gc"></div>
+<div class="cen" style="top:190px"><img id="o-icon" src="assets/img/cortex-icon-256.png" style="width:210px;height:210px;border-radius:50px;display:inline-block"></div>
+<div class="cen hero" id="o-name" style="top:440px;font-size:170px"><span class="w" id="on0">C</span><span class="w" id="on1">o</span><span class="w" id="on2">r</span><span class="w" id="on3">t</span><span class="w" id="on4">e</span><span class="w" id="on5">x</span></div>
+<div class="cen" id="o-tag" style="top:640px;font-size:50px;font-weight:700;line-height:1.25;color:rgba(245,245,247,.82)"><span class="w" id="ot0">Launcher</span> <span class="w" id="ot1">·</span> <span class="w" id="ot2">Dock</span> <span class="w" id="ot3">·</span> <span class="w" id="ot4">Notch</span> <span class="w" id="ot5">·</span> <span class="w" id="ot6">Music</span> <span class="w" id="ot7">·</span> <span class="w" id="ot8">⌘K</span></div>
+<div class="cen" id="o-cta" style="top:790px;opacity:0">
+  <span style="display:inline-block;font-size:34px;font-weight:700;padding:18px 34px;border-radius:999px;background:#fff;color:#000">Free for macOS · cortex.raycode.tech</span>
+</div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 3.272;
+
+  tl.fromTo("#outro-ga", { x: 0, y: 0 }, { x: 115, y: 43, duration: D, ease: "none" }, 0);
+  tl.fromTo("#outro-gb", { x: 0, y: 0 }, { x: -96, y: 54, duration: D, ease: "none" }, 0);
+  tl.fromTo("#outro-gc", { x: 0 }, { x: 96, duration: D, ease: "none" }, 0);  tl.fromTo("#o-icon", { opacity: 0, y: -80, scale: 0.6 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "back.out(1.7)" }, 0.02);
+  tl.fromTo("#on0", { opacity: 0.3, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.272);
+  tl.fromTo("#on1", { opacity: 0.3, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.332);
+  tl.fromTo("#on2", { opacity: 0.3, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.392);
+  tl.fromTo("#on3", { opacity: 0.3, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.452);
+  tl.fromTo("#on4", { opacity: 0.3, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.512);
+  tl.fromTo("#on5", { opacity: 0.3, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.572);
+  tl.fromTo("#ot0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.818);
+  tl.fromTo("#ot1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.878);
+  tl.fromTo("#ot2", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.938);
+  tl.fromTo("#ot3", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 0.998);
+  tl.fromTo("#ot4", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.058);
+  tl.fromTo("#ot5", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.118);
+  tl.fromTo("#ot6", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.178);
+  tl.fromTo("#ot7", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.238);
+  tl.fromTo("#ot8", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.298);
+  tl.fromTo("#o-cta", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "expo.out" }, 1.172);
+
+  window.__timelines["outro"] = tl;
+</script>
+</template>

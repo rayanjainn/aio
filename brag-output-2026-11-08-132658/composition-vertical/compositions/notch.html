@@ -1,0 +1,61 @@
+<template>
+<style>
+
+  #root { position:absolute; inset:0; overflow:hidden; font-family: Inter, sans-serif; color: var(--color-ink); }
+  .full { position:absolute; inset:0; }
+  .cen { position:absolute; left:0; right:0; text-align:center; }
+  .hero { font-weight:900; letter-spacing:-0.055em; line-height:0.95; }
+  .quiet { font-weight:400; color: rgba(245,245,247,.82); letter-spacing:-0.01em; }
+  .w { display:inline-block; }
+  .glowA { position:absolute; width:972px; height:972px; border-radius:50%; left:-216px; top:-480px;
+           background: radial-gradient(circle, rgba(255,69,58,.30), rgba(255,69,58,0) 62%); }
+  .glowB { position:absolute; width:864px; height:864px; border-radius:50%; right:-216px; top:-192px;
+           background: radial-gradient(circle, rgba(10,132,255,.26), rgba(10,132,255,0) 62%); }
+  .glowC { position:absolute; width:756px; height:756px; border-radius:50%; left:162px; bottom:-576px;
+           background: radial-gradient(circle, rgba(255,159,10,.18), rgba(255,159,10,0) 62%); }
+
+
+</style>
+<div id="root" data-composition-id="notch" data-width="1080" data-height="1920">
+<div class="full" id="notch-bg" style="background:var(--color-ground)"></div><div class="glowA" id="notch-ga"></div><div class="glowB" id="notch-gb"></div><div class="glowC" id="notch-gc"></div>
+<div id="nt-pill" style="position:absolute;left:40px;top:0;width:1000px;height:760px;background:#000;border-radius:0 0 56px 56px;box-shadow:0 40px 100px rgba(0,0,0,.6)"></div>
+<div id="nt-cards" style="position:absolute;left:64px;top:24px;width:952px;height:712px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1.25fr 1fr;gap:16px">
+  <div id="nc0" style="border-radius:28px;position:relative;overflow:hidden;background:linear-gradient(135deg,#ff6a3d,#b5179e 55%,#3a0ca3);grid-column:1/-1;">
+    <div style="position:absolute;inset:0;background:linear-gradient(transparent 25%,rgba(0,0,0,.75))"></div>
+    <div style="position:absolute;left:24px;right:24px;bottom:22px">
+      <div style="font-weight:700;font-size:42px">Night Drive</div>
+      <div style="font-size:27px;opacity:.75">The Example Band</div>
+      <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.25);margin-top:14px"><div id="nt-prog" style="height:6px;border-radius:3px;background:#fff;width:100%;transform-origin:0 50%"></div></div>
+    </div>
+  </div>
+  <div id="nc1" style="border-radius:28px;background:rgba(255,255,255,.09);display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="color:#ff453a;font-weight:700;font-size:34px">Sun</div>
+    <div style="font-size:154px;line-height:1;font-weight:700">8</div>
+    <div style="font-size:25px;color:rgba(245,245,247,.45);margin-top:6px">November</div>
+  </div>
+  <div id="nc2" style="border-radius:28px;background:rgba(255,255,255,.09);padding:24px;font-weight:700;font-size:42px;line-height:1.2">
+    27° <span style="color:rgba(245,245,247,.42)">now in</span><br>your city<br><span style="color:rgba(245,245,247,.42)">H</span> 31° <span style="color:rgba(245,245,247,.42)">L</span> 24°<br>☾ Clear
+  </div>
+</div>
+<div class="cen hero" id="nt-title" style="top:1000px;font-size:150px"><span class="w" id="nt0">Hello,</span><br><span class="w" id="nt1">notch.</span></div>
+<div class="cen quiet" id="nt-sub" style="top:1340px;font-size:44px;opacity:0">Music, date and weather<br>— one hover away</div>
+</div>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  const D = 3.818;
+
+  tl.fromTo("#notch-ga", { x: 0, y: 0 }, { x: 65, y: 77, duration: D, ease: "none" }, 0);
+  tl.fromTo("#notch-gb", { x: 0, y: 0 }, { x: -54, y: 96, duration: D, ease: "none" }, 0);
+  tl.fromTo("#notch-gc", { x: 0 }, { x: 54, duration: D, ease: "none" }, 0);  tl.fromTo("#nt-pill", { scaleX: 0.300, scaleY: 0.058, transformOrigin: "50% 0%" }, { scaleX: 1, scaleY: 1, duration: 0.8, ease: "power3.inOut" }, 0.12);
+  tl.fromTo("#nc0", { opacity: 0, y: -20, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "expo.out" }, 0.72);
+  tl.fromTo("#nc1", { opacity: 0, y: -20, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "expo.out" }, 0.8);
+  tl.fromTo("#nc2", { opacity: 0, y: -20, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "expo.out" }, 0.88);
+  tl.fromTo("#nt-prog", { scaleX: 0.25 }, { scaleX: 0.62, duration: D, ease: "none" }, 0);
+  tl.fromTo("#nt0", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.036);
+  tl.fromTo("#nt1", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out" }, 1.116);
+  tl.fromTo("#nt-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "power4.out" }, 1.473);
+  tl.to("#nt-pill, #nt-cards, #nt-title, #nt-sub", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 3.648);
+
+  window.__timelines["notch"] = tl;
+</script>
+</template>
