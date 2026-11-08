@@ -15,3 +15,5 @@ brag-output-*/*-raw.mp4
 brag-output-*/composition-m*/
 brag-output-*/render-*.log
 brag-output-*/preview-*.mp4
+brag-output-*/.preview-*/
+brag-output-*/work-*/
