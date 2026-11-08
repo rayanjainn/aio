@@ -41,7 +41,7 @@ final class Prefs: ObservableObject {
     @Published var launcherHotCorner = "none" { didSet { save() } }
     @Published var launcherWallpaper = "" { didSet { save() } }
     @Published var launcherDim = 0.25 { didSet { save() } }
-    @Published var musicPlayerStyle = "vinyl" { didSet { save() } }
+    @Published var musicPlayerStyle = "sleeve" { didSet { save() } }
     @Published var dockGroupRunning = false { didSet { save() } }
     @Published var musicPlayerLyrics = true { didSet { save() } }
     @Published var dockWidgetTheme = "glass" { didSet { save() } }
@@ -117,7 +117,7 @@ final class Prefs: ObservableObject {
             launcherHotCorner = s.launcherHotCorner ?? "none"
             launcherWallpaper = s.launcherWallpaper ?? ""
             launcherDim = s.launcherDim ?? 0.25
-            musicPlayerStyle = s.musicPlayerStyle ?? "vinyl"
+            musicPlayerStyle = s.musicPlayerStyle ?? "sleeve"
             dockGroupRunning = s.dockGroupRunning ?? false
             musicPlayerLyrics = s.musicPlayerLyrics ?? true
             dockWidgetTheme = s.dockWidgetTheme ?? "glass"

@@ -91,7 +91,7 @@ final class MusicPlayerController {
         }
     }
 
-    /// Space play/pause · ←/→ 10 s · ⌘←/⌘→ previous/next · ↑/↓ volume · L lyrics · 1/2/3 style · M mute · Esc close.
+    /// Space play/pause · ←/→ 10 s · ⌘←/⌘→ previous/next · ↑/↓ volume · L lyrics · 1–5 style · M mute · Esc close.
     private func handle(keyCode: UInt16, chars: String, command: Bool) -> Bool {
         guard let bridge else { return false }
         model.poke()
@@ -105,9 +105,9 @@ final class MusicPlayerController {
         default:
             switch chars.lowercased() {
             case "l": withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { Prefs.shared.musicPlayerLyrics.toggle() }
-            case "1": withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { Prefs.shared.musicPlayerStyle = "vinyl" }
-            case "2": withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { Prefs.shared.musicPlayerStyle = "cover" }
-            case "3": withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { Prefs.shared.musicPlayerStyle = "waves" }
+            case "1", "2", "3", "4", "5":
+                let id = MusicStyle.all[Int(chars)! - 1].id
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { Prefs.shared.musicPlayerStyle = id }
             case "m": model.toggleMute()
             default: return false
             }
@@ -331,6 +331,17 @@ enum ArtworkPalette {
         return out
     }
 
+    /// The artwork's most vivid colour, for tinting a coloured vinyl.
+    static func accent(_ image: NSImage) -> NSColor? {
+        let grid = grid(image)
+        guard !grid.isEmpty else { return nil }
+        func sat(_ c: NSColor) -> CGFloat { var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0; c.getHue(&h, saturation: &s, brightness: &b, alpha: &a); return s * (0.4 + b) }
+        guard let best = grid.max(by: { sat($0) < sat($1) }) else { return nil }
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        best.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        return NSColor(hue: h, saturation: min(1, max(0.35, s * 1.2)), brightness: min(0.75, max(0.45, b * 1.2)), alpha: 1)
+    }
+
     /// A little more saturation, brightness kept in a band where white text stays readable.
     static func tuned(_ c: NSColor) -> NSColor {
         var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
@@ -361,6 +372,10 @@ struct MusicPlayerView: View {
             ZStack {
                 MusicBackdrop(artwork: bridge.info?.artwork, key: trackKey, playing: bridge.info?.playing ?? false)
 
+                if prefs.musicPlayerStyle == "art" {
+                    artLayout(in: geo.size, showLyrics: showLyrics)
+                        .transition(.opacity)
+                } else {
                 HStack(spacing: geo.size.width * 0.05) {
                     nowPlaying(in: geo.size, compact: showLyrics)
                         .frame(width: showLyrics ? geo.size.width * 0.36 : min(620, geo.size.width * 0.6))
@@ -371,6 +386,7 @@ struct MusicPlayerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
 
                 VStack {
                     topBar
@@ -390,7 +406,9 @@ struct MusicPlayerView: View {
         .onChange(of: trackKey) { _, _ in
             model.resetLyrics()
             LyricsService.shared.update(bridge.info)
+            updateTint()
         }
+        .onAppear { updateTint() }
         .animation(.spring(response: 0.55, dampingFraction: 0.86), value: prefs.musicPlayerLyrics)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: prefs.musicPlayerStyle)
     }
@@ -398,10 +416,13 @@ struct MusicPlayerView: View {
     // MARK: Now playing column
 
     private func nowPlaying(in size: CGSize, compact: Bool) -> some View {
-        let art = min(size.height * 0.42, compact ? size.width * 0.27 : size.width * 0.34, 470)
+        let column = compact ? size.width * 0.36 : min(620, size.width * 0.6)
+        var art = min(size.height * 0.42, compact ? size.width * 0.27 : size.width * 0.34, 470)
+        let wide: CGFloat = prefs.musicPlayerStyle == "sleeve" ? 1.5 : prefs.musicPlayerStyle == "waves" ? 1.35 : 1
+        art = min(art, column / wide)
         return VStack(spacing: 0) {
             centerpiece(size: art)
-                .frame(width: art * (prefs.musicPlayerStyle == "waves" ? 1.35 : 1), height: art)
+                .frame(width: art * wide, height: art)
                 .contentShape(Rectangle())
                 .onTapGesture { bridge.send(.toggle); Haptics.tap() }
                 .help("Click to play or pause")
@@ -447,9 +468,55 @@ struct MusicPlayerView: View {
                     .scaleEffect(playing ? 1 : 0.9)
                     .animation(.spring(response: 0.55, dampingFraction: 0.68), value: playing)
             }
+        case "sleeve":
+            SleeveView(artwork: art, playing: playing, tint: tint,
+                       label: [bridge.info?.title, bridge.info?.artist].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " • "))
+                .id(trackKey)
+                .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity), removal: .opacity))
         default:
             VinylView(artwork: art, playing: playing)
         }
+    }
+
+    // MARK: Full-bleed art
+
+    /// The artwork fills the screen; one floating glass bar carries everything else (LaunchMe/Apple TV style).
+    private func artLayout(in size: CGSize, showLyrics: Bool) -> some View {
+        ZStack {
+            if let art = bridge.info?.artwork {
+                Color.clear.overlay {
+                    Image(nsImage: art).resizable().interpolation(.high).aspectRatio(contentMode: .fill)
+                }
+                .clipped()
+                .id(trackKey)
+                .transition(.opacity)
+            }
+            LinearGradient(colors: [.black.opacity(0.25), .clear, .clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
+            HStack {
+                Spacer()
+                if showLyrics {
+                    LyricsPane(bridge: bridge, model: model, lyrics: lyrics)
+                        .frame(width: size.width * 0.4, height: size.height * 0.62)
+                        .padding(.trailing, size.width * 0.04)
+                        .shadow(color: .black.opacity(0.6), radius: 12)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
+            }
+            VStack {
+                Spacer()
+                MusicControlBar(bridge: bridge, model: model, prefs: prefs)
+                    .frame(width: min(860, size.width * 0.66))
+                    .padding(.bottom, size.height * 0.06)
+            }
+        }
+        .animation(.easeInOut(duration: 0.6), value: trackKey)
+    }
+
+    @State private var tint: Color = Color(red: 0.55, green: 0.12, blue: 0.14)
+
+    private func updateTint() {
+        guard let art = bridge.info?.artwork, let c = ArtworkPalette.accent(art) else { return }
+        withAnimation(.easeInOut(duration: 0.8)) { tint = Color(nsColor: c) }
     }
 
     private var titleBlock: some View {
@@ -585,7 +652,8 @@ struct MusicPlayerView: View {
 
     private var styleSwitcher: some View {
         HStack(spacing: 2) {
-            ForEach([("vinyl", "record.circle", "Vinyl (1)"), ("cover", "square.fill", "Cover (2)"), ("waves", "waveform", "Waves (3)")], id: \.0) { id, symbol, help in
+            ForEach(Array(MusicStyle.all.enumerated()), id: \.element.id) { i, style in
+                let id = style.id, symbol = style.symbol, help = "\(style.name) (\(i + 1))"
                 let on = prefs.musicPlayerStyle == id
                 Button {
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { prefs.musicPlayerStyle = id }
@@ -1093,4 +1161,139 @@ struct WavesView: View {
 @MainActor
 enum Haptics {
     static func tap() { NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now) }
+}
+
+
+// MARK: Styles
+
+struct MusicStyle: Identifiable {
+    let id: String
+    let name: String
+    let symbol: String
+
+    static let all: [MusicStyle] = [
+        MusicStyle(id: "sleeve", name: "Sleeve", symbol: "opticaldisc"),
+        MusicStyle(id: "vinyl", name: "Vinyl", symbol: "record.circle"),
+        MusicStyle(id: "cover", name: "Cover", symbol: "square.fill"),
+        MusicStyle(id: "art", name: "Full-screen art", symbol: "photo.fill"),
+        MusicStyle(id: "waves", name: "Waves", symbol: "waveform"),
+    ]
+}
+
+/// The album sleeve with its record slid half out: a coloured vinyl in the artwork's hue, the title printed
+/// around the label, spinning while the song plays and sliding back into the sleeve when paused.
+struct SleeveView: View {
+    let artwork: NSImage?
+    let playing: Bool
+    let tint: Color
+    let label: String
+
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.height, geo.size.width / 1.5)
+            ZStack(alignment: .leading) {
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing)) { ctx in
+                    ColoredRecord(d: s * 0.96, tint: tint, label: label)
+                        .rotationEffect(.degrees(playing ? ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 5) / 5 * 360 : 0))
+                }
+                .frame(width: s * 0.96, height: s * 0.96)
+                .offset(x: playing ? s * 0.52 : s * 0.16)
+                .animation(.spring(response: 1.0, dampingFraction: 0.82), value: playing)
+                .shadow(color: .black.opacity(0.45), radius: 18, x: 8, y: 10)
+
+                ArtworkView(image: artwork, size: s, radius: s * 0.012)
+                    .overlay(alignment: .trailing) {
+                        // The sleeve's open edge: a thin shadow line where the record slides in.
+                        LinearGradient(colors: [.clear, .black.opacity(0.25)], startPoint: .leading, endPoint: .trailing).frame(width: s * 0.03)
+                    }
+                    .shadow(color: .black.opacity(0.55), radius: 30, x: 6, y: 16)
+            }
+            .frame(width: s * 1.5, height: s, alignment: .leading)
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+    }
+}
+
+/// A translucent coloured record: tinted body, fine grooves, a black label with text around it.
+struct ColoredRecord: View {
+    let d: CGFloat
+    let tint: Color
+    let label: String
+
+    var body: some View {
+        ZStack {
+            Circle().fill(RadialGradient(colors: [tint.opacity(0.95), tint.opacity(0.75), Color.black.opacity(0.85)],
+                                         center: .center, startRadius: d * 0.18, endRadius: d * 0.5))
+            // Marbled splashes, like a splatter pressing.
+            ForEach(0..<7, id: \.self) { i in
+                Capsule().fill(Color.black.opacity(0.28))
+                    .frame(width: d * 0.06, height: d * 0.22)
+                    .offset(y: -d * 0.33)
+                    .rotationEffect(.degrees(Double(i) * 51 + 12))
+            }
+            ForEach(0..<18, id: \.self) { i in
+                Circle().stroke(Color.black.opacity(i % 4 == 0 ? 0.22 : 0.1), lineWidth: 0.7)
+                    .frame(width: d * (0.42 + CGFloat(i) * 0.031), height: d * (0.42 + CGFloat(i) * 0.031))
+            }
+            Circle().fill(AngularGradient(colors: [.clear, .white.opacity(0.16), .clear, .clear, .white.opacity(0.1), .clear], center: .center))
+            Circle().fill(Color(white: 0.06)).frame(width: d * 0.38, height: d * 0.38)
+            CircularText(text: String((label.uppercased() + "  •  " + label.uppercased() + "  •  ").prefix(70)), radius: d * 0.15, size: d * 0.022)
+                .foregroundStyle(.white.opacity(0.85))
+            Circle().fill(Color(white: 0.85)).frame(width: d * 0.03, height: d * 0.03)
+        }
+        .frame(width: d, height: d)
+    }
+}
+
+/// Text laid out around a circle (for record labels).
+struct CircularText: View {
+    let text: String
+    let radius: CGFloat
+    let size: CGFloat
+
+    var body: some View {
+        let chars = Array(text)
+        let step = 360.0 / Double(max(chars.count, 1))
+        ZStack {
+            ForEach(chars.indices, id: \.self) { i in
+                Text(String(chars[i])).font(.system(size: size, weight: .semibold, design: .rounded))
+                    .offset(y: -radius)
+                    .rotationEffect(.degrees(Double(i) * step))
+            }
+        }
+    }
+}
+
+/// One floating glass bar with every control: transport, the song, the playhead, lyrics, volume and output.
+struct MusicControlBar: View {
+    @ObservedObject var bridge: MediaRemoteBridge
+    @ObservedObject var model: MusicPlayerModel
+    @ObservedObject var prefs: Prefs
+
+    var body: some View {
+        HStack(spacing: 16) {
+            HStack(spacing: 2) {
+                TransportButton(symbol: "backward.fill", size: 15, help: "Previous") { bridge.send(.previous) }
+                TransportButton(symbol: bridge.info?.playing == true ? "pause.fill" : "play.fill", size: 20, help: "Play/Pause") { bridge.send(.toggle) }
+                TransportButton(symbol: "forward.fill", size: 15, help: "Next") { bridge.send(.next) }
+            }
+            ArtworkView(image: bridge.info?.artwork, size: 40, radius: 8)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(bridge.info?.title ?? "Nothing playing").font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    Text(bridge.info?.artist ?? "").font(.system(size: 12)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                }
+                if let t = bridge.info, t.duration > 0 { ScrubBar(track: t, bridge: bridge) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            ChromeIcon(symbol: prefs.musicPlayerLyrics ? "quote.bubble.fill" : "quote.bubble", active: prefs.musicPlayerLyrics, help: "Lyrics (L)") {
+                prefs.musicPlayerLyrics.toggle()
+            }
+            VolumeRow(model: model).frame(width: 150)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .cortexGlass(in: Capsule(), darken: 0.25)
+        .shadow(color: .black.opacity(0.35), radius: 20, y: 8)
+    }
 }

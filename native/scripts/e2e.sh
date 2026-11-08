@@ -194,14 +194,14 @@ cortex_windows | awk -v m=$((SW - 4)) '$3 >= m { f=1 } END { exit f ? 1 : 0 }' &
 
 # ---------------------------------------------------------------- 6. music player
 section "6. Full-screen music player"
-for s in vinyl cover waves; do
+for s in sleeve vinyl cover art waves; do
   link "run/music.style:$s"; sleep 0.3
   link "run/music.open"; sleep 2
   has_window_wider_than $((SW - 4)) && ok "music player opens ($s)" || bad "music player not on screen ($s)"
   shot "music-$s"
   link "run/music.close"; sleep 0.8
 done
-link "run/music.style:vinyl"
+link "run/music.style:sleeve"
 
 # Lyrics pane + keyboard: open the player, press 2 (cover) and L (lyrics), check prefs follow.
 link "run/music.lyrics:on"; sleep 0.3
@@ -216,7 +216,7 @@ shot "music-no-lyrics"
 osascript -e 'tell application "System Events" to key code 53' >/dev/null 2>&1; sleep 0.8
 has_window_wider_than $((SW - 4)) && warn "Esc didn't close the player from a synthetic keystroke — check by hand" || ok "Esc closes the player"
 link "run/music.close"; sleep 0.6       # whatever happened above, never leave the player covering the next tests
-link "run/music.lyrics:on"; link "run/music.style:vinyl"
+link "run/music.lyrics:on"; link "run/music.style:sleeve"
 
 # ---------------------------------------------------------------- 7. island
 section "7. Island"
