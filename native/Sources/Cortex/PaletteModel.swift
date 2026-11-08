@@ -391,6 +391,8 @@ final class PaletteModel: ObservableObject {
             PaletteRow(id: "home:ai", title: "AI commands", subtitle: "Type  ai  — summarise, fix grammar, explain… on your clipboard", symbol: "sparkles", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:pins", title: "Pinned text", subtitle: "Type  pin  — keep snippets of the clipboard one command away", symbol: "pin", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:cal", title: "Today's schedule", subtitle: "Type  cal  — with Join buttons for calls", symbol: "calendar", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            PaletteRow(id: "home:event", title: "Add an event or reminder", subtitle: "Type  event lunch with Sam tomorrow 1pm   or   remind call mom at 6pm", symbol: "calendar.badge.plus",
+                       iconPath: nil, tag: "", kind: .command("query:event "), section: "Quick actions"),
             PaletteRow(id: "home:note", title: "Quick note", subtitle: "Type  note <text>  to jot something down", symbol: "square.and.pencil", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:spaces", title: "Spaces", subtitle: "Type  space work  to save your whole setup and switch back any time", symbol: "square.stack.3d.up",
                        iconPath: nil, tag: "", kind: .command("query:space "), section: "Quick actions"),
@@ -554,6 +556,20 @@ final class PaletteModel: ObservableObject {
                 out.append(PaletteRow(id: "note.hint", title: "Type a note after “note”", subtitle: "e.g.  note call Sam about the invoice", symbol: "square.and.pencil",
                                       iconPath: nil, tag: "", kind: .copy(""), section: "Quick note"))
             }
+            return out
+        }
+        if lower.hasPrefix("event ") || lower.hasPrefix("remind ") || lower.hasPrefix("reminder ") || lower.hasPrefix("cal add ") {
+            let isReminder = lower.hasPrefix("remind")
+            let rest = String(q.dropFirst(lower.hasPrefix("cal add ") ? 8 : lower.hasPrefix("reminder ") ? 9 : lower.hasPrefix("remind ") ? 7 : 6))
+            guard !rest.trimmingCharacters(in: .whitespaces).isEmpty else { return out }
+            let p = QuickAdd.parse(rest)
+            let when: String = {
+                guard let d = p.date else { return isReminder ? "No due time — add one, e.g. “at 6pm”" : "Today, all day — add a time, e.g. “tomorrow 1pm”" }
+                return p.hasTime ? d.formatted(.dateTime.weekday(.wide).day().month().hour().minute()) : d.formatted(.dateTime.weekday(.wide).day().month()) + " · all day"
+            }()
+            out.append(PaletteRow(id: "quickadd", title: (isReminder ? "Remind me: " : "Add event: ") + p.title, subtitle: when,
+                                  symbol: isReminder ? "checklist" : "calendar.badge.plus", iconPath: nil, tag: isReminder ? "Reminders" : "Calendar",
+                                  kind: .command((isReminder ? "quickadd.reminder:" : "quickadd.event:") + rest), section: isReminder ? "New reminder" : "New event"))
             return out
         }
         if lower == "gh" || lower == "github" || lower.hasPrefix("github ") {
@@ -912,6 +928,21 @@ final class PaletteModel: ObservableObject {
             if id.hasPrefix("query:") { query = String(id.dropFirst(6)); return false }
             if id.hasPrefix("win:"), let w = windowCache[id] { WindowService.raise(w); return true }
             if id == "app.memory" { query = "mem "; return false }
+            if id.hasPrefix("quickadd.") {
+                let reminder = id.hasPrefix("quickadd.reminder:")
+                let p = QuickAdd.parse(String(id.drop(while: { $0 != ":" }).dropFirst()))
+                Task { @MainActor in
+                    let error: String?
+                    if reminder {
+                        error = await CalendarService.shared.addReminder(title: p.title, due: p.date)
+                    } else {
+                        error = await CalendarService.shared.addEvent(title: p.title, start: p.date ?? Calendar.current.startOfDay(for: Date()), allDay: !p.hasTime)
+                    }
+                    Toast.show(error == nil ? (reminder ? "checklist" : "calendar.badge.checkmark") : "exclamationmark.triangle",
+                               error ?? (reminder ? "Reminder added: \(p.title)" : "Added to your calendar: \(p.title)"))
+                }
+                return true
+            }
             runBuiltin?(id)
             return true
         case .system(let id):

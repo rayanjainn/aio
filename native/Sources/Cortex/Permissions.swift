@@ -52,6 +52,8 @@ final class Permissions: ObservableObject {
                  symbol: "rectangle.dashed.badge.record", status: CGPreflightScreenCaptureAccess() ? .granted : .notAsked),
             Item(id: "calendar", title: "Calendar", detail: "Next meeting in the Island and Dock, Join buttons",
                  symbol: "calendar", status: Self.calendarStatus()),
+            Item(id: "reminders", title: "Reminders", detail: "Create reminders from ⌘K (remind …)",
+                 symbol: "checklist", status: Self.reminderStatus()),
             Item(id: "location", title: "Location", detail: "Weather for where you are",
                  symbol: "location", status: Self.locationStatus()),
             Item(id: "camera", title: "Camera", detail: "The Mirror in the Island",
@@ -89,6 +91,9 @@ final class Permissions: ObservableObject {
             if !CGRequestScreenCaptureAccess() { openPane("Privacy_ScreenCapture") }
         case "calendar":
             if Self.calendarStatus() == .denied { openPane("Privacy_Calendars") } else { CalendarService.shared.requestAccess() }
+        case "reminders":
+            if Self.reminderStatus() == .denied { openPane("Privacy_Reminders") }
+            else { EKEventStore().requestFullAccessToReminders { _, _ in Task { @MainActor in Permissions.shared.refresh() } } }
         case "location":
             if Self.locationStatus() == .denied { openPane("Privacy_LocationServices") } else { WeatherService.shared.watch() }
         case "camera", "microphone":
@@ -169,6 +174,15 @@ final class Permissions: ObservableObject {
 
     nonisolated static func calendarStatus() -> Status {
         switch EKEventStore.authorizationStatus(for: .event) {
+        case .fullAccess: return .granted
+        case .denied, .restricted, .writeOnly: return .denied
+        case .notDetermined: return .notAsked
+        default: return .unknown
+        }
+    }
+
+    nonisolated static func reminderStatus() -> Status {
+        switch EKEventStore.authorizationStatus(for: .reminder) {
         case .fullAccess: return .granted
         case .denied, .restricted, .writeOnly: return .denied
         case .notDetermined: return .notAsked

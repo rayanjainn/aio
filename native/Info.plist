@@ -26,7 +26,11 @@
   <string>Cortex shows your next meeting in the Island and offers a Join button.</string>
   <key>NSCalendarsUsageDescription</key>
   <string>Cortex shows your next meeting in the Island and offers a Join button.</string>
-  <key>NSMicrophoneUsageDescription</key>
+  <key>NSRemindersFullAccessUsageDescription</key>
+	<string>Cortex adds reminders you type in the palette.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Cortex adds reminders you type in the palette.</string>
+	<key>NSMicrophoneUsageDescription</key>
 	<string>Cortex listens only while you dictate.</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Cortex shows the weather where you are.</string>

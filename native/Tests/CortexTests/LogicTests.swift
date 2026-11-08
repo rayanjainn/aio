@@ -219,6 +219,17 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertEqual(tabs.last?.index, 2)
     }
 
+    func testQuickAddParsesTitleAndTime() {
+        let p = QuickAdd.parse("lunch with Sam tomorrow at 1pm")
+        XCTAssertEqual(p.title, "Lunch with Sam")
+        XCTAssertTrue(p.hasTime)
+        XCTAssertNotNil(p.date)
+        if let d = p.date { XCTAssertEqual(Calendar.current.component(.hour, from: d), 13) }
+        let plain = QuickAdd.parse("buy milk")
+        XCTAssertEqual(plain.title, "Buy milk")
+        XCTAssertNil(plain.date)
+    }
+
     func testDockBadgeDisplay() {
         XCTAssertEqual(DockBadge.display("3"), "3")
         XCTAssertEqual(DockBadge.display("250"), "99+")
