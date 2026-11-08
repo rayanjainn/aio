@@ -26,20 +26,54 @@ struct DockWidgetKind: Identifiable, Equatable {
     static func find(_ id: String) -> DockWidgetKind? { id == "running" ? running : all.first { $0.id == id } }
 }
 
+/// Looks for the Dock's widget tiles, like LaunchMe's presets: glass by default, or a colour family.
+struct DockWidgetTheme: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let colors: [Color]          // top-left → bottom-right gradient; empty = glass
+    let ink: Color
+
+    static let all: [DockWidgetTheme] = [
+        DockWidgetTheme(id: "glass", name: "Glass", colors: [], ink: .white),
+        DockWidgetTheme(id: "graphite", name: "Graphite", colors: [Color(white: 0.22), Color(white: 0.08)], ink: .white),
+        DockWidgetTheme(id: "paper", name: "Paper", colors: [Color(white: 0.97), Color(white: 0.86)], ink: Color(white: 0.08)),
+        DockWidgetTheme(id: "sunrise", name: "Morning Tide", colors: [Color(red: 1.0, green: 0.80, blue: 0.47), Color(red: 0.96, green: 0.55, blue: 0.30)], ink: Color(red: 0.25, green: 0.12, blue: 0.04)),
+        DockWidgetTheme(id: "ember", name: "Ember", colors: [Color(red: 0.98, green: 0.45, blue: 0.25), Color(red: 0.78, green: 0.16, blue: 0.20)], ink: .white),
+        DockWidgetTheme(id: "ocean", name: "Ocean", colors: [Color(red: 0.25, green: 0.62, blue: 0.98), Color(red: 0.10, green: 0.25, blue: 0.68)], ink: .white),
+        DockWidgetTheme(id: "mint", name: "Mint", colors: [Color(red: 0.62, green: 0.93, blue: 0.80), Color(red: 0.22, green: 0.66, blue: 0.56)], ink: Color(red: 0.03, green: 0.20, blue: 0.16)),
+        DockWidgetTheme(id: "midnight", name: "Midnight Focus", colors: [Color(red: 0.24, green: 0.20, blue: 0.48), Color(red: 0.06, green: 0.06, blue: 0.16)], ink: .white),
+        DockWidgetTheme(id: "rose", name: "Rose", colors: [Color(red: 1.0, green: 0.70, blue: 0.80), Color(red: 0.86, green: 0.36, blue: 0.56)], ink: .white),
+    ]
+
+    static func named(_ id: String) -> DockWidgetTheme { all.first { $0.id == id } ?? all[0] }
+}
+
 struct DockWidgetTile: View {
     let kind: String
     let size: CGFloat
     let compact: Bool
     let model: DockModel
+    @ObservedObject private var prefs = Prefs.shared
 
     var body: some View {
+        let theme = DockWidgetTheme.named(prefs.dockWidgetTheme)
+        let shape = RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).fill(Color.white.opacity(0.10)))
-            .overlay(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).strokeBorder(Color.white.opacity(0.16), lineWidth: 0.6))
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))
-            .foregroundStyle(.white)
-            .environment(\.colorScheme, .dark)
+            .background {
+                if theme.colors.isEmpty {
+                    shape.fill(Color.white.opacity(0.10))
+                } else {
+                    shape.fill(LinearGradient(colors: theme.colors, startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.22), .clear], startPoint: .top, endPoint: .center)))
+                        .shadow(color: .black.opacity(0.25), radius: 3, y: 1.5)
+                }
+            }
+            .overlay(shape.strokeBorder(Color.white.opacity(theme.colors.isEmpty ? 0.16 : 0.28), lineWidth: 0.6))
+            .clipShape(shape)
+            .foregroundStyle(theme.ink)
+            .environment(\.colorScheme, theme.ink == .white ? .dark : .light)
+            .animation(.easeInOut(duration: 0.35), value: prefs.dockWidgetTheme)
     }
 
     @ViewBuilder private var content: some View {
@@ -123,14 +157,14 @@ private struct MusicDockWidget: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(bridge.info?.title ?? "Not playing").font(.system(size: 10.5, weight: .semibold)).lineLimit(1)
             if let artist = bridge.info?.artist, !artist.isEmpty {
-                Text(artist).font(.system(size: 9)).foregroundStyle(.white.opacity(0.65)).lineLimit(1)
+                Text(artist).font(.system(size: 9)).foregroundStyle(.primary.opacity(0.65)).lineLimit(1)
             }
             if let t = bridge.info, t.duration > 0 {
                 TimelineView(.periodic(from: .now, by: 1)) { ctx in
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(.white.opacity(0.22))
-                            Capsule().fill(.white.opacity(0.9)).frame(width: geo.size.width * min(1, max(0, t.position(at: ctx.date) / t.duration)))
+                            Capsule().fill(.primary.opacity(0.22))
+                            Capsule().fill(.primary.opacity(0.9)).frame(width: geo.size.width * min(1, max(0, t.position(at: ctx.date) / t.duration)))
                         }
                     }
                     .frame(height: 2)
@@ -193,7 +227,7 @@ private struct ClockDockWidget: View {
                     .font(.system(size: size * (compact ? 0.26 : 0.34), weight: .semibold, design: .rounded).monospacedDigit())
                 if !compact {
                     Text(ctx.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                        .font(.system(size: size * 0.18)).foregroundStyle(.white.opacity(0.6))
+                        .font(.system(size: size * 0.18)).foregroundStyle(.primary.opacity(0.6))
                 }
             }
         }
@@ -207,9 +241,9 @@ private struct BatteryDockWidget: View {
     var body: some View {
         let p = power.percent ?? 0
         ZStack {
-            Circle().stroke(Color.white.opacity(0.18), lineWidth: 3.5)
+            Circle().stroke(Color.primary.opacity(0.18), lineWidth: 3.5)
             Circle().trim(from: 0, to: max(0.02, Double(p) / 100))
-                .stroke(Color.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: -1) {
                 if power.charging { Image(systemName: "bolt.fill").font(.system(size: size * 0.16)) }
@@ -233,7 +267,7 @@ private struct WeatherDockWidget: View {
                     Text("\(Int(w.temperature.rounded()))°").font(.system(size: size * 0.34, weight: .medium, design: .rounded))
                 }
             } else {
-                Image(systemName: "cloud.sun").font(.system(size: size * 0.34)).foregroundStyle(.white.opacity(0.6))
+                Image(systemName: "cloud.sun").font(.system(size: size * 0.34)).foregroundStyle(.primary.opacity(0.6))
             }
         }
         .onAppear { service.watch() }
@@ -252,9 +286,9 @@ private struct TimerDockWidget: View {
             TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
                 let remaining = Int(timer.remaining(at: ctx.date))
                 ZStack {
-                    Circle().stroke(Color.white.opacity(0.18), lineWidth: 3.5)
+                    Circle().stroke(Color.primary.opacity(0.18), lineWidth: 3.5)
                     Circle().trim(from: 0, to: max(0.02, timer.isActive ? timer.progress(at: ctx.date) : 0))
-                        .stroke(Color.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                        .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     if timer.isActive {
                         Text(String(format: "%d:%02d", remaining / 60, remaining % 60))
@@ -294,13 +328,13 @@ private struct StatsDockWidget: View {
 
     private func ring(_ label: String, _ value: Double) -> some View {
         ZStack {
-            Circle().stroke(Color.white.opacity(0.18), lineWidth: 3)
+            Circle().stroke(Color.primary.opacity(0.18), lineWidth: 3)
             Circle().trim(from: 0, to: max(0.02, min(1, value)))
-                .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: -1) {
                 Text("\(Int(value * 100))").font(.system(size: size * 0.24, weight: .semibold, design: .rounded).monospacedDigit())
-                Text(label).font(.system(size: size * 0.13, weight: .medium)).foregroundStyle(.white.opacity(0.55))
+                Text(label).font(.system(size: size * 0.13, weight: .medium)).foregroundStyle(.primary.opacity(0.55))
             }
         }
         .frame(width: size - 12, height: size - 12)
@@ -325,7 +359,7 @@ private struct MeetingDockWidget: View {
                             Image(systemName: e.joinURL != nil ? "video.fill" : "calendar").font(.system(size: size * 0.28))
                             VStack(alignment: .leading, spacing: 0) {
                                 Text(e.title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
-                                Text(e.start.formatted(date: .omitted, time: .shortened)).font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.6))
+                                Text(e.start.formatted(date: .omitted, time: .shortened)).font(.system(size: 9.5)).foregroundStyle(.primary.opacity(0.6))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -336,7 +370,7 @@ private struct MeetingDockWidget: View {
             } else {
                 VStack(spacing: 0) {
                     Image(systemName: "calendar").font(.system(size: size * 0.3))
-                    if !compact { Text("No meetings").font(.system(size: 9.5)).foregroundStyle(.white.opacity(0.55)) }
+                    if !compact { Text("No meetings").font(.system(size: 9.5)).foregroundStyle(.primary.opacity(0.55)) }
                 }
             }
         }

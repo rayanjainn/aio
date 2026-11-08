@@ -386,6 +386,21 @@ struct DockPane: View {
                 Toggle("Bounce while an app launches", isOn: $prefs.dockBounce)
                 Toggle("Show running apps that aren't pinned", isOn: $prefs.dockShowRunning)
                 Toggle("Gather them into one Active Apps tile", isOn: $prefs.dockGroupRunning)
+                LabeledContent("Widget style") {
+                    HStack(spacing: 8) {
+                        ForEach(DockWidgetTheme.all) { t in
+                            Button { prefs.dockWidgetTheme = t.id } label: {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(t.colors.isEmpty ? AnyShapeStyle(Color.white.opacity(0.15)) : AnyShapeStyle(LinearGradient(colors: t.colors, startPoint: .topLeading, endPoint: .bottomTrailing)))
+                                    .frame(width: 30, height: 30)
+                                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .strokeBorder(prefs.dockWidgetTheme == t.id ? Color.accentColor : Color.white.opacity(0.2), lineWidth: prefs.dockWidgetTheme == t.id ? 2 : 0.6))
+                            }
+                            .buttonStyle(.plain)
+                            .help(t.name)
+                        }
+                    }
+                }
                 Button("Reset Dock look to defaults") {
                     prefs.dockIconSize = 44; prefs.dockMagnification = 1.55; prefs.dockSpacing = 7; prefs.dockRoundness = 0.42
                     prefs.dockDarken = 0; prefs.dockIndicators = true; prefs.dockBounce = true; prefs.dockShowRunning = true

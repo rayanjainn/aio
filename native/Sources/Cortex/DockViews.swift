@@ -56,6 +56,11 @@ struct DockRootView: View {
                 Button(k.title) { if model.hasWidget(k.id) { model.removeWidget(k.id) } else { model.addWidget(k.id) } }
             }
         }
+        Menu("Widget style") {
+            ForEach(DockWidgetTheme.all) { t in
+                Button((Prefs.shared.dockWidgetTheme == t.id ? "✓ " : "") + t.name) { Prefs.shared.dockWidgetTheme = t.id }
+            }
+        }
         Menu("Position") {
             ForEach(["bottom", "left", "right"], id: \.self) { e in
                 Button(e.capitalized) { Prefs.shared.dockEdge = e }
