@@ -374,6 +374,7 @@ final class PaletteModel: ObservableObject {
             PaletteRow(id: "home:pins", title: "Pinned text", subtitle: "Type  pin  — keep snippets of the clipboard one command away", symbol: "pin", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:cal", title: "Today's schedule", subtitle: "Type  cal  — with Join buttons for calls", symbol: "calendar", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
             PaletteRow(id: "home:note", title: "Quick note", subtitle: "Type  note <text>  to jot something down", symbol: "square.and.pencil", iconPath: nil, tag: "", kind: .copy(""), section: "Quick actions"),
+            cmd("launcher", "Open the launcher", "All your apps, full screen  ·  ⌃⌥L", "square.grid.3x3.fill"),
             cmd("app.timeline", "Screen Memory timeline", "Browse and search what you've seen", "clock.arrow.circlepath"),
             sys("sys.focus", "Toggle Do Not Disturb", "Needs a Shortcut named “Toggle Do Not Disturb”", "moon"),
             cmd("app.addWidget", "Add a desktop widget", "Clock, weather, music, notes…", "square.grid.2x2"),

@@ -13,6 +13,7 @@ enum ShortcutTable {
         Entry(id: "switcher", label: "Switch windows (all apps and Spaces)", group: "General", accel: "Alt+Tab"),
         Entry(id: "act", label: "Act on the selection (summarise, translate, reply…)", group: "General", accel: "Control+Alt+KeyA"),
         Entry(id: "clip.plain", label: "Paste as plain text", group: "General", accel: "Control+Alt+Shift+KeyV"),
+        Entry(id: "launcher", label: "Open the app launcher (full screen)", group: "General", accel: "Control+Alt+KeyL"),
         Entry(id: "dictate", label: "Start dictation in the front app", group: "General", accel: "Control+Alt+KeyM"),
         Entry(id: "window.left", label: "Left Half", group: "Windows", accel: "Control+Alt+ArrowLeft"),
         Entry(id: "window.right", label: "Right Half", group: "Windows", accel: "Control+Alt+ArrowRight"),

@@ -64,6 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         syncSecondaryIslands()
         Coach.shared.start()
+        launcher.bridge = nowPlaying
+        Prefs.shared.$launcherHotCorner.receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in DispatchQueue.main.async { self?.launcher.configureHotCorner() } }.store(in: &cancellables)
         menuBarDock.attach(dock.model)
         Prefs.shared.$dockMenuBar.receive(on: DispatchQueue.main)
             .sink { [weak self] on in self?.menuBarDock.setVisible(on) }.store(in: &cancellables)
@@ -147,6 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func runBuiltin(_ id: String) {
         switch id {
         case "palette": palette?.toggle()
+        case "launcher": launcher.toggle()
         case "act": ActOnThis.captureSelection { [weak self] in self?.palette?.show(query: "ai ") }
         case "clip.plain": ActOnThis.pastePlain()
         case "dictate": ActOnThis.dictate()
@@ -207,6 +211,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let open = NSMenuItem(title: "Open Cortex", action: #selector(openPalette), keyEquivalent: "")
         open.target = self
         menu.addItem(open)
+        let launchItem = NSMenuItem(title: "Open Launcher", action: #selector(openLauncher), keyEquivalent: "")
+        launchItem.target = self
+        menu.addItem(launchItem)
         let prefsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         prefsItem.target = self
         menu.addItem(prefsItem)
@@ -283,6 +290,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.runModal() == .OK { for url in panel.urls { dock?.model.addFolder(url) } }
     }
     @objc func openSettings() { settings?.show() }
+    @objc func openLauncher() { launcher.toggle() }
+    func launcherAutoGroup() { launcher.store.reload(); DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.launcher.store.autoGroup() } }
+    func launcherReset() { launcher.store.resetLayout() }
     @objc private func openWidgetGallery() { widgets?.showGallery() }
     @objc private func toggleWidgets() { widgets?.toggleVisible() }
     @objc private func grantAccessibility() { WindowManager.requestAccess() }
@@ -303,6 +313,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var secondaryIslands: [String: IslandController] = [:]
     private let menuBarDock = MenuBarDock()
+    private let launcher = LauncherController()
 
     /// Uses the Dock profile chosen for "external display connected" / "built-in only", if any.
     private func applyDockProfileForDisplays() {

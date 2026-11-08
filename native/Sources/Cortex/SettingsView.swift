@@ -18,7 +18,7 @@ struct SettingsActions {
 }
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, shortcuts, snippets, quicklinks, island, dock, appearance, ai, memory, privacy, about
+    case general, shortcuts, snippets, quicklinks, launcher, island, dock, appearance, ai, memory, privacy, about
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -27,6 +27,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .memory: "Screen Memory"
         case .snippets: "Snippets"
         case .quicklinks: "Quicklinks"
+        case .launcher: "Launcher"
         case .island: "Island"
         case .dock: "Dock"
         case .appearance: "Appearance"
@@ -42,6 +43,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .memory: "clock.arrow.circlepath"
         case .snippets: "text.quote"
         case .quicklinks: "link"
+        case .launcher: "square.grid.3x3"
         case .island: "capsule.portrait"
         case .dock: "dock.rectangle"
         case .appearance: "paintbrush"
@@ -71,6 +73,7 @@ struct SettingsView: View {
                 case .memory: MemoryPane(actions: actions)
                 case .snippets: SnippetsPane()
                 case .quicklinks: QuicklinksPane()
+                case .launcher: LauncherPane(prefs: prefs)
                 case .island: IslandPane(prefs: prefs)
                 case .dock: DockPane(prefs: prefs, actions: actions)
                 case .appearance: AppearancePane(prefs: prefs)
@@ -715,5 +718,58 @@ struct MemoryPane: View {
         cfg["rawStorage"] = raw
         cfg["blockedApps"] = blocked.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         _ = try? await actions.engine.call("config_set", cfg)
+    }
+}
+
+
+struct LauncherPane: View {
+    @ObservedObject var prefs: Prefs
+
+    var body: some View {
+        Form {
+            Section {
+                Text("A full-screen launcher for every app on your Mac. Open it with ⌃⌥L (change it in Shortcuts), the menu bar, ⌘K → \u{201C}launcher\u{201D}, or a hot corner. Right-click an app to put it in a folder, rename, hide or uninstall it.")
+                    .font(.callout).foregroundStyle(.secondary)
+                Picker("Hot corner", selection: $prefs.launcherHotCorner) {
+                    Text("None").tag("none")
+                    Text("Top left").tag("topLeft")
+                    Text("Top right").tag("topRight")
+                    Text("Bottom left").tag("bottomLeft")
+                    Text("Bottom right").tag("bottomRight")
+                }
+            }
+            Section("Look") {
+                LabeledContent("Icon size") {
+                    HStack {
+                        Slider(value: $prefs.launcherIconSize, in: 48...128, step: 4).frame(width: 220)
+                        Text("\(Int(prefs.launcherIconSize)) pt").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                Toggle("Show app names", isOn: $prefs.launcherShowTitles)
+                HStack {
+                    Button("Group apps into folders by category") { (NSApp.delegate as? AppDelegate)?.launcherAutoGroup() }
+                    Button("Remove all folders") { (NSApp.delegate as? AppDelegate)?.launcherReset() }
+                }
+                Toggle("Show date, music and weather on the left", isOn: $prefs.launcherWidgets)
+                LabeledContent("Background dimming") {
+                    HStack {
+                        Slider(value: $prefs.launcherDim, in: 0...0.7).frame(width: 220)
+                        Text("\(Int(prefs.launcherDim * 100))%").monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                HStack {
+                    Button("Choose wallpaper…") {
+                        let panel = NSOpenPanel()
+                        panel.allowedContentTypes = [.image]
+                        NSApp.activate(ignoringOtherApps: true)
+                        if panel.runModal() == .OK, let u = panel.url { prefs.launcherWallpaper = u.path }
+                    }
+                    if !prefs.launcherWallpaper.isEmpty {
+                        Text(URL(fileURLWithPath: prefs.launcherWallpaper).lastPathComponent).foregroundStyle(.secondary).lineLimit(1)
+                        Button("Remove") { prefs.launcherWallpaper = "" }
+                    }
+                }
+            }
+        }
     }
 }
