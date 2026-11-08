@@ -122,6 +122,30 @@ final class LyricsTests: XCTestCase {
         XCTAssertEqual(lines[2].text, "World")
         XCTAssertEqual(lines.map(\.time), lines.map(\.time).sorted())
     }
+
+    func testRepeatedStampsAndIndex() {
+        let lines = LyricsService.parse("[00:10.00][00:40.00]Chorus\n[00:20.00]Verse")
+        XCTAssertEqual(lines.map(\.text), ["Chorus", "Verse", "Chorus"])
+        XCTAssertNil(LyricsService.index(in: lines, at: 5))
+        XCTAssertEqual(LyricsService.index(in: lines, at: 10), 0)
+        XCTAssertEqual(LyricsService.index(in: lines, at: 25), 1)
+        XCTAssertEqual(LyricsService.index(in: lines, at: 400), 2)
+        XCTAssertNil(LyricsService.index(in: [], at: 3))
+    }
+
+    func testArtworkPaletteKeepsTextReadable() {
+        let image = NSImage(size: NSSize(width: 30, height: 30))
+        image.lockFocus()
+        NSColor.white.setFill(); NSRect(x: 0, y: 0, width: 30, height: 30).fill()
+        image.unlockFocus()
+        let grid = ArtworkPalette.grid(image)
+        XCTAssertEqual(grid.count, 9)
+        for c in grid {
+            var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            c.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+            XCTAssertLessThanOrEqual(b, 0.63)      // white artwork is toned down behind white text
+        }
+    }
 }
 
 @MainActor

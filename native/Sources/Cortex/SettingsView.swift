@@ -765,7 +765,12 @@ struct LauncherPane: View {
                         NSApp.activate(ignoringOtherApps: true)
                         if panel.runModal() == .OK, let u = panel.url { prefs.launcherWallpaper = u.path }
                     }
-                    if !prefs.launcherWallpaper.isEmpty {
+                    Button("Use song artwork") { prefs.launcherWallpaper = "music" }
+                        .help("The playing song's colours, moving slowly behind your apps")
+                    if prefs.launcherWallpaper == "music" {
+                        Text("Song artwork").foregroundStyle(.secondary)
+                        Button("Remove") { prefs.launcherWallpaper = "" }
+                    } else if !prefs.launcherWallpaper.isEmpty {
                         Text(URL(fileURLWithPath: prefs.launcherWallpaper).lastPathComponent).foregroundStyle(.secondary).lineLimit(1)
                         Button("Remove") { prefs.launcherWallpaper = "" }
                     }

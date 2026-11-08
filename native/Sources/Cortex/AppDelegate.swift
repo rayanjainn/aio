@@ -185,6 +185,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         default:
             if id.hasPrefix("island.page:"), let page = IslandPage(rawValue: String(id.dropFirst(12))) { island?.openPage(page) }
             else if id.hasPrefix("music.style:") { Prefs.shared.musicPlayerStyle = String(id.dropFirst(12)) }
+            else if id == "dock.magnify:on" { if magnifyBeforeTest == nil { magnifyBeforeTest = Prefs.shared.dockMagnify }; Prefs.shared.dockMagnify = true }
+            else if id == "dock.magnify:restore" { Prefs.shared.dockMagnify = magnifyBeforeTest ?? Prefs.shared.dockMagnify; magnifyBeforeTest = nil }
             else if id.hasPrefix("music.lyrics:") { Prefs.shared.musicPlayerLyrics = id.hasSuffix(":on") }
             else if id.hasPrefix("space.save:") { Spaces.save(String(id.dropFirst(11)), dock: dock?.model) }
             else if id.hasPrefix("space.use:") { Spaces.apply(String(id.dropFirst(10)), dock: dock?.model) }
@@ -327,6 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let menuBarDock = MenuBarDock()
     private let launcher = LauncherController()
     private let musicPlayer = MusicPlayerController()
+    private var magnifyBeforeTest: Bool?
 
     /// Uses the Dock profile chosen for "external display connected" / "built-in only", if any.
     private func applyDockProfileForDisplays() {

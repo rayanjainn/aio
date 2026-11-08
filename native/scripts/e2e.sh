@@ -57,6 +57,14 @@ screen_w() { osascript -e 'tell application "Finder" to get item 3 of (get bound
 screen_h() { osascript -e 'tell application "Finder" to get item 4 of (get bounds of window of desktop)' 2>/dev/null || echo 900; }
 cpu_of() { ps -o pcpu= -p "$1" 2>/dev/null | tr -d ' '; }
 rss_mb() { ps -o rss= -p "$1" 2>/dev/null | awk '{printf "%d", $1/1024}'; }
+# Synthetic pointer events (top-left origin). Needs Accessibility for the terminal app; otherwise they're ignored.
+mouse_event() {  # type x y button
+  osascript -l JavaScript -e "ObjC.import('CoreGraphics'); var e = \$.CGEventCreateMouseEvent(null, $1, {x: $2, y: $3}, $4); \$.CGEventPost(0, e);" >/dev/null 2>&1
+}
+mouse_to()    { mouse_event 5 "$1" "$2" 0; }
+mouse_click() { mouse_to "$1" "$2"; sleep 0.1; mouse_event 1 "$1" "$2" 0; sleep 0.05; mouse_event 2 "$1" "$2" 0; }
+mouse_right() { mouse_to "$1" "$2"; sleep 0.1; mouse_event 3 "$1" "$2" 1; sleep 0.05; mouse_event 4 "$1" "$2" 1; }
+front_app()   { osascript -e 'tell application "System Events" to get name of first process whose frontmost is true' 2>/dev/null; }
 
 {
   echo "# Cortex end-to-end report"
@@ -195,6 +203,20 @@ for s in vinyl cover waves; do
 done
 link "run/music.style:vinyl"
 
+# Lyrics pane + keyboard: open the player, press 2 (cover) and L (lyrics), check prefs follow.
+link "run/music.lyrics:on"; sleep 0.3
+link "run/music"; sleep 2.5
+shot "music-lyrics"
+osascript -e 'tell application "System Events" to keystroke "2"' >/dev/null 2>&1; sleep 0.8
+grep -q '"musicPlayerStyle":"cover"' "$CORTEX/native/prefs.json" 2>/dev/null && ok "pressing 2 in the player switches to the cover style" || bad "pressing 2 did not change the player style"
+shot "music-lyrics-cover"
+osascript -e 'tell application "System Events" to keystroke "l"' >/dev/null 2>&1; sleep 0.8
+grep -q '"musicPlayerLyrics":false' "$CORTEX/native/prefs.json" 2>/dev/null && ok "pressing L hides the lyrics" || bad "pressing L did not toggle lyrics"
+shot "music-no-lyrics"
+osascript -e 'tell application "System Events" to key code 53' >/dev/null 2>&1; sleep 0.8
+has_window_wider_than $((SW - 4)) && bad "Esc did not close the player" || ok "Esc closes the player"
+link "run/music.lyrics:on"; link "run/music.style:vinyl"
+
 # ---------------------------------------------------------------- 7. island
 section "7. Island"
 shot_region "island-00-compact" "$((SW/2 - 360)),0,720,60"
@@ -208,10 +230,51 @@ link "run/island.collapse"; sleep 1
 
 # ---------------------------------------------------------------- 8. dock
 section "8. Dock"
+TERM_APP=$(front_app)
 DOCKLINE=$(cortex_windows | awk -v h="$SH" '($2 + $4) >= h - 8 && $3 > 200 { print; exit }')
 if [ -n "$DOCKLINE" ]; then
   ok "Cortex Dock on screen: \`$DOCKLINE\`"
-  set -- $DOCKLINE; shot_region "dock" "$1,$(( $2 - 160 )),$3,$(( $4 + 160 ))"
+  set -- $DOCKLINE; DX=$1; DY=$2; DW=$3; DH=$4
+  shot_region "dock" "$DX,$(( DY - 160 )),$DW,$(( DH + 160 ))"
+  MIDY=$(( DY + DH / 2 ))
+
+  # Hover sweep with magnification on: the Dock window must grow while the pointer is over it.
+  link "run/dock.magnify:on"; sleep 0.6
+  mouse_to $(( DX + DW / 2 )) $(( DY - 200 )); sleep 0.4
+  BEFORE=$(cortex_windows | awk -v h="$SH" '($2 + $4) >= h - 8 && $3 > 200 { print $4; exit }')
+  MAXH=$BEFORE; i=0
+  for x in $(seq $(( DX + 24 )) 22 $(( DX + DW - 24 ))); do
+    mouse_to "$x" "$MIDY"; sleep 0.07
+    i=$((i+1))
+    if [ $((i % 6)) -eq 0 ]; then
+      H=$(cortex_windows | awk -v h="$SH" '($2 + $4) >= h - 8 && $3 > 200 { print $4; exit }')
+      [ -n "$H" ] && [ "$H" -gt "${MAXH:-0}" ] && MAXH=$H
+    fi
+    [ $i -eq 12 ] && shot_region "dock-hover-magnify" "$DX,$(( DY - 200 )),$DW,$(( DH + 200 ))"
+  done
+  if [ "${MAXH:-0}" -gt "${BEFORE:-0}" ]; then ok "Dock magnifies under the pointer (height $BEFORE → $MAXH)"
+  else warn "Dock height didn't change while hovering ($BEFORE) — the terminal may need Accessibility to move the pointer"; fi
+
+  # Rest on the first icon (Finder is always running): label + window previews should appear above it.
+  mouse_to $(( DX + 30 )) "$MIDY"; sleep 1.6
+  shot_region "dock-hover-preview" "$DX,$(( DY - 420 )),$(( DW / 2 + 200 )),$(( DH + 420 ))"
+  cortex_windows | awk -v top="$DY" '($2 + $4) <= top + 4 && $4 > 60 && $3 > 100 { f=1 } END { exit f ? 0 : 1 }' \
+    && ok "hovering a running app shows its window previews" || warn "no preview panel above the Dock (no Screen Recording, or Finder has no windows)"
+
+  # A first click activates the app (non-activating panel: the click must not be spent on focus).
+  [ -n "$TERM_APP" ] && [ "$TERM_APP" != "Finder" ] && osascript -e "tell application \"System Events\" to set frontmost of process \"$TERM_APP\" to true" >/dev/null 2>&1; sleep 0.4
+  mouse_click $(( DX + 30 )) "$MIDY"; sleep 1.2
+  [ "$(front_app)" = "Finder" ] && ok "one click on the Finder icon brings Finder forward" || warn "after one click the front app is $(front_app), not Finder"
+
+  # Right-click the bar background (past the Trash divider) for the Dock menu.
+  mouse_right $(( DX + DW - 6 )) "$MIDY"; sleep 0.8
+  shot "dock-context-menu"
+  osascript -e 'tell application "System Events" to key code 53' >/dev/null 2>&1; sleep 0.3
+
+  mouse_to $(( DX + DW / 2 )) $(( DY - 300 )); sleep 0.8
+  link "run/dock.magnify:restore"; sleep 0.4
+  AFTER=$(cortex_windows | awk -v h="$SH" '($2 + $4) >= h - 8 && $3 > 200 { print $4; exit }')
+  [ "${AFTER:-0}" -le "$(( ${BEFORE:-0} + 2 ))" ] && ok "Dock shrinks back after the pointer leaves" || bad "Dock window stayed tall ($AFTER) after the pointer left — it would block clicks"
 else
   warn "no Cortex Dock at the bottom (off, auto-hidden, or on another edge)"; shot "dock-fullscreen"
 fi
@@ -258,7 +321,7 @@ section "13. Logs and crashes"
 cp "$CORTEX/logs/native.log" "$LOGS/" 2>/dev/null
 cp "$CORTEX/logs/cortexd.log" "$LOGS/" 2>/dev/null
 link "run/app.diagnostics.export"; sleep 1; cp "$CORTEX/logs/diagnostics.txt" "$LOGS/diagnostics-end.txt" 2>/dev/null
-ERRS=$(grep -c " ERROR " "$CORTEX/logs/native.log" 2>/dev/null || echo 0)
+ERRS=$(grep -c " ERROR " "$CORTEX/logs/native.log" 2>/dev/null); ERRS=${ERRS:-0}
 [ "$ERRS" = "0" ] && ok "no ERROR lines in native.log" || bad "$ERRS ERROR lines in native.log (see logs/native.log)"
 log show --last 15m --style compact --predicate 'process == "Cortex" AND (messageType == error OR messageType == fault)' > "$LOGS/system-errors.txt" 2>/dev/null
 CR=$(ls -t "$HOME/Library/Logs/DiagnosticReports/" 2>/dev/null | grep -iE "^Cortex" | head -3)
@@ -270,7 +333,7 @@ else ok "no Cortex crash reports"; fi
 # ---------------------------------------------------------------- done
 section "Summary"
 say "- ✅ $PASS passed · ❌ $FAIL failed · ⚠️ $WARN warnings · ⏭ $SKIP skipped"
-say "- Not automatable here (please check by hand): hovering the Dock (magnify, previews, Peek), drag-and-drop to the Shelf, media keys/HUD, Act on this (⌃⌥A), Hyper key."
+say "- Not automatable here (please check by hand): Peek, drag-and-drop to the Shelf, media keys/HUD, Act on this (⌃⌥A), Hyper key."
 restore; trap - EXIT
 # Keep the zip small enough to attach anywhere: JPEG screenshots at a readable size, compressed profiles.
 for f in "$SHOTS"/*.png; do

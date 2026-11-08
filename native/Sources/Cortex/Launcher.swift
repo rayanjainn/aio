@@ -365,8 +365,11 @@ struct LauncherView: View {
     @ViewBuilder private var background: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial)
-            if !prefs.launcherWallpaper.isEmpty, let img = NSImage(contentsOfFile: prefs.launcherWallpaper) {
-                Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).opacity(0.85)
+            if prefs.launcherWallpaper == "music", let bridge {
+                LauncherMusicWallpaper(bridge: bridge).transition(.opacity)
+            } else if !prefs.launcherWallpaper.isEmpty, let img = NSImage(contentsOfFile: prefs.launcherWallpaper) {
+                // Overlay on a clear view so a fill-scaled image never grows the layout past the screen.
+                Color.clear.overlay { Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).opacity(0.85) }.clipped()
             }
             Color.black.opacity(prefs.launcherDim)
         }
@@ -592,6 +595,18 @@ struct LauncherMusicCard: View {
             .frame(maxWidth: .infinity)
             .padding(16)
             .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.2)
+        }
+    }
+}
+
+/// The playing song's artwork colours as a moving wallpaper; the frosted look when nothing plays.
+struct LauncherMusicWallpaper: View {
+    @ObservedObject var bridge: MediaRemoteBridge
+
+    var body: some View {
+        if let info = bridge.info, info.artwork != nil {
+            MusicBackdrop(artwork: info.artwork, key: "\(info.title)|\(info.artist)", playing: info.playing)
+                .opacity(0.9)
         }
     }
 }
