@@ -120,10 +120,12 @@ struct DockIcon: View {
             .frame(width: front ? 12 : 4, height: 4)
             .shadow(color: .white.opacity(front && show ? 0.8 : 0), radius: 3)
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: front)
+        // The indicator lives in the bar's padding, so every icon (Trash included) sits dead centre.
+        let inset = DockModel.padding / 2 + 1.5
         switch model.edge {
-        case "left": HStack(spacing: 3) { dot; icon(size, launching) }
-        case "right": HStack(spacing: 3) { icon(size, launching); dot }
-        default: VStack(spacing: 3) { icon(size, launching); dot }
+        case "left": icon(size, launching).overlay(alignment: .leading) { dot.rotationEffect(.degrees(90)).offset(x: -inset - 2) }
+        case "right": icon(size, launching).overlay(alignment: .trailing) { dot.rotationEffect(.degrees(90)).offset(x: inset + 2) }
+        default: icon(size, launching).overlay(alignment: .bottom) { dot.offset(y: inset + 2) }
         }
     }
 

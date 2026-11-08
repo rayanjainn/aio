@@ -50,7 +50,18 @@ final class LauncherStore: ObservableObject {
     func reload() {
         Task.detached(priority: .userInitiated) {
             let found = LauncherStore.scan()
-            await MainActor.run { self.apps = found }
+            // Decode every icon here, off the main thread, so scrolling and opening never stall on them.
+            var icons: [String: NSImage] = [:]
+            for app in found {
+                let img = NSWorkspace.shared.icon(forFile: app.path)
+                img.size = NSSize(width: 128, height: 128)
+                icons[app.path] = img
+            }
+            let ready = icons
+            await MainActor.run {
+                LauncherIcons.cache.merge(ready) { _, new in new }
+                if self.apps != found { self.apps = found }
+            }
         }
     }
 
@@ -176,6 +187,13 @@ final class LauncherStore: ObservableObject {
             Task { @MainActor in self.reload() }
         }
     }
+}
+
+/// Launcher icons, decoded in the background (see `LauncherStore.reload`).
+@MainActor
+enum LauncherIcons {
+    static var cache: [String: NSImage] = [:]
+    static func icon(_ path: String) -> NSImage { cache[path] ?? IconCache.icon(forPath: path) }
 }
 
 // MARK: - Window
@@ -316,7 +334,7 @@ struct LauncherView: View {
             .padding(.horizontal, 70).padding(.top, 70).padding(.bottom, 40)
             .scaleEffect(appeared ? 1 : 1.04)
             .opacity(appeared ? 1 : 0)
-            .blur(radius: store.openFolder == nil ? 0 : 8)
+            .opacity(store.openFolder == nil ? 1 : 0.25)
 
             if let id = store.openFolder, let folder = store.layout.folders.first(where: { $0.id == id }) {
                 FolderSheet(store: store, folder: folder, iconSize: iconSize, onLaunch: launch)
@@ -439,16 +457,14 @@ struct AppTile: View {
 
     var body: some View {
         VStack(spacing: 7) {
-            Image(nsImage: IconCache.icon(forPath: app.path))
+            Image(nsImage: LauncherIcons.icon(app.path))
                 .resizable().interpolation(.high)
                 .frame(width: iconSize, height: iconSize)
-                .shadow(color: .black.opacity(0.35), radius: hover ? 10 : 5, y: hover ? 5 : 3)
                 .opacity(store.layout.hidden.contains(app.path) ? 0.4 : 1)
             if showTitle {
                 Text(store.name(of: app)).font(.system(size: 12, weight: .medium)).foregroundStyle(.white)
                     .lineLimit(1).truncationMode(.middle)
                     .frame(maxWidth: iconSize + 30)
-                    .shadow(color: .black.opacity(0.5), radius: 2)
             }
         }
         .scaleEffect(hover ? 1.07 : 1)
@@ -509,16 +525,14 @@ struct FolderTile: View {
             let apps = store.apps(in: folder).prefix(9)
             LazyVGrid(columns: Array(repeating: GridItem(.fixed(iconSize * 0.24), spacing: iconSize * 0.05), count: 3), spacing: iconSize * 0.05) {
                 ForEach(Array(apps)) { a in
-                    Image(nsImage: IconCache.icon(forPath: a.path)).resizable().frame(width: iconSize * 0.24, height: iconSize * 0.24)
+                    Image(nsImage: LauncherIcons.icon(a.path)).resizable().frame(width: iconSize * 0.24, height: iconSize * 0.24)
                 }
             }
             .frame(width: iconSize, height: iconSize)
             .background(RoundedRectangle(cornerRadius: iconSize * 0.24, style: .continuous).fill(Color.white.opacity(0.14)))
             .overlay(RoundedRectangle(cornerRadius: iconSize * 0.24, style: .continuous).strokeBorder(Color.white.opacity(0.18), lineWidth: 0.6))
-            .shadow(color: .black.opacity(0.3), radius: hover ? 10 : 5, y: 3)
             if showTitle {
                 Text(folder.name).font(.system(size: 12, weight: .medium)).foregroundStyle(.white).lineLimit(1)
-                    .shadow(color: .black.opacity(0.5), radius: 2)
             }
         }
         .scaleEffect(hover ? 1.07 : 1)

@@ -272,9 +272,15 @@ section "Summary"
 say "- ✅ $PASS passed · ❌ $FAIL failed · ⚠️ $WARN warnings · ⏭ $SKIP skipped"
 say "- Not automatable here (please check by hand): hovering the Dock (magnify, previews, Peek), drag-and-drop to the Shelf, media keys/HUD, Act on this (⌃⌥A), Hyper key."
 restore; trap - EXIT
+# Keep the zip small enough to attach anywhere: JPEG screenshots at a readable size, compressed profiles.
+for f in "$SHOTS"/*.png; do
+  [ -f "$f" ] || continue
+  sips -Z 1600 -s format jpeg -s formatOptions 72 "$f" --out "${f%.png}.jpg" >/dev/null 2>&1 && rm -f "$f"
+done
+gzip -9 "$LOGS"/profile-*.txt 2>/dev/null
 ZIP="$HOME/Desktop/cortex-e2e-$STAMP.zip"
 ditto -c -k --sequesterRsrc --keepParent "$WORK" "$ZIP" && rm -rf "$WORK"
 echo ""
 echo "Done: $PASS passed, $FAIL failed, $WARN warnings."
-echo "Send this file: $ZIP"
+echo "Send this file: $ZIP ($(du -h "$ZIP" | cut -f1))"
 open -R "$ZIP" 2>/dev/null

@@ -445,7 +445,7 @@ final class DockModel: ObservableObject {
     }
 
     var barAlong: CGFloat { contentLength + Self.padding * 2 }
-    var barAcross: CGFloat { iconSize + Self.dotArea + Self.padding * 2 }
+    var barAcross: CGFloat { iconSize + Self.padding * 2 }
     var headroom: CGFloat { iconSize * (Self.maxScale - 1) + 10 }
 
     /// Resting centre of the slot at `index`, along the bar's axis, measured from the start of the content.
