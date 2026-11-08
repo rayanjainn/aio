@@ -44,7 +44,9 @@ jobs:
           else
             # A self-signed certificate (native/scripts/make-signing-cert.sh): no notarization, but every release
             # has the same signature identity, so macOS keeps Accessibility / Screen Recording grants across updates.
-            ID=$(security find-identity -p codesigning "$KC" | grep -m1 -E '[0-9A-F]{40}' | sed -E 's/.*"(.*)"/\1/')
+            # Sign by SHA-1 fingerprint: a self-signed certificate is untrusted (CSSMERR_TP_NOT_TRUSTED), and codesign
+            # only finds untrusted identities by hash, not by name.
+            ID=$(security find-identity -p codesigning "$KC" | grep -m1 -oE '[0-9A-F]{40}')
             echo "SELF_SIGN_IDENTITY=$ID" >> "$GITHUB_ENV"
           fi
           echo "Signing identity: $ID"
