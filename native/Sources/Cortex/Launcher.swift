@@ -468,6 +468,7 @@ struct LauncherView: View {
             }
             if let bridge { LauncherMusicCard(bridge: bridge) }
             LauncherWeatherCard()
+            LauncherMonthCard()
             Spacer(minLength: 0)
         }
         .foregroundStyle(.white)
@@ -610,32 +611,126 @@ struct FolderSheet: View {
     }
 }
 
+/// A record peeking out of the top of the card (coloured in the artwork's hue), then the song and controls.
 struct LauncherMusicCard: View {
     @ObservedObject var bridge: MediaRemoteBridge
+    @State private var tint = Color(white: 0.85)
 
     var body: some View {
         if let t = bridge.info {
-            VStack(spacing: 10) {
-                // A clock-driven spin (not a repeatForever animation, which can keep running after the launcher closes).
+            VStack(spacing: 8) {
                 TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !t.playing)) { ctx in
-                    ArtworkView(image: t.artwork, size: 120, radius: 60)
-                        .rotationEffect(.degrees(t.playing ? ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 12) / 12 * 360 : 0))
-                        .overlay(Circle().fill(Color.black.opacity(0.6)).frame(width: 18, height: 18))
+                    ColoredRecord(d: 170, tint: tint, label: "\(t.title) • \(t.artist)")
+                        .rotationEffect(.degrees(t.playing ? ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 8) / 8 * 360 : 0))
                 }
-                Text(t.title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                    .onTapGesture { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
-                Text(t.artist).font(.system(size: 11)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                .frame(width: 170, height: 170)
+                .frame(height: 92, alignment: .bottom)          // only the lower half shows
+                .clipped()
+                .overlay(alignment: .bottom) {
+                    ArtworkView(image: t.artwork, size: 40, radius: 8)
+                        .shadow(color: .black.opacity(0.4), radius: 6, y: 3)
+                        .offset(x: 58, y: 8)
+                }
+                .onTapGesture { NotificationCenter.default.post(name: .openMusicPlayer, object: nil) }
+                .help("Open the full-screen player")
+                VStack(spacing: 2) {
+                    Text(t.title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    Text(t.artist).font(.system(size: 11)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                }
+                if t.duration > 0 {
+                    TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                        let f = min(1, t.position(at: ctx.date) / t.duration)
+                        VStack(spacing: 2) {
+                            GeometryReader { g in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(.white.opacity(0.2))
+                                    Capsule().fill(.white.opacity(0.9)).frame(width: max(3, g.size.width * f))
+                                }
+                            }
+                            .frame(height: 3)
+                            HStack {
+                                Text(clock(t.position(at: ctx.date))); Spacer(); Text(clock(t.duration))
+                            }
+                            .font(.system(size: 9, weight: .medium).monospacedDigit()).foregroundStyle(.white.opacity(0.5))
+                        }
+                    }
+                }
                 HStack(spacing: 22) {
                     Button { bridge.send(.previous) } label: { Image(systemName: "backward.fill") }
-                    Button { bridge.send(.toggle) } label: { Image(systemName: t.playing ? "pause.fill" : "play.fill").font(.system(size: 18)) }
+                    Button { bridge.send(.toggle) } label: {
+                        Image(systemName: t.playing ? "pause.fill" : "play.fill").font(.system(size: 18)).contentTransition(.symbolEffect(.replace))
+                    }
                     Button { bridge.send(.next) } label: { Image(systemName: "forward.fill") }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressDipStyle())
             }
             .frame(maxWidth: .infinity)
-            .padding(16)
+            .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 0)
+            .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.2)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .onAppear { retint(t.artwork) }
+            .onChange(of: t.title) { _, _ in retint(bridge.info?.artwork) }
+        }
+    }
+
+    private func retint(_ art: NSImage?) {
+        guard let art, let c = ArtworkPalette.accent(art) else { return }
+        withAnimation(.easeInOut(duration: 0.6)) { tint = Color(nsColor: c) }
+    }
+}
+
+/// This month at a glance: today circled in red, then the next couple of events.
+struct LauncherMonthCard: View {
+    @ObservedObject private var calendar = CalendarService.shared
+
+    var body: some View {
+        TimelineView(.everyMinute) { ctx in
+            let cal = Calendar.current
+            let now = ctx.date
+            let first = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+            let days = cal.range(of: .day, in: .month, for: now)?.count ?? 30
+            let lead = (cal.component(.weekday, from: first) - cal.firstWeekday + 7) % 7
+            let today = cal.component(.day, from: now)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(now.formatted(.dateTime.month(.abbreviated).year())).font(.system(size: 13, weight: .bold))
+                let symbols = Array(cal.veryShortWeekdaySymbols[(cal.firstWeekday - 1)...] + cal.veryShortWeekdaySymbols[..<(cal.firstWeekday - 1)])
+                // One list of cells with unique ids: weekday headers, blanks before the 1st, then the days.
+                let cells: [(id: String, text: String, day: Int)] =
+                    symbols.enumerated().map { ("h\($0.offset)", $0.element, -1) }
+                    + (0..<lead).map { ("b\($0)", "", 0) }
+                    + (1...days).map { ("d\($0)", "\($0)", $0) }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 7), spacing: 4) {
+                    ForEach(cells, id: \.id) { c in
+                        if c.day < 0 {
+                            Text(c.text).font(.system(size: 8.5, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
+                        } else if c.day == 0 {
+                            Color.clear.frame(height: 16)
+                        } else {
+                            Text(c.text).font(.system(size: 9.5, weight: c.day == today ? .bold : .medium).monospacedDigit())
+                                .foregroundStyle(c.day == today ? Color.white : Color.white.opacity(c.day < today ? 0.4 : 0.8))
+                                .frame(width: 18, height: 16)
+                                .background { if c.day == today { Circle().fill(Color(red: 1, green: 0.27, blue: 0.23)).frame(width: 17, height: 17) } }
+                        }
+                    }
+                }
+                if calendar.authorized {
+                    ForEach(calendar.events.prefix(2)) { e in
+                        HStack(spacing: 6) {
+                            Capsule().fill(Color.white.opacity(0.7)).frame(width: 2.5, height: 22)
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(e.title).font(.system(size: 10.5, weight: .semibold)).lineLimit(1)
+                                Text(e.allDay ? "All day" : e.start.formatted(date: .omitted, time: .shortened))
+                                    .font(.system(size: 9)).foregroundStyle(.white.opacity(0.5))
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
             .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.2)
         }
+        .onAppear { CalendarService.shared.refresh() }
     }
 }
 
