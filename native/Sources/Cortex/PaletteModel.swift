@@ -54,6 +54,9 @@ final class PaletteModel: ObservableObject {
     @Published private(set) var message: String?
     @Published private(set) var chat: ChatState?
     @Published var focusToken = 0
+    /// Rows computed asynchronously for the current query (currency rates, translations). Kept across the
+    /// engine's result refresh, which used to overwrite them.
+    private var asyncRows: [PaletteRow] = []
     /// Running apps, most recently used first — shown as an icon strip above the results when nothing is typed.
     @Published private(set) var runningApps: [RunningApp] = []
 
@@ -146,6 +149,14 @@ final class PaletteModel: ObservableObject {
         return Self.searchHeight + strip + min(body, Self.maxBody + 8 - strip) + Self.footerHeight
     }
 
+    private func addAsync(_ row: PaletteRow) {
+        guard !asyncRows.contains(where: { $0.id == row.id }) else { return }
+        asyncRows.append(row)
+        rows.removeAll { $0.id == row.id }
+        rows.insert(row, at: 0)
+        selection = 0
+    }
+
     /// ⌘1…⌘9 and clicks on the strip: bring that app forward.
     func switchToApp(at index: Int) -> Bool {
         guard showsApps, runningApps.indices.contains(index) else { return false }
@@ -167,6 +178,7 @@ final class PaletteModel: ObservableObject {
         if chat != nil { endChat() }
         let local = localRows(for: q)
         let tail = tailRows(for: q)
+        asyncRows = []
         rows = local + tail
         selection = 0
 
@@ -178,7 +190,7 @@ final class PaletteModel: ObservableObject {
                     let text = String(format: "%.2f %@", value, c.to)
                     let row = PaletteRow(id: "currency", title: text, subtitle: "\(Calculator.format(c.amount)) \(c.from) → \(c.to) · ECB rates", symbol: "dollarsign.circle",
                                          iconPath: nil, tag: "Currency", kind: .copy(text), section: "Calculator")
-                    if !self.rows.contains(where: { $0.id == "currency" }) { self.rows.insert(row, at: 0) }
+                    self.addAsync(row)
                 }
             }
         }
@@ -189,7 +201,7 @@ final class PaletteModel: ObservableObject {
                     guard let self, self.generation == gen else { return }
                     let row = PaletteRow(id: "translate", title: out, subtitle: "Translated to \(t.to) — copy", symbol: "character.bubble",
                                          iconPath: nil, tag: t.to.uppercased(), kind: .copy(out), section: "Translate")
-                    if !self.rows.contains(where: { $0.id == "translate" }) { self.rows.insert(row, at: 0) }
+                    self.addAsync(row)
                 }
             }
         }
@@ -298,7 +310,8 @@ final class PaletteModel: ObservableObject {
                     guard let self, self.generation == gen else { return }
                     self.message = nil
                     let engineRows = Self.grouped(Self.curate(response.results, forEmptyQuery: q.isEmpty, query: text).map(Self.row(from:)))
-                    self.rows = local + engineRows + tail
+                    // Answers that arrived on their own (currency, translation) stay on top.
+                    self.rows = self.asyncRows + local.filter { r in !self.asyncRows.contains { $0.id == r.id } } + engineRows + tail
                     self.selection = min(self.selection, max(self.rows.count - 1, 0))
                 }
             } catch {

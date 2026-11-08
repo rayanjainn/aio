@@ -158,12 +158,19 @@ impl OllamaClient {
         Ok(())
     }
 
-    /// Background loop: re-check health every 30 s and update `self.status`.
+    /// Background loop: re-check health every 30 s while Ollama is up (every 5 min while it isn't), and
+    /// only log when the status changes — an absent Ollama used to write a log line every 30 s forever.
     pub async fn watch(self: Arc<Self>) {
+        let mut last = String::new();
         loop {
             let status = self.check_health().await;
-            tracing::info!("ollama status: {:?}", status);
-            sleep(WATCH_INTERVAL).await;
+            let now = format!("{:?}", status);
+            if now != last {
+                tracing::info!("ollama status: {now}");
+                last = now.clone();
+            }
+            let wait = if now.contains("Unavailable") { WATCH_INTERVAL * 10 } else { WATCH_INTERVAL };
+            sleep(wait).await;
         }
     }
 }
