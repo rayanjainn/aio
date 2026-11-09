@@ -1,4 +1,4 @@
-//! cortexd — started by Cortex.app; exits when the app that launched it is gone.
+//! cortexd (installed as Helpers/aiod) — started by AIO.app; exits when the app that launched it is gone.
 
 use cortexd_lib::{engine::Engine, rpc};
 use std::io::Write;

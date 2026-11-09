@@ -1,8 +1,8 @@
-# Cortex — Agent Notes
+# AIO — Agent Notes
 
 ## Project
-Cortex — native macOS launcher + Dock + notch Island + widgets. Swift/SwiftUI/AppKit app, Rust engine.
-No Tauri, no web UI.
+AIO (formerly Cortex) — native macOS launcher + Dock + notch Island + widgets. Swift/SwiftUI/AppKit app, Rust engine.
+No Tauri, no web UI. The product name is AIO; internal names stay Cortex/cortexd (Swift module, bundle id dev.cortex.native, ~/.cortex) so permissions and data carry over.
 
 ## Key paths
 - `native/Sources/Cortex/` — the app. One file per area:

@@ -1,7 +1,7 @@
 /**
- * Cortex Memory Bridge — Manifest V3 background service worker
+ * AIO Memory Bridge — Manifest V3 background service worker
  *
- * Maintains a persistent WebSocket connection to the local Cortex daemon
+ * Maintains a persistent WebSocket connection to the local AIO daemon
  * (ws://localhost:27182).  Sends tab lifecycle events so the daemon can
  * maintain a live-tabs table that surfaces currently-open pages in search.
  *
@@ -30,7 +30,7 @@ function connect() {
   ws = new WebSocket(WS_URL);
 
   ws.addEventListener("open", () => {
-    console.log("[Cortex] WS connected");
+    console.log("[AIO] WS connected");
     backoff = 1_000; // reset back-off on successful connect
     // Send all currently open tabs immediately
     chrome.tabs.query({}, (tabs) => {
@@ -41,7 +41,7 @@ function connect() {
   });
 
   ws.addEventListener("close", (ev) => {
-    console.log(`[Cortex] WS closed (${ev.code}), reconnecting in ${backoff}ms`);
+    console.log(`[AIO] WS closed (${ev.code}), reconnecting in ${backoff}ms`);
     scheduleReconnect();
   });
 
@@ -76,7 +76,7 @@ function sendEvent(eventType, tab) {
   try {
     ws.send(JSON.stringify(payload));
   } catch (e) {
-    console.warn("[Cortex] send failed:", e);
+    console.warn("[AIO] send failed:", e);
   }
 }
 

@@ -6,14 +6,14 @@ enum Diagnostics {
     static func report(island: IslandController?, dock: DockController?, bridge: MediaRemoteBridge, engineProcess: String, engineConnected: Bool, widgets: String = "") -> String {
         var out: [String] = []
         let os = ProcessInfo.processInfo
-        out.append("Cortex native \(AppInfo.version)")
+        out.append("AIO \(AppInfo.version)")
         out.append("macOS \(os.operatingSystemVersionString)  arch=\(machineArch())")
         out.append("log: \(Log.fileURL.path)")
         out.append("")
         out.append("== Resources ==")
         let me = ProcessInfo.processInfo.processIdentifier
-        let engine = SystemCommands.shell("/usr/bin/pgrep", ["-x", "cortexd"]).trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "\n").first.map(String.init)
-        for (label, pid) in [("Cortex", "\(me)"), ("cortexd", engine ?? "")] where !pid.isEmpty {
+        let engine = SystemCommands.shell("/usr/bin/pgrep", ["-x", "aiod"]).trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "\n").first.map(String.init)
+        for (label, pid) in [("AIO", "\(me)"), ("aiod", engine ?? "")] where !pid.isEmpty {
             let r = SystemCommands.shell("/bin/ps", ["-o", "pcpu=,rss=", "-p", pid]).trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ", omittingEmptySubsequences: true)
             if r.count == 2, let kb = Double(r[1]) { out.append("\(label): cpu \(r[0])%  memory \(Int(kb / 1024)) MB") }
         }
@@ -37,7 +37,7 @@ enum Diagnostics {
         out.append("")
         out.append("== Dock ==")
         out.append(dock?.describe() ?? "not created")
-        out.append("macOS Dock hidden by Cortex: \(SystemDock.hiddenByUs)")
+        out.append("macOS Dock hidden by AIO: \(SystemDock.hiddenByUs)")
         out.append("")
         out.append("== Now Playing (system) ==")
         out.append("adapter: \(bridge.status)  lines=\(bridge.lines)  last=\(bridge.lastLineAt.map { "\(Int(Date().timeIntervalSince($0)))s ago" } ?? "never")")

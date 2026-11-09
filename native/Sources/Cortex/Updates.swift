@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import ServiceManagement
 
 /// Looks at the GitHub releases for a newer build. (Native previews are published as
 /// pre-releases, so "newest" includes those.)
@@ -45,7 +46,7 @@ enum UpdateChecker {
     }
 }
 
-/// Downloads a release and swaps it in: a small detached script waits for Cortex to quit,
+/// Downloads a release and swaps it in: a small detached script waits for the app to quit,
 /// replaces the app from the .dmg and opens the new one.
 @MainActor
 final class SelfUpdater: ObservableObject {
@@ -64,14 +65,14 @@ final class SelfUpdater: ObservableObject {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let (tmp, response) = try await URLSession.shared.download(from: update.url)
             if let http = response as? HTTPURLResponse, http.statusCode >= 400 { throw EngineError(message: "Download failed (\(http.statusCode))") }
-            let dmg = dir.appendingPathComponent("Cortex.dmg")
+            let dmg = dir.appendingPathComponent("AIO.dmg")
             try? FileManager.default.removeItem(at: dmg)
             try FileManager.default.moveItem(at: tmp, to: dmg)
 
             let appPath = Bundle.main.bundleURL.path
             guard FileManager.default.isWritableFile(atPath: Bundle.main.bundleURL.deletingLastPathComponent().path) else {
                 NSWorkspace.shared.open(dmg)
-                message = "Open the downloaded disk image and drag Cortex to Applications."
+                message = "Open the downloaded disk image and drag AIO to Applications."
                 return
             }
             let script = dir.appendingPathComponent("install.sh")
@@ -81,18 +82,30 @@ final class SelfUpdater: ObservableObject {
             exec >>"$HOME/.cortex/logs/update.log" 2>&1
             echo "== $(date) updating $APP"
             while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done
-            MNT=$(mktemp -d /tmp/cortex-mnt.XXXXXX)
+            MNT=$(mktemp -d /tmp/aio-mnt.XXXXXX)
             hdiutil attach -nobrowse -quiet -mountpoint "$MNT" "$DMG" || exit 1
-            if [ -d "$MNT/Cortex.app" ]; then
-              rm -rf "$APP.old"
-              mv "$APP" "$APP.old"
-              if cp -R "$MNT/Cortex.app" "$APP"; then rm -rf "$APP.old"; else rm -rf "$APP"; mv "$APP.old" "$APP"; fi
-              xattr -cr "$APP" 2>/dev/null
+            # New images hold AIO.app; older ones Cortex.app. An install still named Cortex.app moves to AIO.app.
+            SRC=""
+            for n in AIO.app Cortex.app; do if [ -d "$MNT/$n" ]; then SRC="$MNT/$n"; break; fi; done
+            DEST="$APP"
+            case "$APP" in */Cortex.app) DEST="$(dirname "$APP")/AIO.app" ;; esac
+            if [ -n "$SRC" ]; then
+              rm -rf "$DEST.old"
+              if [ -e "$DEST" ]; then mv "$DEST" "$DEST.old"; fi
+              if cp -R "$SRC" "$DEST"; then
+                rm -rf "$DEST.old"
+                if [ "$DEST" != "$APP" ]; then rm -rf "$APP"; fi
+              else
+                rm -rf "$DEST"
+                if [ -e "$DEST.old" ]; then mv "$DEST.old" "$DEST"; fi
+              fi
+              xattr -cr "$DEST" 2>/dev/null
             fi
             hdiutil detach "$MNT" -quiet
             rm -f "$DMG"
-            codesign -dv "$APP" 2>&1 | grep -E "Authority|Signature|Identifier"
-            open "$APP"
+            if [ ! -d "$DEST" ]; then DEST="$APP"; fi
+            codesign -dv "$DEST" 2>&1 | grep -E "Authority|Signature|Identifier"
+            open "$DEST"
             echo "== done"
             """
             try body.write(to: script, atomically: true, encoding: .utf8)
@@ -109,6 +122,62 @@ final class SelfUpdater: ObservableObject {
         } catch {
             message = "Update failed: \(error.localizedDescription)"
             Log.warn("self-update: \(error)")
+        }
+    }
+}
+
+/// One-time move to the new name. Versions up to v0.5.0 were called Cortex and their updater installs
+/// "…/Cortex.app"; this release renames that bundle to AIO.app and relaunches from there. The bundle
+/// identifier and signature are unchanged, so permissions and settings carry over.
+enum AppRename {
+    static let oldName = "Cortex.app", newName = "AIO.app"
+    private static var loginFlag: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cortex/native/relogin")
+    }
+
+    /// True when the app moved itself and a relaunch is on its way: the caller stops starting up.
+    @MainActor static func migrateIfNeeded() -> Bool {
+        let fm = FileManager.default
+        let me = Bundle.main.bundleURL, dir = me.deletingLastPathComponent()
+        if me.lastPathComponent == newName {
+            cleanUpOldCopy(in: dir)
+            if fm.fileExists(atPath: loginFlag.path) {
+                try? fm.removeItem(at: loginFlag)
+                try? SMAppService.mainApp.unregister()
+                do { try SMAppService.mainApp.register() } catch { Log.warn("rename: login item: \(error)") }
+            }
+            return false
+        }
+        guard me.lastPathComponent == oldName, fm.isWritableFile(atPath: dir.path) else { return false }
+        let target = dir.appendingPathComponent(newName)
+        guard !fm.fileExists(atPath: target.path) else { return false }
+        let wasLoginItem = SMAppService.mainApp.status == .enabled
+        do { try fm.moveItem(at: me, to: target) } catch {
+            Log.warn("rename: could not move \(me.path) to \(target.path): \(error)")
+            return false
+        }
+        if wasLoginItem { fm.createFile(atPath: loginFlag.path, contents: Data()) }
+        Log.info("rename: moved to \(target.path), relaunching")
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/nohup")
+        p.arguments = ["/bin/bash", "-c", "while kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do sleep 0.2; done; open \"$0\"", target.path]
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch {
+            Log.warn("rename: relaunch failed: \(error)")
+            return false
+        }
+        DispatchQueue.main.async { NSApp.terminate(nil) }
+        return true
+    }
+
+    /// An old Cortex.app next to AIO.app is the previous install of this same app: move it to the Trash.
+    @MainActor private static func cleanUpOldCopy(in dir: URL) {
+        let old = dir.appendingPathComponent(oldName)
+        guard let b = Bundle(url: old), b.bundleIdentifier == Bundle.main.bundleIdentifier,
+              !NSWorkspace.shared.runningApplications.contains(where: { $0.bundleURL?.standardizedFileURL == old.standardizedFileURL }) else { return }
+        NSWorkspace.shared.recycle([old]) { _, error in
+            if let error { Log.warn("rename: could not trash \(old.path): \(error)") } else { Log.info("rename: moved the old Cortex.app to the Trash") }
         }
     }
 }

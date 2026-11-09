@@ -1,15 +1,15 @@
 #!/bin/bash
-# Cortex end-to-end test — run on the Mac with Cortex installed.
+# AIO end-to-end test — run on the Mac with AIO installed.
 #
-#   bash e2e.sh                 # finds Cortex.app, runs everything (about 4 minutes)
-#   bash e2e.sh /path/Cortex.app
+#   bash e2e.sh                 # finds AIO.app, runs everything (about 4 minutes)
+#   bash e2e.sh /path/AIO.app
 #
 # Opens every surface through cortex:// links, checks the windows really appear (size and
 # position), takes screenshots, probes the search engine, Now Playing, permissions and
 # performance, collects logs and crash reports, then zips everything onto your Desktop:
 #     ~/Desktop/cortex-e2e-<time>.zip      ← send me this
 #
-# Your Cortex settings are backed up first and restored at the end. Nothing is deleted.
+# Your AIO settings are backed up first and restored at the end. Nothing is deleted.
 # Please don't use the mouse or keyboard while it runs (it takes screenshots).
 
 set -u
@@ -36,14 +36,14 @@ link()   { open -g "cortex://$1" >/dev/null 2>&1; }
 shot()   { screencapture -x -t png "$SHOTS/$1.png" 2>/dev/null; }
 shot_region() { screencapture -x -t png -R "$2" "$SHOTS/$1.png" 2>/dev/null; }   # x,y,w,h (top-left origin)
 
-# Cortex's on-screen windows as "x y w h" lines (top-left origin), via the window server.
+# AIO's on-screen windows as "x y w h" lines (top-left origin), via the window server.
 cortex_windows() {
   osascript -l JavaScript <<'JXA' 2>/dev/null
 ObjC.import('CoreGraphics');
 var list = ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo(1, 0))) || [];
 var out = [];
 list.forEach(function (w) {
-  if (w.kCGWindowOwnerName === 'Cortex' && w.kCGWindowBounds) {
+  if (w.kCGWindowOwnerName === 'AIO' && w.kCGWindowBounds) {
     var b = w.kCGWindowBounds;
     out.push([Math.round(b.X), Math.round(b.Y), Math.round(b.Width), Math.round(b.Height), w.kCGWindowLayer].join(' '));
   }
@@ -67,7 +67,7 @@ mouse_right() { mouse_to "$1" "$2"; sleep 0.1; mouse_event 3 "$1" "$2" 1; sleep 
 front_app()   { osascript -e 'tell application "System Events" to get name of first process whose frontmost is true' 2>/dev/null; }
 
 {
-  echo "# Cortex end-to-end report"
+  echo "# AIO end-to-end report"
   echo ""
   echo "Started $(date). Screenshots are in \`screenshots/\`, logs in \`logs/\`."
 } > "$REPORT"
@@ -83,14 +83,14 @@ system_profiler SPDisplaysDataType 2>/dev/null | grep -E "Resolution|Main Displa
 # ---------------------------------------------------------------- 1. app + backup
 section "1. App bundle"
 if [ -z "$APP" ]; then
-  PID0=$(pgrep -x Cortex | head -1)
+  PID0=$(pgrep -x AIO | head -1)
   if [ -n "$PID0" ]; then APP="$(ps -o comm= -p "$PID0" | sed 's#/Contents/MacOS/.*##')"; fi
 fi
-[ -z "$APP" ] && for c in /Applications/Cortex.app "$HOME/Applications/Cortex.app" "$HOME/Desktop/Cortex.app" "$HOME/Downloads/Cortex.app"; do [ -d "$c" ] && APP="$c" && break; done
-if [ ! -d "$APP" ]; then bad "Cortex.app not found — pass its path: bash e2e.sh /path/Cortex.app"; fi
+[ -z "$APP" ] && for c in /Applications/AIO.app "$HOME/Applications/AIO.app" "$HOME/Desktop/AIO.app" "$HOME/Downloads/AIO.app" /Applications/Cortex.app; do [ -d "$c" ] && APP="$c" && break; done
+if [ ! -d "$APP" ]; then bad "AIO.app not found — pass its path: bash e2e.sh /path/AIO.app"; fi
 VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist" 2>/dev/null)
-say "- App: \`$APP\` version **$VER** ($(lipo -archs "$APP/Contents/MacOS/Cortex" 2>/dev/null))"
-[ -x "$APP/Contents/Helpers/cortexd" ] && ok "search engine helper is in the bundle" || bad "cortexd helper missing"
+say "- App: \`$APP\` version **$VER** ($(lipo -archs "$APP/Contents/MacOS/AIO" 2>/dev/null))"
+[ -x "$APP/Contents/Helpers/aiod" ] && ok "search engine helper is in the bundle" || bad "cortexd helper missing"
 [ -f "$APP/Contents/Resources/mediaremote/mediaremote-adapter.pl" ] && ok "Now Playing adapter is in the bundle" || bad "mediaremote adapter missing"
 /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Contents/Info.plist" 2>/dev/null | grep -q cortex \
   && ok "cortex:// links are registered" || bad "cortex:// URL scheme missing — this build is too old for the e2e test (need v0.3.5+)"
@@ -110,13 +110,13 @@ trap restore EXIT
 
 # ---------------------------------------------------------------- 2. launch
 section "2. Launch"
-if ! pgrep -x Cortex >/dev/null; then
+if ! pgrep -x AIO >/dev/null; then
   open "$APP"; sleep 8
 fi
-PID=$(pgrep -x Cortex | head -1)
-DPID=$(pgrep -x cortexd | head -1)
-[ -n "$PID" ] && ok "Cortex is running (pid $PID)" || { bad "Cortex is not running — stopping"; exit 1; }
-[ -n "$DPID" ] && ok "search engine running (pid $DPID)" || bad "search engine (cortexd) not running"
+PID=$(pgrep -x AIO | head -1)
+DPID=$(pgrep -x aiod | head -1)
+[ -n "$PID" ] && ok "AIO is running (pid $PID)" || { bad "AIO is not running — stopping"; exit 1; }
+[ -n "$DPID" ] && ok "search engine running (pid $DPID)" || bad "search engine (aiod) not running"
 link "run/app.diagnostics.export"; sleep 1.5
 if [ -f "$CORTEX/logs/diagnostics.txt" ]; then
   cp "$CORTEX/logs/diagnostics.txt" "$LOGS/diagnostics-start.txt"; ok "Diagnostics exported"
@@ -126,7 +126,7 @@ else
   bad "Diagnostics export didn't appear (cortex:// links may not reach the app)"
 fi
 shot "00-desktop"
-say "- Windows Cortex has on screen: \`$(cortex_windows | tr '\n' ';')\`"
+say "- Windows AIO has on screen: \`$(cortex_windows | tr '\n' ';')\`"
 
 # ---------------------------------------------------------------- 3. engine
 section "3. Search engine"
@@ -234,7 +234,7 @@ section "8. Dock"
 TERM_APP=$(front_app)
 DOCKLINE=$(cortex_windows | awk -v h="$SH" '($2 + $4) >= h - 8 && $3 > 200 { print; exit }')
 if [ -n "$DOCKLINE" ]; then
-  ok "Cortex Dock on screen: \`$DOCKLINE\`"
+  ok "AIO Dock on screen: \`$DOCKLINE\`"
   set -- $DOCKLINE; DX=$1; DY=$2; DW=$3; DH=$4
   shot_region "dock" "$DX,$(( DY - 160 )),$DW,$(( DH + 160 ))"
   MIDY=$(( DY + DH / 2 ))
@@ -277,7 +277,7 @@ if [ -n "$DOCKLINE" ]; then
   AFTER=$(cortex_windows | awk -v h="$SH" '($2 + $4) >= h - 8 && $3 > 200 { print $4; exit }')
   [ "${AFTER:-0}" -le "$(( ${BEFORE:-0} + 2 ))" ] && ok "Dock shrinks back after the pointer leaves" || bad "Dock window stayed tall ($AFTER) after the pointer left — it would block clicks"
 else
-  warn "no Cortex Dock at the bottom (off, auto-hidden, or on another edge)"; shot "dock-fullscreen"
+  warn "no AIO Dock at the bottom (off, auto-hidden, or on another edge)"; shot "dock-fullscreen"
 fi
 say "- macOS Dock autohide=$(defaults read com.apple.dock autohide 2>/dev/null || echo 0)"
 
@@ -307,8 +307,8 @@ sleep 4
 CPU_SAMPLES=$(top -l 6 -s 2 -pid "$PID" -stats cpu 2>/dev/null | grep -E '^[0-9.]+ *$' | tail -5 | tr -d ' ' | tr '\n' ' ')
 CPU_IDLE=$(echo "$CPU_SAMPLES" | tr ' ' '\n' | grep -v '^$' | sort -n | awk '{a[NR]=$1} END{ if (NR) print a[int((NR+1)/2)]; else print 0 }')
 say "- CPU samples (2 s each): $CPU_SAMPLES"
-say "- Cortex idle CPU: ${CPU_IDLE}% · memory $(rss_mb "$PID") MB · threads $(ps -M -p "$PID" | tail -n +2 | wc -l | tr -d ' ')"
-[ -n "$DPID" ] && say "- cortexd CPU: $(cpu_of "$DPID")% · memory $(rss_mb "$DPID") MB"
+say "- AIO idle CPU: ${CPU_IDLE}% · memory $(rss_mb "$PID") MB · threads $(ps -M -p "$PID" | tail -n +2 | wc -l | tr -d ' ')"
+[ -n "$DPID" ] && say "- engine CPU: $(cpu_of "$DPID")% · memory $(rss_mb "$DPID") MB"
 awk -v c="${CPU_IDLE:-0}" 'BEGIN{ exit (c+0 > 10) ? 1 : 0 }' && ok "idle CPU is low" || bad "idle CPU is high (${CPU_IDLE}%)"
 link "run/launcher"; sleep 1
 sample "$PID" 4 -file "$LOGS/profile-launcher.txt" >/dev/null 2>&1 && ok "profiled the launcher while open (logs/profile-launcher.txt)"
@@ -328,12 +328,12 @@ cp "$CORTEX/logs/cortexd.log" "$LOGS/" 2>/dev/null
 link "run/app.diagnostics.export"; sleep 1; cp "$CORTEX/logs/diagnostics.txt" "$LOGS/diagnostics-end.txt" 2>/dev/null
 ERRS=$(grep -c " ERROR " "$CORTEX/logs/native.log" 2>/dev/null); ERRS=${ERRS:-0}
 [ "$ERRS" = "0" ] && ok "no ERROR lines in native.log" || bad "$ERRS ERROR lines in native.log (see logs/native.log)"
-log show --last 15m --style compact --predicate 'process == "Cortex" AND (messageType == error OR messageType == fault)' > "$LOGS/system-errors.txt" 2>/dev/null
-CR=$(ls -t "$HOME/Library/Logs/DiagnosticReports/" 2>/dev/null | grep -iE "^Cortex" | head -3)
+log show --last 15m --style compact --predicate 'process == "AIO" AND (messageType == error OR messageType == fault)' > "$LOGS/system-errors.txt" 2>/dev/null
+CR=$(ls -t "$HOME/Library/Logs/DiagnosticReports/" 2>/dev/null | grep -iE "^(AIO|AIO)" | head -3)
 if [ -n "$CR" ]; then
   bad "crash reports found: $(echo $CR)"
   for f in $CR; do cp "$HOME/Library/Logs/DiagnosticReports/$f" "$LOGS/" 2>/dev/null; done
-else ok "no Cortex crash reports"; fi
+else ok "no AIO crash reports"; fi
 
 # ---------------------------------------------------------------- done
 section "Summary"

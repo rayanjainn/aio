@@ -34,7 +34,7 @@ struct OnboardingView: View {
                 }
                 Spacer()
                 if step > 0 { Button("Back") { withAnimation(.easeInOut(duration: 0.25)) { step -= 1 } }.buttonStyle(.plain).foregroundStyle(.secondary) }
-                Button(step == 3 ? "Start using Cortex" : "Continue") {
+                Button(step == 3 ? "Start using AIO" : "Continue") {
                     if step == 3 { prefs.onboardingDone = true; finish() }
                     else { withAnimation(.easeInOut(duration: 0.25)) { step += 1 } }
                 }
@@ -57,7 +57,7 @@ struct OnboardingView: View {
         VStack(spacing: 18) {
             Image(systemName: "sparkle").font(.system(size: 54, weight: .light))
                 .padding(26).cortexGlass(in: Circle())
-            Text("Cortex").font(.system(size: 40, weight: .semibold, design: .rounded))
+            Text("AIO").font(.system(size: 40, weight: .semibold, design: .rounded))
             Text("One place for launching, windows, your Dock, the notch and desktop widgets — all native, all glass.")
                 .font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth: 420)
         }
@@ -93,7 +93,7 @@ struct OnboardingView: View {
     private var permissions: some View {
         VStack(spacing: 14) {
             Text("Optional permissions").font(.system(size: 24, weight: .semibold, design: .rounded))
-            Text("Cortex works without them; each one unlocks a feature.").font(.system(size: 13)).foregroundStyle(.secondary)
+            Text("AIO works without them; each one unlocks a feature.").font(.system(size: 13)).foregroundStyle(.secondary)
             Button {
                 Permissions.shared.refresh()
                 Permissions.shared.grantEverything()
@@ -120,7 +120,7 @@ struct OnboardingView: View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle").font(.system(size: 52, weight: .light))
             Text("You're set").font(.system(size: 30, weight: .semibold, design: .rounded))
-            Toggle("Hide the macOS Dock while Cortex runs", isOn: Binding(get: { SystemDock.hiddenByUs }, set: { SystemDock.setHidden($0) }))
+            Toggle("Hide the macOS Dock while AIO runs", isOn: Binding(get: { SystemDock.hiddenByUs }, set: { SystemDock.setHidden($0) }))
                 .toggleStyle(.switch).frame(maxWidth: 340)
             Text("Press ⌘K any time. Everything is in Settings (⌘, from the ✦ menu).")
                 .font(.system(size: 13)).foregroundStyle(.secondary)

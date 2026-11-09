@@ -1,4 +1,4 @@
-# Using Cortex
+# Using AIO
 
 **⌘K** opens the palette. Type to search; `↩` opens, `⌘↩` reveals in Finder, `⌘⇧↩` copies the path.
 
@@ -44,7 +44,7 @@
 | `space work` | save your whole setup as a Space (Dock, windows, tabs, wallpaper, glass) — `space work` again switches back |
 
 Snippets can ask for values: `Hi {ask:Name}, see you {ask:When}`.
-Scripts and Shortcuts can drive Cortex: `open "cortex://run/timer.25"`, `cortex://palette?q=tab`, `cortex://toast?text=Hello`, `cortex://layout?name=coding`.
+Scripts and Shortcuts can drive AIO: `open "cortex://run/timer.25"`, `cortex://palette?q=tab`, `cortex://toast?text=Hello`, `cortex://layout?name=coding`.
 Window layouts now also remember and reopen your browser tabs.
 
 Snippets understand `{date}`, `{time}`, `{datetime}`, `{day}`, `{uuid}` and `{clipboard}`.
@@ -68,7 +68,7 @@ provider, browser-tab access and the search engine.
 
 **Permissions** (Settings → Privacy & Permissions): every permission with its live status. *Grant everything* asks for all of them
 in a row (macOS has no single switch; Accessibility and Screen Recording you switch on yourself). If a switch is on in System
-Settings but Cortex still says off — common after an update — use *Reset and ask again*.
+Settings but AIO still says off — common after an update — use *Reset and ask again*.
 
 **Events and reminders** from ⌘K: `event lunch with Sam tomorrow 1pm` or `remind call mom at 6pm`, then Enter.
 

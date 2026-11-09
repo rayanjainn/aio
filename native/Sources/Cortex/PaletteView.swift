@@ -181,7 +181,7 @@ struct PaletteView: View {
                 hint("esc", model.query.isEmpty ? "close" : "clear")
             }
             Spacer()
-            Text(model.engineReady ? "Cortex" : "Starting engine…").font(.system(size: 11)).foregroundStyle(.tertiary)
+            Text(model.engineReady ? "AIO" : "Starting engine…").font(.system(size: 11)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 22)
         .frame(height: PaletteModel.footerHeight)

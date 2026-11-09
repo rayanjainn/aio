@@ -124,7 +124,7 @@ final class GitHubService: ObservableObject {
         r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         r.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         r.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
-        r.setValue("Cortex-macOS", forHTTPHeaderField: "User-Agent")
+        r.setValue("AIO-macOS", forHTTPHeaderField: "User-Agent")
         if body != nil { r.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         return r
     }
@@ -374,7 +374,7 @@ struct ConnectionsPane: View {
                     if gh.connected { Button("Disconnect") { token = ""; gh.setToken("") } }
                     Spacer()
                     Button("Create a token…") {
-                        NSWorkspace.shared.open(URL(string: "https://github.com/settings/tokens/new?scopes=repo,notifications,read:user&description=Cortex")!)
+                        NSWorkspace.shared.open(URL(string: "https://github.com/settings/tokens/new?scopes=repo,notifications,read:user&description=AIO")!)
                     }
                 }
                 Text("A classic token with repo, notifications and read:user is enough. It stays in ~/.cortex/native/connections.json, readable only by you, and is never exported.")

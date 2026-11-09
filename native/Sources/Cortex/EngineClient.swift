@@ -275,7 +275,7 @@ final class EngineProcess {
     private var delay: TimeInterval = 1
 
     private var executable: URL? {
-        let url = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/cortexd")
+        let url = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/aiod")
         return FileManager.default.isExecutableFile(atPath: url.path) ? url : nil
     }
 

@@ -16,7 +16,7 @@ enum SettingsTransfer {
         panel.prompt = "Export Here"
         NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let dir = panel.url else { return }
-        let dest = dir.appendingPathComponent("Cortex Settings", isDirectory: true)
+        let dest = dir.appendingPathComponent("AIO Settings", isDirectory: true)
         try? FileManager.default.createDirectory(at: dest, withIntermediateDirectories: true)
         var n = 0
         for f in (try? FileManager.default.contentsOfDirectory(at: source, includingPropertiesForKeys: nil)) ?? [] where f.pathExtension == "json" || f.pathExtension == "md" {
@@ -34,7 +34,7 @@ enum SettingsTransfer {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.prompt = "Import"
-        panel.message = "Choose the “Cortex Settings” folder"
+        panel.message = "Choose the “AIO Settings” folder"
         NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let dir = panel.url else { return }
         var n = 0
@@ -46,7 +46,7 @@ enum SettingsTransfer {
         }
         let alert = NSAlert()
         alert.messageText = "Imported \(n) settings files"
-        alert.informativeText = "Quit and reopen Cortex to use them."
+        alert.informativeText = "Quit and reopen AIO to use them."
         alert.runModal()
     }
 }

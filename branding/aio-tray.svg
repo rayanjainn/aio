@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 1024 1024">
+  <!-- Menu-bar template glyph: the same ring + node, solid black (macOS tints it). -->
+  <circle cx="512" cy="512" r="330" fill="none" stroke="#000" stroke-width="118"/>
+  <circle cx="512" cy="512" r="110" fill="#000"/>
+</svg>

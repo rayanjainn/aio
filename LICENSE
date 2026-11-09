@@ -1,7 +1,7 @@
-Cortex — Proprietary Source-Available License
+AIO — Proprietary Source-Available License
 Copyright (c) 2025-2026 Rayan Jain <rayansjain@gmail.com>. All rights reserved.
 
-Cortex (the native macOS app, the cortexd engine, the browser extension, the
+AIO, formerly called Cortex (the native macOS app, the cortexd engine, the browser extension, the
 website, the artwork and branding, the launch videos and all other material in
 this repository, together "the Software") was created by and is owned by
 Rayan Jain. The source code is published so people can read, audit and learn
@@ -20,7 +20,7 @@ ownership.
       modify, relicense and distribute it as part of the Software, and you
       confirm you have the right to grant that license.
    d. Quote short excerpts of the code in articles, reviews or discussions,
-      with credit to "Cortex by Rayan Jain" and a link to this repository.
+      with credit to "AIO by Rayan Jain" and a link to this repository.
 
 2. What you may not do, without prior written permission from Rayan Jain
    a. Redistribute, publish, sell, sublicense, rent or host the Software or
@@ -30,12 +30,12 @@ ownership.
       that is based on, derived from or substantially copies the Software,
       its code, its design or its artwork.
    c. Remove, alter or obscure this license, any copyright notice, the
-      author's name, or the "Cortex" name and icon in the Software or in its
+      author's name, or the "AIO" name and icon in the Software or in its
       About and signing information.
    d. Claim, imply or represent that you, or anyone other than Rayan Jain,
       wrote, created or owns the Software or any part of it.
-   e. Use the name "Cortex" in connection with this Software's code or
-      design, the Cortex icon, or the author's name, to brand, promote or
+   e. Use the name "AIO" in connection with this Software's code or
+      design, the AIO icon, or the author's name, to brand, promote or
       endorse anything else.
    f. Use the Software, its code or its artwork to train or fine-tune a
       machine-learning model whose output is distributed or sold.

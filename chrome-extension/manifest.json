@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Cortex Memory Bridge",
+  "name": "AIO Memory Bridge",
   "version": "0.1.0",
   "author": "Rayan Jain",
-  "description": "Sends tab lifecycle events to the Cortex daemon for live-tab search.",
+  "description": "Sends tab lifecycle events to the AIO daemon for live-tab search.",
 
   "permissions": [
     "tabs",
@@ -26,7 +26,7 @@
   },
 
   "action": {
-    "default_title": "Cortex Memory Bridge",
+    "default_title": "AIO Memory Bridge",
     "default_icon": {
       "16":  "icons/icon16.png",
       "48":  "icons/icon48.png",

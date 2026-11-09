@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Cortex app icon — Liquid Glass: graphite slab, frosted lens, open "C" ring
-       (memory) with a recall node at its opening (the C of Cortex; the node is what you recall). -->
+  <!-- AIO app icon — Liquid Glass: graphite slab, frosted lens, a closed ring (the O of "all in one")
+       around a single node: everything, in one place. -->
   <defs>
     <linearGradient id="slab" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#4a4a54"/>
@@ -57,11 +57,9 @@
   <circle cx="512" cy="512" r="266" fill="none" stroke="url(#lensRim)" stroke-width="5"/>
   <path d="M300 420 A228 228 0 0 1 560 290" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round"/>
 
-  <!-- the mark: open ring + recall node -->
-  <g transform="rotate(45 512 512)">
-    <path d="M 512 342 A 170 170 0 1 0 682 512" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="66" stroke-linecap="round" filter="url(#soft)"/>
-    <path d="M 512 342 A 170 170 0 1 0 682 512" fill="none" stroke="url(#ring)" stroke-width="58" stroke-linecap="round"/>
-  </g>
-  <circle cx="694" cy="512" r="44" fill="#fff" opacity="0.6" filter="url(#soft)"/>
-  <circle cx="694" cy="512" r="36" fill="#fff"/>
+  <!-- the mark: a closed ring around one node -->
+  <circle cx="512" cy="512" r="170" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="66" filter="url(#soft)"/>
+  <circle cx="512" cy="512" r="170" fill="none" stroke="url(#ring)" stroke-width="58"/>
+  <circle cx="512" cy="512" r="58" fill="#fff" opacity="0.55" filter="url(#soft)"/>
+  <circle cx="512" cy="512" r="50" fill="#fff"/>
 </svg>

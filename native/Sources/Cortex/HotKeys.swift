@@ -7,7 +7,7 @@ enum ShortcutTable {
     struct Entry { let id: String; let label: String; let group: String; let accel: String }
 
     static let all: [Entry] = [
-        Entry(id: "palette", label: "Open Cortex", group: "General", accel: "CommandOrControl+K"),
+        Entry(id: "palette", label: "Open AIO", group: "General", accel: "CommandOrControl+K"),
         Entry(id: "pause", label: "Pause / resume screen memory", group: "General", accel: "CommandOrControl+Shift+P"),
         Entry(id: "island", label: "Expand the Island", group: "General", accel: "Control+Alt+Space"),
         Entry(id: "switcher", label: "Switch windows (all apps and Spaces)", group: "General", accel: "Alt+Tab"),

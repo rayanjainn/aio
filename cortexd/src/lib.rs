@@ -1,4 +1,4 @@
-//! cortexd — the Cortex engine as a library: search plugins, ranking, the session
+//! cortexd — the AIO engine as a library: search plugins, ranking, the session
 //! graph and the memory daemon, served to the native app over a local socket.
 
 pub mod auth;

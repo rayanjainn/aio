@@ -12,7 +12,7 @@ final class MenuBarDock: NSObject, NSMenuDelegate {
     func setVisible(_ on: Bool) {
         if on, item == nil {
             let i = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-            i.button?.image = NSImage(systemSymbolName: "dock.rectangle", accessibilityDescription: "Cortex Dock")
+            i.button?.image = NSImage(systemSymbolName: "dock.rectangle", accessibilityDescription: "AIO Dock")
             let menu = NSMenu()
             menu.delegate = self
             i.menu = menu

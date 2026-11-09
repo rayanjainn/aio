@@ -71,27 +71,16 @@ struct ArtworkBackdrop: View {
     }
 }
 
-/// The Cortex menu-bar glyph: an open "C" with a spark, drawn as a template so macOS tints it.
+/// The AIO menu-bar glyph: a closed ring around one node, drawn as a template so macOS tints it.
 enum MenuBarIcon {
     static func image() -> NSImage {
         let img = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
             NSColor.black.setStroke()
             NSColor.black.setFill()
-            let arc = NSBezierPath()
-            arc.appendArc(withCenter: NSPoint(x: 8.2, y: 9), radius: 6.2, startAngle: 38, endAngle: 322, clockwise: false)
-            arc.lineWidth = 1.9
-            arc.lineCapStyle = .round
-            arc.stroke()
-            // Four-point spark in the opening.
-            let c = NSPoint(x: 13.2, y: 9)
-            let pts: [(CGFloat, CGFloat)] = [(0, 3.0), (0.95, 0.95), (3.0, 0), (0.95, -0.95), (0, -3.0), (-0.95, -0.95), (-3.0, 0), (-0.95, 0.95)]
-            let star = NSBezierPath()
-            for (i, p) in pts.enumerated() {
-                let pt = NSPoint(x: c.x + p.0, y: c.y + p.1)
-                if i == 0 { star.move(to: pt) } else { star.line(to: pt) }
-            }
-            star.close()
-            star.fill()
+            let ring = NSBezierPath(ovalIn: NSRect(x: 2.4, y: 2.4, width: 13.2, height: 13.2))
+            ring.lineWidth = 1.9
+            ring.stroke()
+            NSBezierPath(ovalIn: NSRect(x: 6.8, y: 6.8, width: 4.4, height: 4.4)).fill()
             return true
         }
         img.isTemplate = true

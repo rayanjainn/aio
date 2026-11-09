@@ -138,7 +138,7 @@ final class KeepAwake: ObservableObject {
     func start() {
         guard !on else { return }
         let ok = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
-                                             IOPMAssertionLevel(kIOPMAssertionLevelOn), "Cortex: Keep awake" as CFString, &assertion)
+                                             IOPMAssertionLevel(kIOPMAssertionLevelOn), "AIO: Keep awake" as CFString, &assertion)
         on = ok == kIOReturnSuccess
         Toast.show("cup.and.saucer.fill", on ? "Your Mac stays awake" : "Couldn't keep the Mac awake")
     }

@@ -144,7 +144,7 @@ final class Permissions: ObservableObject {
             walkNote = missing.isEmpty ? "Everything is granted." :
                 "Still off: \(missing.joined(separator: ", ")). Switch them on in System Settings, then come back."
             if !AXIsProcessTrusted() || !CGPreflightScreenCaptureAccess() {
-                walkNote += " Accessibility and Screen Recording need a restart of Cortex after you switch them on."
+                walkNote += " Accessibility and Screen Recording need a restart of AIO after you switch them on."
             }
         }
     }
@@ -264,10 +264,10 @@ struct PermissionsCenter: View {
                 Text(perms.walkNote).font(.callout).foregroundStyle(.secondary)
             }
         }
-        .confirmationDialog("Reset all of Cortex's permissions?", isPresented: $confirmReset) {
+        .confirmationDialog("Reset all of AIO's permissions?", isPresented: $confirmReset) {
             Button("Reset and relaunch", role: .destructive) { perms.resetAndRelaunch() }
         } message: {
-            Text("Use this when a switch in System Settings is on but Cortex still says it's off — that happens after an update, because macOS tied the old grant to the previous build. Cortex clears its entries, relaunches and asks again. Nothing else is touched.")
+            Text("Use this when a switch in System Settings is on but AIO still says it's off — that happens after an update, because macOS tied the old grant to the previous build. AIO clears its entries, relaunches and asks again. Nothing else is touched.")
         }
 
         Section("Each permission") {
@@ -292,7 +292,7 @@ struct PermissionsCenter: View {
                 }
             }
             if perms.items.contains(where: { ($0.id == "accessibility" || $0.id == "screen") && $0.status != .granted }) {
-                Text("Switched Accessibility or Screen Recording on but it still shows off? It's a stale entry from an older version: use Reset and ask again, or remove Cortex from that list with − and add it back.")
+                Text("Switched Accessibility or Screen Recording on but it still shows off? It's a stale entry from an older version: use Reset and ask again, or remove AIO from that list with − and add it back.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }

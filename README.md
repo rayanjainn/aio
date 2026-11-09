@@ -1,4 +1,4 @@
-# Cortex
+# AIO
 
 **Created by [Rayan Jain](https://github.com/rayanjainn).** © 2025–2026 Rayan Jain. All rights reserved — see [LICENSE](LICENSE).
 
@@ -17,8 +17,8 @@ Swift / SwiftUI / AppKit for everything you see, a Rust engine (`cortexd`) for s
 
 ## Install
 
-Download the `.dmg` from the [latest release](https://github.com/rayanjainn/aio/releases/latest), drag Cortex to Applications.
-Cortex isn't notarized yet: if macOS says it is damaged run `xattr -cr /Applications/Cortex.app`.
+Download the `.dmg` from the [latest release](https://github.com/rayanjainn/aio/releases/latest), drag AIO to Applications.
+AIO isn't notarized yet: if macOS says it is damaged run `xattr -cr /Applications/AIO.app`.
 Requires macOS 14+; the glass is the real Liquid Glass material on macOS 26+.
 
 ## Layout
@@ -33,7 +33,7 @@ marketing/ Website (GitHub Pages)
 ## Build
 
 ```bash
-native/scripts/bundle.sh 0.3.0     # universal Cortex.app + Cortex.dmg in native/build/
+native/scripts/bundle.sh 0.3.0     # universal AIO.app + AIO.dmg in native/build/
 cd native && swift test            # unit tests
 cd cortexd && cargo test           # engine tests
 ```
@@ -46,6 +46,6 @@ Everything stays on your Mac. Screen memory is **off** until you turn it on, nev
 
 ## License
 
-Cortex is **source-available, not open source**. © 2025–2026 Rayan Jain, all rights reserved.
+AIO is **source-available, not open source**. © 2025–2026 Rayan Jain, all rights reserved.
 You can use the official releases for free and read the code, but you may not redistribute it, publish a product
 based on it, or remove the author's name. Full terms: [LICENSE](LICENSE). Third-party components: [NOTICE](NOTICE).

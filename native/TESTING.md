@@ -1,4 +1,4 @@
-# Testing Cortex on your Mac
+# Testing AIO on your Mac
 
 Two parts: an **automatic self-test** (one command, produces a report) and a **manual checklist**
 (things only a human can judge). Do both, send me the report file + screenshots of anything that
@@ -16,14 +16,14 @@ bash ~/Desktop/e2e.sh
 It opens every surface (palette with ~30 queries, launcher, music player in each style, every Island page, Dock,
 Settings, Screen Memory, widget gallery, Diagnostics), checks each window really appears, screenshots everything,
 probes the engine, Now Playing, permissions and performance (with CPU profiles), collects logs and crash reports,
-and zips it all to `~/Desktop/cortex-e2e-<time>.zip`. Your Cortex settings are backed up and restored. Don't touch
+and zips it all to `~/Desktop/cortex-e2e-<time>.zip`. Your AIO settings are backed up and restored. Don't touch
 the mouse or keyboard while it runs. Send me the zip.
 
 ## Part A — Automatic self-test (3 minutes)
 
 ```bash
-bash /path/to/aio/native/scripts/selftest.sh              # auto-finds Cortex.app
-bash /path/to/aio/native/scripts/selftest.sh ~/Desktop/Cortex.app   # or give the path
+bash /path/to/aio/native/scripts/selftest.sh              # auto-finds AIO.app
+bash /path/to/aio/native/scripts/selftest.sh ~/Desktop/AIO.app   # or give the path
 ```
 
 If you don't have the repo checked out, download the single file:
@@ -39,7 +39,7 @@ What it does (read-only, it changes nothing):
 |---|---|---|
 | 0 Context | macOS, chip, RAM, displays, low-power mode | Low Power Mode and Reduce Transparency both change how glass and animation behave |
 | 1 App bundle | version, architectures, helper + adapter present, signing flags | A hardened signature silently blocks Apple Events; a missing helper kills search |
-| 2 Processes | Cortex / cortexd running, CPU, RAM, threads, open files | Finds a runaway process or a leak |
+| 2 Processes | AIO / cortexd running, CPU, RAM, threads, open files | Finds a runaway process or a leak |
 | 3 Idle CPU | 10 s of CPU with the mouse untouched | Anything above ~15 % idle means a timer or animation is spinning |
 | 4 Lag profile | 8 s CPU **profile while you hover the Dock / Island / palette** | The single most useful file for fixing lag: shows which function is hot |
 | 5 Log | ERROR/WARN lines, last lines, crash reports, system errors | Shows real failures |
@@ -62,11 +62,11 @@ go to the top-centre so the Island opens and closes, and press ⌘K, type a few 
 For each item write **OK / BROKEN / SLOW** and, if not OK, one line on what you saw. Screenshots
 or a short screen recording (⇧⌘5) beat descriptions.
 
-Before you start: Cortex menu-bar icon → **Diagnostics** → copy the text and keep it for the report.
+Before you start: AIO menu-bar icon → **Diagnostics** → copy the text and keep it for the report.
 
 ### B1. First run & permissions
-1. Quit Cortex, relaunch. Does the welcome walkthrough appear (first run only)?
-2. Settings (menu-bar icon → Settings, or ⌘,) → **Privacy**: grant **Accessibility** and **Screen Recording**. After granting, quit and reopen Cortex (macOS requires it).
+1. Quit AIO, relaunch. Does the welcome walkthrough appear (first run only)?
+2. Settings (menu-bar icon → Settings, or ⌘,) → **Privacy**: grant **Accessibility** and **Screen Recording**. After granting, quit and reopen AIO (macOS requires it).
 3. Diagnostics should now say `Accessibility: granted` and `screenRecording=true`.
 
 ### B2. Dock
@@ -86,7 +86,7 @@ Before you start: Cortex menu-bar icon → **Diagnostics** → copy the text and
 | 12 | Drop a file on an app icon | The app opens the file |
 | 13 | Folder icon (Downloads etc.) | Hover shows recent files; click opens |
 | 14 | Auto-hide on, move to bottom edge | Slides in; leaves when the pointer goes away |
-| 15 | Is the real macOS Dock gone? | Hidden while Cortex runs, restored on quit (Diagnostics shows state) |
+| 15 | Is the real macOS Dock gone? | Hidden while AIO runs, restored on quit (Diagnostics shows state) |
 
 Report: icon size feels (too big / right / too small), any stutter (when exactly: entering, magnifying, leaving).
 
@@ -144,7 +144,7 @@ Also: does the palette open instantly on the hotkey (target < 100 ms)? Does typi
 - `⌥⇥` window switcher: appears, cycles, releases to switch.
 
 ### B7. Stability
-- Leave Cortex running 30 min while you work. Afterwards run the self-test again and compare section 2 (RSS memory should not have grown by hundreds of MB; idle CPU still low).
+- Leave AIO running 30 min while you work. Afterwards run the self-test again and compare section 2 (RSS memory should not have grown by hundreds of MB; idle CPU still low).
 - Sleep/wake the Mac, plug/unplug a display: do Dock/Island reposition correctly?
 - Quit from the menu bar: macOS Dock comes back?
 
@@ -161,9 +161,9 @@ Also: does the palette open instantly on the hotkey (target < 100 ms)? Does typi
 
 - **Real Dock stays hidden after a crash**:
   `defaults write com.apple.dock autohide -bool false; defaults delete com.apple.dock autohide-delay; killall Dock`
-- **Reset Cortex settings** (keeps nothing): quit Cortex, `mv ~/.cortex/native ~/Desktop/cortex-native-backup`, relaunch.
-- **Permissions stuck** (switch is on in System Settings but Cortex says off): Settings → Privacy & Permissions → **Reset and ask again**. It clears Cortex's entries and relaunches straight into *Grant everything*. By hand: `tccutil reset All dev.cortex.native`.
-- **Gatekeeper blocks launch**: `xattr -dr com.apple.quarantine /path/to/Cortex.app`
+- **Reset AIO settings** (keeps nothing): quit AIO, `mv ~/.cortex/native ~/Desktop/cortex-native-backup`, relaunch.
+- **Permissions stuck** (switch is on in System Settings but AIO says off): Settings → Privacy & Permissions → **Reset and ask again**. It clears AIO's entries and relaunches straight into *Grant everything*. By hand: `tccutil reset All dev.cortex.native`.
+- **Gatekeeper blocks launch**: `xattr -dr com.apple.quarantine /path/to/AIO.app`
 
 ## Signing and notarization (optional)
 
@@ -180,6 +180,6 @@ Releases are ad-hoc signed until these repository secrets exist (Settings → Se
 **No paid Apple account?** Run `bash native/scripts/make-signing-cert.sh` once on your Mac. It makes a self-signed
 certificate and stores it as `MACOS_CERT_P12` / `MACOS_CERT_PASSWORD` (with `gh`, or prints what to paste). Releases are
 then signed with the same identity every time, so macOS keeps your permission grants across updates — no more removing
-and re-adding Cortex. (It does not remove the first-launch Gatekeeper warning; only a Developer ID does.)
+and re-adding AIO. (It does not remove the first-launch Gatekeeper warning; only a Developer ID does.)
 
 With Developer ID secrets set, the Release workflow signs with your Developer ID (hardened runtime), notarizes and staples the .dmg — no more `xattr -cr`.

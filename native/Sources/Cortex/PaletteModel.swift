@@ -77,7 +77,7 @@ final class PaletteModel: ObservableObject {
                            keywords: ["window", "snap", "resize"] + $0.label.lowercased().split(separator: " ").map(String.init))
         }
         list += [
-            BuiltinCommand(id: "app.settings", title: "Cortex Settings", subtitle: "Shortcuts, Island, Dock, permissions", symbol: "gearshape", keywords: ["preferences", "options", "shortcuts", "permissions"]),
+            BuiltinCommand(id: "app.settings", title: "AIO Settings", subtitle: "Shortcuts, Island, Dock, permissions", symbol: "gearshape", keywords: ["preferences", "options", "shortcuts", "permissions"]),
             BuiltinCommand(id: "app.memory", title: "Search Screen Memory", subtitle: "What was on your screen — type mem, then your words", symbol: "clock.arrow.circlepath", keywords: ["memory", "rewind", "screen", "history", "remember"]),
             BuiltinCommand(id: "app.switcher", title: "Switch Windows", subtitle: "Every window of every app, with previews", symbol: "rectangle.on.rectangle", keywords: ["window", "alt tab", "switcher", "windows"]),
             BuiltinCommand(id: "timer.25", title: "Start Focus Timer (25 min)", subtitle: "Shown live in the Island", symbol: "timer", keywords: ["focus", "pomodoro", "timer", "work"]),
@@ -89,14 +89,14 @@ final class PaletteModel: ObservableObject {
             BuiltinCommand(id: "island.tools", title: "Island: Tools", subtitle: "Timer, mirror, Shortcuts", symbol: "slider.horizontal.3", keywords: ["island", "mirror", "camera", "shortcuts"]),
             BuiltinCommand(id: "app.addWidget", title: "Add a Widget", subtitle: "Clock, calendar, system, now playing, notes, to-dos", symbol: "square.grid.2x2", keywords: ["widgets", "desktop", "clock", "notes"]),
             BuiltinCommand(id: "app.toggleWidgets", title: "Show / hide widgets", subtitle: "", symbol: "eye", keywords: ["widgets", "desktop"]),
-            BuiltinCommand(id: "app.diagnostics", title: "Cortex Diagnostics", subtitle: "Screens, engine, Now Playing", symbol: "stethoscope", keywords: ["debug", "log", "info"]),
-            BuiltinCommand(id: "app.toggleDock", title: "Toggle Cortex Dock", subtitle: "Show or hide the Dock", symbol: "dock.rectangle", keywords: ["dock"]),
-            BuiltinCommand(id: "app.toggleSystemDock", title: "Hide / show macOS Dock", subtitle: "Replace the system Dock with Cortex's", symbol: "dock.arrow.down.rectangle", keywords: ["dock", "system"]),
+            BuiltinCommand(id: "app.diagnostics", title: "AIO Diagnostics", subtitle: "Screens, engine, Now Playing", symbol: "stethoscope", keywords: ["debug", "log", "info"]),
+            BuiltinCommand(id: "app.toggleDock", title: "Toggle AIO Dock", subtitle: "Show or hide the Dock", symbol: "dock.rectangle", keywords: ["dock"]),
+            BuiltinCommand(id: "app.toggleSystemDock", title: "Hide / show macOS Dock", subtitle: "Replace the system Dock with AIO's", symbol: "dock.arrow.down.rectangle", keywords: ["dock", "system"]),
             BuiltinCommand(id: "app.island", title: "Expand the Island", subtitle: "Open the notch player", symbol: "capsule.portrait", keywords: ["island", "notch", "music"]),
             BuiltinCommand(id: "app.pause", title: "Pause / resume screen memory", subtitle: "Toggle episodic capture", symbol: "pause.circle", keywords: ["memory", "capture", "privacy"]),
             BuiltinCommand(id: "app.reindex", title: "Re-index now", subtitle: "Refresh apps, files, browser and git", symbol: "arrow.triangle.2.circlepath", keywords: ["sync", "index"]),
             BuiltinCommand(id: "app.clipboard", title: "Clipboard History", subtitle: "Everything you copied recently", symbol: "doc.on.clipboard", keywords: ["clip", "paste", "copied"]),
-            BuiltinCommand(id: "app.quit", title: "Quit Cortex", subtitle: "", symbol: "power", keywords: ["exit"]),
+            BuiltinCommand(id: "app.quit", title: "Quit AIO", subtitle: "", symbol: "power", keywords: ["exit"]),
         ]
         return list
     }()
@@ -417,7 +417,7 @@ final class PaletteModel: ObservableObject {
             sys("sys.screenshot", "Screenshot selection", "Copies to the clipboard", "camera.viewfinder"),
             sys("sys.pickColor", "Pick a colour", "Copies the hex value", "eyedropper"),
             sys("sys.darkmode", "Toggle dark mode", "", "circle.lefthalf.filled"),
-            cmd("app.settings", "Cortex settings", "Dock, Island, shortcuts, appearance", "gearshape"),
+            cmd("app.settings", "AIO settings", "Dock, Island, shortcuts, appearance", "gearshape"),
         ]
         out.append(contentsOf: Self.recentFileRows())
         return out
@@ -687,7 +687,7 @@ final class PaletteModel: ObservableObject {
             let prompt = q.hasPrefix("?") ? String(q.dropFirst()) : String(q.dropFirst(4))
             let p = prompt.trimmingCharacters(in: .whitespaces)
             if !p.isEmpty {
-                out.append(PaletteRow(id: "ai", title: p, subtitle: "Ask Cortex AI", symbol: "sparkles", iconPath: nil, tag: "",
+                out.append(PaletteRow(id: "ai", title: p, subtitle: "Ask AI", symbol: "sparkles", iconPath: nil, tag: "",
                                       kind: .ai(p), section: "Ask"))
             }
             return out
@@ -737,7 +737,7 @@ final class PaletteModel: ObservableObject {
         let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
         out.append(PaletteRow(id: "web:google", title: "Search the web for “\(q)”", subtitle: "Google", symbol: "magnifyingglass", iconPath: nil, tag: "",
                               kind: .web("https://www.google.com/search?q=\(encoded)"), section: "Web"))
-        out.append(PaletteRow(id: "ai:ask", title: "Ask Cortex AI: “\(q)”", subtitle: ["openai": "Your AI server (Settings → AI)", "ollamaCloud": "Ollama Cloud"][AISettings.load().provider] ?? "Local model via Ollama", symbol: "sparkles", iconPath: nil, tag: "",
+        out.append(PaletteRow(id: "ai:ask", title: "Ask AI: “\(q)”", subtitle: ["openai": "Your AI server (Settings → AI)", "ollamaCloud": "Ollama Cloud"][AISettings.load().provider] ?? "Local model via Ollama", symbol: "sparkles", iconPath: nil, tag: "",
                               kind: .ai(q), section: "Web"))
         return out
     }

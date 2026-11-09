@@ -24,7 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        Log.info("Cortex native \(AppInfo.version) starting on \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        Log.info("AIO \(AppInfo.version) starting on \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        if AppRename.migrateIfNeeded() { return }
 
         // Search engine (separate process) + its client.
         engineProcess.start()
@@ -233,9 +234,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = MenuBarIcon.image()
         let menu = NSMenu()
-        menu.addItem(withTitle: "Cortex \(AppInfo.version)", action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: "AIO \(AppInfo.version)", action: nil, keyEquivalent: "")
         menu.addItem(.separator())
-        let open = NSMenuItem(title: "Open Cortex", action: #selector(openPalette), keyEquivalent: "")
+        let open = NSMenuItem(title: "Open AIO", action: #selector(openPalette), keyEquivalent: "")
         open.target = self
         menu.addItem(open)
         let launchItem = NSMenuItem(title: "Open Launcher", action: #selector(openLauncher), keyEquivalent: "")
@@ -245,7 +246,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         prefsItem.target = self
         menu.addItem(prefsItem)
         menu.addItem(.separator())
-        let dockToggle = NSMenuItem(title: "Show Cortex Dock", action: #selector(toggleDock), keyEquivalent: "")
+        let dockToggle = NSMenuItem(title: "Show AIO Dock", action: #selector(toggleDock), keyEquivalent: "")
         dockToggle.target = self
         dockToggle.state = .on
         menu.addItem(dockToggle)
@@ -280,7 +281,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         log.target = self
         menu.addItem(log)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Cortex", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit AIO", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         item.menu = menu
         statusItem = item
     }
@@ -310,7 +311,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if isNew { Toast.show("arrow.down.circle", "Update \(update.tag) available — ✦ menu → Install") }
             return
         }
-        if isNew { Toast.show("arrow.down.circle", "Cortex \(update.tag) will install when you're away for a minute") }
+        if isNew { Toast.show("arrow.down.circle", "AIO \(update.tag) will install when you're away for a minute") }
         installWhenIdle()
     }
 
@@ -433,7 +434,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.makeKeyAndOrderFront(nil)
         } else {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 460), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-            w.title = "Cortex Diagnostics"
+            w.title = "AIO Diagnostics"
             w.isReleasedWhenClosed = false
             w.contentView = view
             w.center()

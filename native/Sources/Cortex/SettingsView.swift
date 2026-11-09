@@ -102,7 +102,7 @@ struct GeneralPane: View {
     var body: some View {
         Form {
             Section("Startup") {
-                Toggle("Open Cortex at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
+                Toggle("Open AIO at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
             }
             Section("Nudges") {
                 Toggle("Tell me when an app drains the battery", isOn: $prefs.batteryCoach)
@@ -118,7 +118,7 @@ struct GeneralPane: View {
             }
             Section("Keyboard") {
                 Toggle("Hyper key: Caps Lock presses ⌃⌥⌘⇧ together with another key", isOn: $prefs.hyperKey)
-                Text("Use it as a modifier in Settings → Shortcuts, e.g. Hyper+Space. Needs Accessibility. Undone when you turn it off or quit Cortex.")
+                Text("Use it as a modifier in Settings → Shortcuts, e.g. Hyper+Space. Needs Accessibility. Undone when you turn it off or quit AIO.")
                     .font(.callout).foregroundStyle(.secondary)
             }
             Section("Search engine") {
@@ -126,7 +126,7 @@ struct GeneralPane: View {
                 Button("Re-index now") { actions.reindex() }
             }
             Section("Screen memory") {
-                Text("Cortex can remember what was on your screen so you can search it later. It is off until you turn it on, and it never captures password fields or apps you block.")
+                Text("AIO can remember what was on your screen so you can search it later. It is off until you turn it on, and it never captures password fields or apps you block.")
                     .font(.callout).foregroundStyle(.secondary)
                 Button("Pause / resume screen memory") { actions.toggleScreenMemory() }
             }
@@ -334,7 +334,7 @@ struct DockPane: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Show the Cortex Dock", isOn: $prefs.dockEnabled)
+                Toggle("Show the AIO Dock", isOn: $prefs.dockEnabled)
                 Picker("Position", selection: $prefs.dockEdge) {
                     Text("Bottom").tag("bottom")
                     Text("Left").tag("left")
@@ -479,8 +479,8 @@ struct DockPane: View {
                     .font(.callout).foregroundStyle(.secondary)
             }
             Section("macOS Dock") {
-                Toggle("Hide the macOS Dock while Cortex runs", isOn: Binding(get: { hidden }, set: { hidden = $0; actions.setSystemDockHidden($0) }))
-                Text("Cortex restores your Dock settings when it quits. If it ever doesn't, run:  defaults delete com.apple.dock autohide-delay; killall Dock")
+                Toggle("Hide the macOS Dock while AIO runs", isOn: Binding(get: { hidden }, set: { hidden = $0; actions.setSystemDockHidden($0) }))
+                Text("AIO restores your Dock settings when it quits. If it ever doesn't, run:  defaults delete com.apple.dock autohide-delay; killall Dock")
                     .font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
             }
         }
@@ -533,13 +533,13 @@ struct PrivacyPane: View {
         Form {
             if !prefs.onboardingDone {
                 Section {
-                    Text("Welcome to Cortex. Grant what you want to use — everything is optional, and you can change it later.")
+                    Text("Welcome to AIO. Grant what you want to use — everything is optional, and you can change it later.")
                     Button("Done") { prefs.onboardingDone = true }
                 }
             }
             PermissionsCenter()
             Section("Now Playing") {
-                Text("Cortex reads what's playing from macOS itself, so Apple Music, Spotify, browsers and more need no permission.")
+                Text("AIO reads what's playing from macOS itself, so Apple Music, Spotify, browsers and more need no permission.")
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
@@ -564,7 +564,7 @@ struct AboutPane: View {
             }
             Section("Updates") {
                 Toggle("Install updates automatically", isOn: $prefs.autoUpdate)
-                Text("Cortex checks every few hours and installs a new version when you've been away from the keyboard for a minute. Permissions carry over as long as releases are signed with the same certificate.")
+                Text("AIO checks every few hours and installs a new version when you've been away from the keyboard for a minute. Permissions carry over as long as releases are signed with the same certificate.")
                     .font(.caption).foregroundStyle(.secondary)
                 LabeledContent("Status", value: updater.message.isEmpty ? status : updater.message)
                 HStack {
@@ -616,7 +616,7 @@ final class SettingsController {
         } else {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 540),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-            w.title = "Cortex Settings"
+            w.title = "AIO Settings"
             w.isReleasedWhenClosed = false
             w.center()
             w.contentView = host
@@ -711,7 +711,7 @@ struct MemoryPane: View {
                 Toggle("Remember what's on my screen", isOn: Binding(get: { recording }, set: { want in
                     if want != recording { Task { await toggle() } }
                 }))
-                Text("Cortex reads the text on your screen (on this Mac only) so you can search it later: type  mem  in the palette. It never captures password fields or blocked apps. Needs Screen Recording access. ⌘⇧P pauses it.")
+                Text("AIO reads the text on your screen (on this Mac only) so you can search it later: type  mem  in the palette. It never captures password fields or blocked apps. Needs Screen Recording access. ⌘⇧P pauses it.")
                     .font(.callout).foregroundStyle(.secondary)
                 LabeledContent("Engine", value: status)
             }

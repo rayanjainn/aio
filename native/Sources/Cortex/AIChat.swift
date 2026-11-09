@@ -46,7 +46,7 @@ enum AIChat {
         return first
     }
 
-    private static let systemPrompt = "You are Cortex, a concise assistant inside a Mac launcher. Answer directly in a few sentences unless asked for more."
+    private static let systemPrompt = "You are AIO, a concise assistant inside a Mac launcher. Answer directly in a few sentences unless asked for more."
 
     private static func streamOpenAI(_ s: AISettings, prompt: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
@@ -105,7 +105,7 @@ enum AIChat {
                     let payload: [String: Any] = [
                         "model": model, "stream": true,
                         "messages": [
-                            ["role": "system", "content": "You are Cortex, a concise assistant inside a Mac launcher. Answer directly in a few sentences unless asked for more."],
+                            ["role": "system", "content": "You are AIO, a concise assistant inside a Mac launcher. Answer directly in a few sentences unless asked for more."],
                             ["role": "user", "content": prompt],
                         ],
                     ]

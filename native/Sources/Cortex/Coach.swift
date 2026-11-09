@@ -50,7 +50,7 @@ final class Coach {
     }
 
     private func evaluate(_ top: [(Double, String)]) {
-        let ignore: Set<String> = ["kernel_task", "WindowServer", "Cortex", "cortexd", "mds_stores", "mds", "backupd"]
+        let ignore: Set<String> = ["kernel_task", "WindowServer", "Cortex", "cortexd", "AIO", "aiod", "mds_stores", "mds", "backupd"]
         var next: [String: Int] = [:]
         for (cpu, name) in top where cpu > 60 && !ignore.contains(name) {
             next[name] = (strikes[name] ?? 0) + 1

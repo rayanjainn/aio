@@ -1,7 +1,7 @@
 #!/bin/bash
-# Cortex self-test — run on the Mac that has Cortex installed.
+# AIO self-test — run on the Mac that has AIO installed.
 #
-#   bash selftest.sh [path/to/Cortex.app]
+#   bash selftest.sh [path/to/AIO.app]
 #
 # Collects everything needed to diagnose lag and broken features into ONE text file on the
 # Desktop (plus a CPU profile of the app). Read-only: it changes nothing, except that the
@@ -41,11 +41,11 @@ system_profiler SPDisplaysDataType 2>/dev/null | grep -E "Resolution|Chipset Mod
 # ------------------------------------------------------------------------------------------
 section "1. App bundle"
 if [ -z "$APP" ]; then
-  for c in "/Applications/Cortex.app" "$HOME/Applications/Cortex.app" "$HOME/Desktop/Cortex.app" "$HOME/Downloads/Cortex.app"; do
+  for c in "/Applications/AIO.app" "$HOME/Applications/AIO.app" "$HOME/Desktop/AIO.app" "$HOME/Downloads/AIO.app" "/Applications/Cortex.app"; do
     [ -d "$c" ] && APP="$c" && break
   done
 fi
-RUNNING_BIN="$(pgrep -x Cortex | head -1)"
+RUNNING_BIN="$(pgrep -x AIO | head -1)"
 if [ -n "$RUNNING_BIN" ]; then
   RPATH="$(ps -p "$RUNNING_BIN" -o comm= 2>/dev/null)"
   [ -n "$RPATH" ] && APP="${RPATH%/Contents/MacOS/*}"
@@ -55,8 +55,8 @@ if [ -d "$APP" ]; then
   PLIST="$APP/Contents/Info.plist"
   info "version: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST" 2>/dev/null)"
   info "bundle id: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST" 2>/dev/null)"
-  info "executable arch: $(lipo -archs "$APP/Contents/MacOS/Cortex" 2>/dev/null)"
-  [ -x "$APP/Contents/Helpers/cortexd" ] && ok "cortexd helper present ($(lipo -archs "$APP/Contents/Helpers/cortexd" 2>/dev/null))" || bad "cortexd helper missing in Contents/Helpers"
+  info "executable arch: $(lipo -archs "$APP/Contents/MacOS/AIO" 2>/dev/null)"
+  [ -x "$APP/Contents/Helpers/aiod" ] && ok "engine helper present ($(lipo -archs "$APP/Contents/Helpers/aiod" 2>/dev/null))" || bad "cortexd helper missing in Contents/Helpers"
   [ -f "$APP/Contents/Resources/mediaremote/mediaremote-adapter.pl" ] && ok "mediaremote adapter script present" || bad "mediaremote adapter script missing"
   [ -d "$APP/Contents/Resources/mediaremote/MediaRemoteAdapter.framework" ] && ok "mediaremote framework present" || bad "mediaremote framework missing"
   codesign -dv "$APP" 2>&1 | grep -E "Identifier|Signature|flags|TeamIdentifier" | sed 's/^/         /'
@@ -67,15 +67,15 @@ if [ -d "$APP" ]; then
   fi
   xattr "$APP" 2>/dev/null | grep -q quarantine && warn "app is quarantined — right-click > Open once, or: xattr -dr com.apple.quarantine \"$APP\""
 else
-  bad "Cortex.app not found. Pass its path: bash selftest.sh /path/to/Cortex.app"
+  bad "AIO.app not found. Pass its path: bash selftest.sh /path/to/AIO.app"
 fi
 
 # ------------------------------------------------------------------------------------------
 section "2. Processes"
-PID="$(pgrep -x Cortex | head -1)"
-DPID="$(pgrep -x cortexd | head -1)"
-if [ -n "$PID" ]; then ok "Cortex running (pid $PID)"; else bad "Cortex is not running — open it and re-run"; fi
-if [ -n "$DPID" ]; then ok "cortexd engine running (pid $DPID)"; else bad "cortexd engine not running"; fi
+PID="$(pgrep -x AIO | head -1)"
+DPID="$(pgrep -x aiod | head -1)"
+if [ -n "$PID" ]; then ok "AIO running (pid $PID)"; else bad "AIO is not running — open it and re-run"; fi
+if [ -n "$DPID" ]; then ok "engine (aiod) running (pid $DPID)"; else bad "engine (aiod) not running"; fi
 echo "mediaremote adapter processes:"; pgrep -fl mediaremote-adapter || echo "  (none)"
 echo
 echo "Process table (CPU% MEM% RSS-MB threads):"
@@ -88,8 +88,8 @@ done
 # ------------------------------------------------------------------------------------------
 if [ -z "$PID" ]; then
   echo
-  echo "  Cortex is not running, so the CPU, profile and engine checks would be meaningless."
-  echo "  → Open Cortex ($APP), wait ~10 s for the Dock/Island to appear, then run this script again."
+  echo "  AIO is not running, so the CPU, profile and engine checks would be meaningless."
+  echo "  → Open AIO ($APP), wait ~10 s for the Dock/Island to appear, then run this script again."
   echo "  (Log below is from the LAST run, not now.)"
   section "5. Log (last run)"
   grep -E "starting on" "$CORTEX_HOME/logs/native.log" 2>/dev/null | tail -3 | sed 's/^/  /'
@@ -102,13 +102,13 @@ section "3. Idle CPU (10 s, hands off the mouse)"
 if [ -n "$PID" ]; then
   echo "Sampling… don't touch the mouse for 10 seconds."
   IDLE="$(top -l 3 -s 4 -pid "$PID" -stats pid,cpu,mem,threads,command 2>/dev/null | awk '$1=='"$PID"' {print $2}' | tail -1)"
-  printf '  Cortex idle CPU (last sample): %s%%\n' "${IDLE:-?}"
+  printf '  AIO idle CPU (last sample): %s%%\n' "${IDLE:-?}"
   if [ -n "${IDLE:-}" ]; then
     awk -v c="$IDLE" 'BEGIN{ if (c+0 > 15) exit 1; else exit 0 }' && ok "idle CPU is low" || bad "idle CPU is high (${IDLE}%) — something is spinning; see the profile below"
   fi
   if [ -n "$DPID" ]; then
     DIDLE="$(top -l 2 -s 3 -pid "$DPID" -stats pid,cpu 2>/dev/null | awk '$1=='"$DPID"' {print $2}' | tail -1)"
-    printf '  cortexd idle CPU: %s%%\n' "${DIDLE:-?}"
+    printf '  engine idle CPU: %s%%\n' "${DIDLE:-?}"
   fi
 fi
 
@@ -155,8 +155,8 @@ ls -t "$HOME/Library/Logs/DiagnosticReports/" 2>/dev/null | grep -iE "cortex" | 
 [ -z "$(ls "$HOME/Library/Logs/DiagnosticReports/" 2>/dev/null | grep -iE cortex)" ] && echo "  none"
 
 echo
-echo "Unified log, last 10 min (Cortex errors/faults):"
-log show --last 10m --style compact --predicate 'process == "Cortex" AND (messageType == error OR messageType == fault)' 2>/dev/null | tail -15 | sed 's/^/  /'
+echo "Unified log, last 10 min (AIO errors/faults):"
+log show --last 10m --style compact --predicate 'process == "AIO" AND (messageType == error OR messageType == fault)' 2>/dev/null | tail -15 | sed 's/^/  /'
 
 # ------------------------------------------------------------------------------------------
 section "6. Engine (cortexd JSON-RPC over unix socket)"
@@ -196,9 +196,9 @@ else warn "adapter not found, skipped"; fi
 # ------------------------------------------------------------------------------------------
 section "8. Permissions"
 echo "  (macOS 14+ hides the TCC database; these probes test the real capability instead)"
-# Accessibility: System Events can only read UI elements if the *terminal* has it, so test via Cortex's own log/Diagnostics.
+# Accessibility: System Events can only read UI elements if the *terminal* has it, so test via AIO's own log/Diagnostics.
 grep -E "Accessibility" "$LOG" 2>/dev/null | tail -2 | sed 's/^/  log: /'
-echo "  → In Cortex: menu-bar icon → Diagnostics shows 'Accessibility: granted/missing' and 'screenRecording'."
+echo "  → In AIO: menu-bar icon → Diagnostics shows 'Accessibility: granted/missing' and 'screenRecording'."
 printf '  Screen Recording (Terminal probe): '
 screencapture -x -t png /tmp/cortex-probe.png 2>/dev/null && [ -s /tmp/cortex-probe.png ] && echo "capture ok" || echo "capture failed"
 rm -f /tmp/cortex-probe.png
@@ -213,7 +213,7 @@ printf '  macOS Dock autohide: %s\n' "$(defaults read com.apple.dock autohide 2>
 printf '  macOS Dock autohide-delay: %s\n' "$(defaults read com.apple.dock autohide-delay 2>/dev/null || echo default)"
 printf '  macOS Dock tilesize: %s\n' "$(defaults read com.apple.dock tilesize 2>/dev/null || echo default)"
 printf '  Dock process: %s\n' "$(pgrep -x Dock | head -1)"
-echo "  If Cortex quit uncleanly and the real Dock stays hidden, restore it with:"
+echo "  If AIO quit uncleanly and the real Dock stays hidden, restore it with:"
 echo "      defaults write com.apple.dock autohide -bool false; defaults delete com.apple.dock autohide-delay; killall Dock"
 
 # ------------------------------------------------------------------------------------------
@@ -229,7 +229,7 @@ echo "    (a file listed here that is not changing is a leftover — delete it)"
 
 # ------------------------------------------------------------------------------------------
 section "11. Other things that make macOS laggy"
-echo "  Top 8 CPU processes right now (if WindowServer/nehelper/another app is high, lag may not be Cortex):"
+echo "  Top 8 CPU processes right now (if WindowServer/nehelper/another app is high, lag may not be AIO):"
 ps -Ao pcpu,pmem,comm -r 2>/dev/null | head -9 | awk 'NR==1{print "    "$0;next}{printf "    %5s%% %5s%%  %s\n",$1,$2,$3}'
 echo
 echo "  Other Dock / window-manager style apps running (they fight over the same windows):"

@@ -134,7 +134,7 @@ pub async fn get_valid_access_token() -> Result<String> {
 const SUCCESS_HTML: &str = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n\
     <html><body style='font-family:system-ui;text-align:center;padding:60px;\
     background:#000;color:#fff'>\
-    <h2 style='color:#4ade80;margin-bottom:8px'>&#x2713; Connected to Cortex</h2>\
+    <h2 style='color:#4ade80;margin-bottom:8px'>&#x2713; Connected to AIO</h2>\
     <p style='opacity:.5;font-size:14px'>Gmail is connected. Close this tab.</p>\
     </body></html>";
 
@@ -308,7 +308,7 @@ pub async fn check_github_token() -> GithubAuthStatus {
     match http
         .get("https://api.github.com/user")
         .header("Authorization", format!("Bearer {token}"))
-        .header("User-Agent", "Cortex/0.1.0")
+        .header("User-Agent", "AIO/0.1.0")
         .send().await
     {
         Err(e) => GithubAuthStatus {

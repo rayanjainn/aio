@@ -229,7 +229,7 @@ final class LyricsService: ObservableObject {
         func request(_ url: URL) async -> Any? {
             var req = URLRequest(url: url)
             req.timeoutInterval = 8
-            req.setValue("Cortex (macOS launcher)", forHTTPHeaderField: "User-Agent")
+            req.setValue("AIO (macOS launcher)", forHTTPHeaderField: "User-Agent")
             guard let (data, resp) = try? await URLSession.shared.data(for: req), (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
             return try? JSONSerialization.jsonObject(with: data)
         }
