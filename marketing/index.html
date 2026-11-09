@@ -91,7 +91,7 @@ nav .links a{color:var(--ink2)}
 .menubar .mbtn:hover{background:rgba(0,0,0,.08)}
 /* island */
 #island{position:absolute;left:50%;top:0;width:196px;height:32px;transform:translateX(-50%);background:#000;border-radius:0 0 14px 14px;z-index:30;overflow:hidden;transition:width .55s var(--spring),height .55s var(--spring),border-radius .55s var(--spring),box-shadow .4s;color:#f5f5f7;cursor:pointer}
-#island.open{width:690px;height:222px;border-radius:0 0 38px 38px;box-shadow:0 30px 60px -20px rgba(0,0,0,.45)}
+#island.open{width:690px;height:238px;border-radius:0 0 38px 38px;box-shadow:0 30px 60px -20px rgba(0,0,0,.45)}
 #island .in{position:absolute;left:0;right:0;top:44px;padding:0 22px;display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:12px;opacity:0;transform:scale(.94) translateY(-8px);transition:opacity .25s,transform .45s var(--spring)}
 #island.open .in{opacity:1;transform:none;transition-delay:.12s}
 #island .card{background:rgba(255,255,255,.08);border-radius:22px;height:150px;padding:14px;position:relative;overflow:hidden}
@@ -269,6 +269,95 @@ nav .links a{color:var(--ink2)}
 #player .styles{position:absolute;left:150px;top:640px;display:flex;gap:8px}
 #player .styles span{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:980px;background:rgba(255,255,255,.5);color:#3a3a3c}
 #player .styles span:first-child{background:#1d1d1f;color:#fff}
+/* island pages, tabs, HUD */
+#island .in.page:not(.on){opacity:0!important;transform:scale(.96)!important;pointer-events:none}
+#island .in.pg-clip{grid-template-columns:1fr 1fr;gap:10px}
+#island .in.pg-shelf{grid-template-columns:repeat(4,1fr);gap:10px}
+#island .in.pg-tools{grid-template-columns:150px 150px 1fr;gap:10px}
+#island .ci{height:70px;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:18px}
+#island .ci .ib{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex:none}
+#island .ci .ib svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#island .ci b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+#island .ci small{font-size:11.5px;color:#a1a1a6}
+#island .file{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:12px;color:#d1d1d6}
+#island .file .doc{width:46px;height:58px;border-radius:6px;background:linear-gradient(#fafafa,#d8d8dc);position:relative}
+#island .file .doc:after{content:"";position:absolute;right:0;top:0;width:14px;height:14px;background:linear-gradient(225deg,#2b2b2e 50%,#bdbdc2 50%);border-radius:0 6px 0 3px}
+#island .file .doc.img{background:linear-gradient(160deg,#c9c9ce,#6e6e73)}
+#island .file.ad .doc{background:none;display:flex;align-items:center;justify-content:center;border:1.5px dashed rgba(255,255,255,.35);border-radius:12px}
+#island .ring2{width:86px;height:86px;border-radius:50%;border:4px solid rgba(255,255,255,.18);border-top-color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;margin:0 auto}
+#island .tg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;font-size:11.5px;color:#d1d1d6;align-content:center}
+#island .tg i{display:flex;width:44px;height:44px;margin:0 auto 6px;border-radius:50%;background:rgba(255,255,255,.12);align-items:center;justify-content:center}
+#island .tg i.on{background:#fff}
+#island .tg svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round}
+#island .tg i.on svg{stroke:#000}
+#island .tabs{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;opacity:0;transition:opacity .2s}
+#island.open .tabs{opacity:1;transition-delay:.18s}
+#island .tabs b{width:40px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+#island .tabs b.on{background:rgba(255,255,255,.18)}
+#island .tabs svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#island.hud{width:420px;height:44px;border-radius:0 0 22px 22px}
+#island .hudc{position:absolute;left:20px;right:20px;top:0;height:44px;display:flex;align-items:center;gap:12px;opacity:0;transition:opacity .2s}
+#island.hud .hudc{opacity:1;transition-delay:.12s}
+#island .hudc svg{width:20px;height:20px;fill:#fff}
+#island .hudc .hb{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+#island .hudc .hb i{display:block;height:100%;width:var(--v,60%);background:#fff;border-radius:3px;transition:width .25s var(--out)}
+/* launcher widget columns */
+.lpw.r{left:auto;right:64px}
+.lpw{min-height:40px;transition:outline-color .2s}
+#lp.dragging .lpw{min-height:420px;outline:2px dashed rgba(0,0,0,.12);outline-offset:10px;border-radius:26px}
+#lp.dragging .lpw.over{outline-color:rgba(0,113,227,.5);background:rgba(0,113,227,.04)}
+.lpw .c{transition:transform .5s var(--spring),box-shadow .3s;cursor:grab;touch-action:none}
+.lpw .c.drag{transition:box-shadow .3s;z-index:9;box-shadow:0 0 0 .5px rgba(0,0,0,.08),0 30px 60px -12px rgba(0,0,0,.35);cursor:grabbing}
+.lphint{position:absolute;left:0;right:0;bottom:26px;text-align:center;font-size:13px;color:#6e6e73}
+.grid6{transition:left .5s var(--spring),right .5s var(--spring)}
+/* window snapping + switcher */
+.win.anim{transition:left .5s var(--spring),top .5s var(--spring),width .5s var(--spring),height .5s var(--spring),opacity .3s,transform .4s var(--spring)}
+.win{overflow:hidden}
+#snapPrev{position:absolute;z-index:2;border-radius:16px;background:rgba(0,113,227,.1);border:2px solid rgba(0,113,227,.4);opacity:0;pointer-events:none;transition:opacity .2s,left .3s var(--spring),top .3s var(--spring),width .3s var(--spring),height .3s var(--spring)}
+#snapPrev.on{opacity:1}
+#switcher{position:absolute;left:50%;top:300px;transform:translateX(-50%) scale(.96);display:flex;gap:10px;padding:16px;border-radius:24px;background:rgba(250,250,252,.82);backdrop-filter:blur(40px) saturate(1.8);-webkit-backdrop-filter:blur(40px) saturate(1.8);box-shadow:0 0 0 .5px rgba(0,0,0,.14),0 40px 90px -20px rgba(0,0,0,.35);z-index:27;opacity:0;pointer-events:none;transition:opacity .18s,transform .3s var(--spring)}
+#switcher.on{opacity:1;transform:translateX(-50%)}
+#switcher .sw{width:168px;padding:10px;border-radius:16px;text-align:center;font-size:12.5px;color:#3a3a3c;transition:background .15s}
+#switcher .sw.sel{background:rgba(0,0,0,.08)}
+#switcher .th{height:100px;border-radius:9px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.14),0 6px 14px -6px rgba(0,0,0,.25);position:relative;overflow:hidden;margin-bottom:9px}
+#switcher .th:before{content:"";position:absolute;left:8px;top:7px;width:30px;height:7px;background:radial-gradient(circle 3px at 3px 3.5px,#ff5f57 99%,transparent) 0 0/10px 7px repeat-x}
+#switcher .th i{position:absolute;left:10px;right:10px;height:6px;border-radius:3px;background:#e5e5ea}
+#switcher .th.dk{background:#2b2b2e}#switcher .th.dk i{background:#48484a}
+#switcher .sw .ico{width:22px;height:22px;display:inline-flex;vertical-align:middle;margin-right:6px;border-radius:6px}
+/* dock presets */
+#dmenu{position:absolute;z-index:30;min-width:210px;padding:5px;border-radius:12px;background:rgba(246,246,248,.9);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 18px 40px -10px rgba(0,0,0,.3);font-size:13.5px;opacity:0;transform:scale(.97);transform-origin:50% 100%;pointer-events:none;transition:opacity .15s,transform .2s var(--spring)}
+#dmenu.on{opacity:1;transform:none;pointer-events:auto}
+#dmenu .h{padding:4px 10px;color:#86868b;font-size:12px;font-weight:600}
+#dmenu .mi{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;cursor:default}
+#dmenu .mi:hover,#dmenu .mi.hv{background:#0071e3;color:#fff}
+#dmenu .mi span{width:12px}
+#dmenu .mi i{width:14px;height:14px;border-radius:4px;margin-left:auto;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.2)}
+#mdock .dw{transition:transform .35s var(--spring),background .4s,color .4s}
+#mdock.p-tide .dw{background:linear-gradient(135deg,#ffcc78,#f58c4c)}
+#mdock.p-midnight .dw{background:linear-gradient(135deg,#3d3379,#0f0f29)}
+#mdock.p-ocean .dw{background:linear-gradient(135deg,#409efa,#1a40ad)}
+#mdock.p-paper .dw{background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.08)}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .dw :is(b,strong){color:#fff}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .dw :is(small){color:rgba(255,255,255,.78)}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .dw.sq{color:rgba(255,255,255,.78)}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .ring circle:last-of-type{stroke:#fff}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .ring circle:first-of-type{stroke:rgba(255,255,255,.25)}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .ring text{fill:#fff}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .dw.np .bar{background:rgba(255,255,255,.3)}
+#mdock:is(.p-tide,.p-midnight,.p-ocean) .dw.np .bar i{background:#fff}
+/* act on this */
+#win .body p{user-select:text;-webkit-user-select:text;cursor:text}
+#actp.hl,#win .body p::selection,#win .body p *::selection{background:rgba(0,113,227,.24)}
+#act{position:absolute;z-index:26;width:380px;padding:12px;border-radius:16px;background:rgba(250,250,252,.92);backdrop-filter:blur(30px) saturate(1.8);-webkit-backdrop-filter:blur(30px) saturate(1.8);box-shadow:0 0 0 .5px rgba(0,0,0,.16),0 24px 50px -14px rgba(0,0,0,.3);opacity:0;transform:translateY(-6px) scale(.97);pointer-events:none;transition:opacity .18s,transform .3s var(--spring)}
+#act.on{opacity:1;transform:none;pointer-events:auto}
+#act .ah{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#86868b;margin-bottom:8px}
+#act .ah svg{width:14px;height:14px;stroke:#86868b;fill:none;stroke-width:1.8}
+#act .ab{display:flex;flex-wrap:wrap;gap:6px}
+#act .ab b{font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:999px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.14);cursor:pointer;color:#1d1d1f}
+#act .ab b:hover,#act .ab b.on{background:#1d1d1f;color:#fff}
+#act .res{margin-top:10px;font-size:14px;line-height:1.45;color:#1d1d1f;padding:10px 12px;border-radius:10px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.1);display:none}
+#act .res.on{display:block}
+#act .res small{display:block;color:#86868b;font-size:11.5px;margin-top:4px}
 /* fake cursor + keys */
 #cursor{position:absolute;left:0;top:0;width:26px;height:26px;z-index:99;pointer-events:none;transition:opacity .3s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 #cursor.hide{opacity:0}
@@ -397,12 +486,30 @@ footer a{color:var(--ink2)}
           </div>
 
           <div id="island" role="button" aria-label="The notch: hover or tap to open the Island">
-            <div class="in">
+            <div class="in page pg-home on">
               <div class="card np" data-act="player"><div class="art"></div><div style="min-width:0;flex:1"><b>Night Drive</b><small>The Example Band</small><div class="prog"><i class="pg"></i></div><div class="ctl"><svg viewBox="0 0 24 24"><path d="M6 5.5v13M18.5 5.5v13L9 12z"/></svg><svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg><svg viewBox="0 0 24 24"><path d="M18 5.5v13M5.5 5.5v13L15 12z"/></svg></div></div></div>
               <div class="card date"><em class="dow">Sunday</em><strong class="dnum">8</strong><small class="mon">November</small></div>
               <div class="card wx">Now<strong>24°</strong>Clear · H 27° L 18°<br>Focus 25:00</div>
             </div>
-            <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="in page pg-clip">
+              <div class="card ci"><span class="ib"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg></span><div><b>github.com/rayanjainn/aio</b><small>Link · just now</small></div></div>
+              <div class="card ci"><span class="ib" style="background:#0071e3"></span><div><b>#0071E3</b><small>Colour · 2 min ago</small></div></div>
+              <div class="card ci"><span class="ib"><svg viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg></span><div><b>~/Documents/Q4 plan.pdf</b><small>Path · 8 min ago</small></div></div>
+              <div class="card ci"><span class="ib"><svg viewBox="0 0 24 24"><path d="M3.5 5h17v14h-17zM7 10l3 2.5L7 15M12.5 15H17"/></svg></span><div><b>git commit -m "ship it"</b><small>Code · 12 min ago</small></div></div>
+            </div>
+            <div class="in page pg-shelf">
+              <div class="card file"><span class="doc"></span>Q4 plan.pdf</div>
+              <div class="card file"><span class="doc img"></span>Logo.png</div>
+              <div class="card file"><span class="doc"></span>Notes.txt</div>
+              <div class="card file ad"><span class="doc"><svg style="width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.5" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10zM12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2z"/></svg></span>AirDrop</div>
+            </div>
+            <div class="in page pg-tools">
+              <div class="card" style="text-align:center"><div class="ring2">25:00</div><small style="color:#a1a1a6;font-size:12px;display:block;margin-top:10px">Focus timer</small></div>
+              <div class="card" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px"><svg style="width:34px;height:34px;stroke:#fff;fill:none;stroke-width:1.5" viewBox="0 0 24 24"><path d="M12 4a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7zM5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><b style="font-size:14px">Mirror</b><small style="color:#a1a1a6;font-size:11.5px">Check yourself before a call</small></div>
+              <div class="card tg"><div><i class="on"><svg viewBox="0 0 24 24"><path d="M5 9h12v4a6 6 0 0 1-12 0zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v3M12 3v3"/></svg></i>Awake</div><div><i><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18zM12 3a9 9 0 0 1 0 18"/></svg></i>Dark</div><div><i><svg viewBox="0 0 24 24"><path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z"/></svg></i>Capture</div><div><i><svg viewBox="0 0 24 24"><path d="M14.5 5.5l4 4M4 20l2-6 8.5-8.5 4 4L10 18z"/></svg></i>Colour</div></div>
+            </div>
+            <div class="tabs"><b class="on" data-pg="home"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></b><b data-pg="clip"><svg viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 5.5H5v15h14v-15h-1"/></svg></b><b data-pg="shelf"><svg viewBox="0 0 24 24"><path d="M3 13l2-8h14l2 8v6H3zM3 13h5l1 2h6l1-2h5"/></svg></b><b data-pg="tools"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4"/></svg></b></div>
+            <div class="hudc"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4zM16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" stroke="#fff" stroke-width="1.6" fill="none"/><path d="M4 9h4l5-4v14l-5-4H4z"/></svg><span class="hb"><i></i></span></div>
           </div>
 
           <div class="wg cal"><div class="l"><em class="dow">Sunday</em><strong class="dnum">8</strong><small>Design review<br>2:00 PM</small></div><div class="m" id="cal"></div></div>
@@ -414,10 +521,14 @@ footer a{color:var(--ink2)}
             <div class="body">
               <h4>Go ahead, try it.</h4>
               <p>This is AIO running on a Mac — in your browser. Everything here works.</p>
+              <p><span id="actp">Select this sentence, then pick an action: translate it, summarise it or fix it.</span></p>
               <div class="try" data-act="island"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round"><path d="M4 5h16M8 5v2.5a4 4 0 0 0 8 0V5"/></svg></span>Hover the notch<span class="k">top centre</span></div>
               <div class="try" data-act="palette"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round"><path d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.5 15.5 20 20"/></svg></span>Search, calculate, convert<span class="k">⌘K</span></div>
               <div class="try" data-act="launcher"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></span>Open the Launcher<span class="k">L</span></div>
               <div class="try" data-act="player"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5.5l11-2V16M9 18a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0zM20 16a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0z"/></svg></span>Play music full screen<span class="k">P</span></div>
+              <div class="try" data-act="snap"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17v14h-17zM12 5v14"/></svg></span>Snap this window<span class="k">⌃⌥← →</span></div>
+              <div class="try" data-act="switcher"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h8v8H3zM13 10h8v8h-8z"/></svg></span>Switch windows<span class="k">⌥⇥</span></div>
+              <div class="try" data-act="widgets"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h6v14H4zM14 5h6v6h-6zM17 14v6M14 17h6"/></svg></span>Move Launcher widgets<span class="k">drag</span></div>
             </div>
           </div>
 
@@ -426,12 +537,14 @@ footer a{color:var(--ink2)}
           <div id="lp">
             <div class="inner">
               <div class="sfield"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.5 15.5 20 20"/></svg><input id="lpq" placeholder="Search" autocomplete="off" spellcheck="false"></div>
-              <div class="lpw">
-                <div class="c d"><em class="dow">Sunday</em><strong class="dnum">8</strong><small class="mon">November</small></div>
-                <div class="c mu" data-act="player"><div class="recwrap"><div class="vinyl spin"></div><div class="art"></div></div><div><b>Night Drive</b><small>The Example Band</small></div></div>
-                <div class="c w"><div><small>Your city</small><strong>24°</strong></div><small style="text-align:right">Clear<br>H 27° L 18°</small></div>
+              <div class="lpw" id="lpwL">
+                <div class="c d" data-w="date"><em class="dow">Sunday</em><strong class="dnum">8</strong><small class="mon">November</small></div>
+                <div class="c mu" data-w="music" data-act="player"><div class="recwrap"><div class="vinyl spin"></div><div class="art"></div></div><div><b>Night Drive</b><small>The Example Band</small></div></div>
+                <div class="c w" data-w="weather"><div><small>Your city</small><strong>24°</strong></div><small style="text-align:right">Clear<br>H 27° L 18°</small></div>
               </div>
+              <div class="lpw r" id="lpwR"></div>
               <div class="grid6" id="apps"></div>
+              <div class="lphint">Drag a widget to either side · right-click for more</div>
               <div class="lpempty" id="lpempty">No apps match.</div>
             </div>
           </div>
@@ -456,6 +569,10 @@ footer a{color:var(--ink2)}
             </div>
           </div>
 
+          <div id="snapPrev"></div>
+          <div id="switcher"></div>
+          <div id="dmenu"><div class="h">Dock presets</div></div>
+          <div id="act"><div class="ah"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Act on this · ⌃⌥A</div><div class="ab"><b data-a="translate">Translate</b><b data-a="summarise">Summarise</b><b data-a="fix">Fix grammar</b><b data-a="reply">Reply</b><b data-a="search">Search</b></div><div class="res"></div></div>
           <div id="toast"></div>
           <div id="keys"></div>
           <div id="cursor" class="hide"><svg viewBox="0 0 26 26"><path d="M5 3l15.5 11.2-6.6.9 3.9 7.4-3 1.6-3.9-7.5L5 21.4z" fill="#000" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="clk"></span></div>
@@ -464,7 +581,7 @@ footer a{color:var(--ink2)}
       <div class="base"></div>
     </div>
     <div class="status" id="status"><span class="dot"></span><span id="stxt">Playing a live demo — move your mouse onto the Mac to take over.</span><button id="replay" hidden>Replay demo</button></div>
-    <div class="hints"><button data-play="island">Notch</button><button data-play="dock">Dock</button><button data-play="launcher">Launcher</button><button data-play="palette">⌘K</button><button data-play="player">Music</button></div>
+    <div class="hints"><button data-play="island">Notch</button><button data-play="dock">Dock</button><button data-play="launcher">Launcher</button><button data-play="palette">⌘K</button><button data-play="snap">Snapping</button><button data-play="switcher">⌥⇥ Switcher</button><button data-play="act">Act on this</button><button data-play="player">Music</button></div>
   </div>
 </section>
 
@@ -749,9 +866,55 @@ const showKeys = ks => { const el = $('#keys'); el.innerHTML = ks.map(k => `<spa
 const island = $('#island');
 const setIsland = open => island.classList.toggle('open', open);
 const islandHit = (x, y) => {
-  if (island.classList.contains('open')) return y < 232 && Math.abs(x - 720) < 355;
+  if (island.classList.contains('open')) return y < 248 && Math.abs(x - 720) < 355;
   return y < 36 && Math.abs(x - 720) < 110;
 };
+
+
+const setPage = pg => { $$('#island .page').forEach(p => p.classList.toggle('on', p.classList.contains('pg-' + pg))); $$('#island .tabs b').forEach(b => b.classList.toggle('on', b.dataset.pg === pg)); };
+$$('#island .tabs b').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setPage(b.dataset.pg); }));
+let hudT;
+const hud = v => { island.classList.remove('open'); island.classList.add('hud'); island.style.setProperty('--v', Math.round(v * 100) + '%'); clearTimeout(hudT); hudT = setTimeout(() => island.classList.remove('hud'), 1500); };
+let vol = .6;
+
+// ---------- Menus (Dock presets, widget options) ----------
+const dmenu = $('#dmenu');
+const menu = (x, y, title, items) => {
+  dmenu.innerHTML = `<div class="h">${title}</div>` + items.map((it, i) => it === '-' ? '<div style="height:1px;background:rgba(0,0,0,.1);margin:4px 6px"></div>' : `<div class="mi" data-i="${i}"><span>${it.check ? '✓' : ''}</span>${it.label}${it.sw ? `<i style="background:${it.sw}"></i>` : ''}</div>`).join('');
+  dmenu._items = items;
+  const h = dmenu.offsetHeight;
+  dmenu.style.left = Math.max(8, Math.min(1440 - 230, x)) + 'px';
+  dmenu.style.top = (y > 450 ? y - h - 8 : y + 8) + 'px';
+  dmenu.classList.add('on');
+};
+const closeMenu = () => dmenu.classList.remove('on');
+dmenu.addEventListener('click', e => { const m = e.target.closest('.mi'); if (!m) return; e.stopPropagation(); const it = dmenu._items[+m.dataset.i]; closeMenu(); it.fn && it.fn(); });
+const PRESETS = [['glass', 'Glass', '#e5e5ea'], ['tide', 'Morning Tide', 'linear-gradient(135deg,#ffcc78,#f58c4c)'], ['midnight', 'Midnight Focus', 'linear-gradient(135deg,#3d3379,#0f0f29)'], ['ocean', 'Ocean Desk', 'linear-gradient(135deg,#409efa,#1a40ad)'], ['paper', 'Paper', '#fff']];
+let preset = 'glass';
+const setPreset = k => { preset = k; const d = $('#mdock'); PRESETS.forEach(([p]) => d.classList.remove('p-' + p)); if (k !== 'glass') d.classList.add('p-' + k); };
+const presetMenu = (x, y) => menu(x, y, 'Dock presets', PRESETS.map(([k, n, sw]) => ({ label: n, sw, check: k === preset, fn: () => { setPreset(k); toast(`Dock: ${n}`); } })));
+
+// ---------- Window snapping ----------
+const SNAPS = { left: [8, 38, 708, 770], right: [724, 38, 708, 770], max: [8, 38, 1424, 770] };
+let winNat = 0;
+const snapWin = (k, instant) => {
+  const w = $('#win');
+  if (!w.dataset.snap) winNat = w.offsetHeight;
+  w.style.height = w.offsetHeight + 'px'; void w.offsetWidth;
+  if (!instant) w.classList.add('anim');
+  if (!k || k === 'restore') { w.style.left = '96px'; w.style.top = '96px'; w.style.width = '470px'; w.style.height = (winNat || w.offsetHeight) + 'px'; w.dataset.snap = ''; setTimeout(() => { if (!w.dataset.snap) w.style.height = ''; }, instant ? 0 : 560); }
+  else { const [x, y, ww, hh] = SNAPS[k]; w.style.left = x + 'px'; w.style.top = y + 'px'; w.style.width = ww + 'px'; w.style.height = hh + 'px'; w.dataset.snap = k; }
+  setTimeout(() => w.classList.remove('anim'), instant ? 0 : 560);
+};
+const snapPrev = $('#snapPrev');
+const preview = k => { if (!k) return snapPrev.classList.remove('on'); const [x, y, w, h] = SNAPS[k]; Object.assign(snapPrev.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }); snapPrev.classList.add('on'); };
+
+// ---------- Window switcher (⌥⇥) ----------
+const SW = [['Welcome to AIO', 'brand', ''], ['Browser — Docs', 'globe', ''], ['Notes — Ideas', 'notes', ''], ['Terminal — ~', 'terminal', 'dk'], ['Music — Night Drive', 'music', '']];
+const switcherEl = $('#switcher');
+let swi = -1;
+const swShow = i => { switcherEl.classList.add('on'); swi = (i + SW.length) % SW.length; $$('.sw', switcherEl).forEach((e, j) => e.classList.toggle('sel', j === swi)); };
+const swDone = () => { if (swi < 0) return; const n = SW[swi][0]; switcherEl.classList.remove('on'); swi = -1; if (n.startsWith('Welcome')) { $('#win').classList.remove('closed'); toast('Switched to Welcome to AIO'); } else { bounce(n.split(' — ')[0]); toast(`Switched to ${n}`); } };
 
 // ---------- Launcher ----------
 const apps = $('#apps');
@@ -767,10 +930,63 @@ const filterApps = () => {
 lpq.addEventListener('input', filterApps);
 const openLP = (focus) => { closeAll('lp'); lp.classList.add('open'); $('#mdock').classList.add('hide'); if (focus) setTimeout(() => lpq.focus({ preventScroll: true }), 50); };
 const closeLP = () => { lp.classList.remove('open'); $('#mdock').classList.remove('hide'); lpq.value = ''; filterApps(); lpq.blur(); };
+
+// Launcher widgets live in a left or right column: drag one across (or onto another to reorder).
+const lpL = $('#lpwL'), lpR = $('#lpwR'), WORDER = ['date', 'music', 'weather'];
+const lpLayout = () => {
+  const hasL = lpL.children.length > 0, hasR = lpR.children.length > 0, g = $('#apps'), e = $('#lpempty');
+  const l = hasL ? 420 : 64, r = hasR ? 420 : 56;
+  g.style.left = e.style.left = l + 'px'; g.style.right = e.style.right = r + 'px';
+  g.style.gridTemplateColumns = `repeat(${Math.max(4, Math.floor((1440 - l - r) / 122))},1fr)`;
+};
+let wdrag = null, justDragged = false;
+const wStart = (card, x, y) => { wdrag = { card, x0: x, y0: y, x, y, moved: false, right: card.parentElement === lpR }; };
+const wMove = (x, y) => {
+  if (!wdrag) return;
+  const dx = x - wdrag.x0, dy = y - wdrag.y0; wdrag.x = x; wdrag.y = y;
+  if (!wdrag.moved && Math.abs(dx) + Math.abs(dy) < 6) return;
+  if (!wdrag.moved) { wdrag.moved = true; wdrag.card.classList.add('drag'); lp.classList.add('dragging'); }
+  wdrag.dx = dx; wdrag.dy = dy;
+  wdrag.card.style.transform = `translate(${dx}px,${dy}px) scale(1.04) rotate(${Math.max(-3, Math.min(3, dx / 80)).toFixed(2)}deg)`;
+  wdrag.right = x > 720; lpL.classList.toggle('over', !wdrag.right); lpR.classList.toggle('over', wdrag.right);
+};
+const placeWidget = (card, col, beforeEl, from) => {
+  const cards = $$('.lpw .c'), first = new Map(cards.map(c => { const p = pos(c); return [c, { x: p.x, y: p.y }]; }));
+  if (from) { const f = first.get(card); f.x += from[0]; f.y += from[1]; }
+  col.insertBefore(card, beforeEl || null); lpLayout();
+  cards.forEach(c => { const a = first.get(c), b = pos(c); c.style.transition = 'none'; c.style.transform = `translate(${a.x - b.x}px,${a.y - b.y}px)`; });
+  card.classList.remove('drag'); void lp.offsetWidth;
+  cards.forEach(c => { c.style.transition = ''; c.style.transform = ''; });
+};
+const wEnd = () => {
+  if (!wdrag) return false;
+  const d = wdrag; wdrag = null; lpL.classList.remove('over'); lpR.classList.remove('over'); lp.classList.remove('dragging');
+  if (!d.moved) return false;
+  const col = d.right ? lpR : lpL, before = [...col.children].filter(c => c !== d.card).find(c => pos(c).cy > d.y);
+  placeWidget(d.card, col, before, [d.dx || 0, d.dy || 0]);
+  justDragged = true; setTimeout(() => justDragged = false, 50);
+  return true;
+};
+const resetWidgets = () => { WORDER.forEach(w => lpL.appendChild($(`.lpw .c[data-w="${w}"]`))); lpLayout(); };
+$$('.lpw .c').forEach(c => {
+  c.addEventListener('pointerdown', e => { if (e.button) return; const [x, y] = toV(e); wStart(c, x, y); c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', e => { if (wdrag) { const [x, y] = toV(e); wMove(x, y); } });
+  c.addEventListener('pointerup', () => wEnd());
+  c.addEventListener('contextmenu', e => {
+    e.preventDefault(); const [x, y] = toV(e), right = c.parentElement === lpR, col = right ? lpR : lpL, i = [...col.children].indexOf(c);
+    menu(x, y, 'Widget', [
+      { label: right ? 'Move to Left Column' : 'Move to Right Column', fn: () => placeWidget(c, right ? lpL : lpR) },
+      { label: 'Move Up', fn: () => i > 0 && placeWidget(c, col, col.children[i - 1]) },
+      { label: 'Move Down', fn: () => i < col.children.length - 1 && placeWidget(c, col, col.children[i + 2]) },
+      '-', { label: 'Reset Widgets', fn: resetWidgets }]);
+  });
+});
+lpLayout();
 lp.addEventListener('click', e => {
+  if (justDragged) return;
   const a = e.target.closest('.app'); if (a) { const n = a.dataset.name; closeLP(); if (n === 'Music') return openPlayer(); bounce(n); toast(`Opening ${n}…`); return; }
   if (e.target.closest('[data-act="player"]')) { closeLP(); return openPlayer(); }
-  if (!e.target.closest('.sfield,.lpw')) closeLP();
+  if (!e.target.closest('.sfield,.lpw,#dmenu')) closeLP();
 });
 
 // ---------- Command bar ----------
@@ -863,14 +1079,45 @@ $('#plnext').addEventListener('click', () => { line = (line + 1) % LYR.length; l
 $('#plprev').addEventListener('click', () => { line = (line - 1 + LYR.length) % LYR.length; lineT = 0; });
 ps.forEach((p, i) => p.addEventListener('click', () => { line = i; lineT = 0; }));
 
-const closeAll = except => { if (except !== 'lp') closeLP(); if (except !== 'pal') closePal(); if (except !== 'player') closePlayer(); setIsland(false); };
+
+// ---------- Act on this ----------
+const actEl = $('#act'), actp = $('#actp');
+const ACT = {
+  translate: ['Selecciona esta frase y elige una acción: tradúcela, resúmela o corrígela.', 'Translated to Spanish · by your AI'],
+  summarise: ['Pick an action for the selected text.', 'Summary · by your AI'],
+  fix: ['Select this sentence, then pick an action: translate it, summarise it or fix it.', 'No changes needed ✓'],
+  reply: ['Sounds good — trying it now!', 'Suggested reply'],
+  search: ['Searching the web for your selection…', 'Browser']
+};
+let actText = '';
+const showAct = (el = actp) => { const p = pos(el); actEl.style.left = Math.min(1440 - 400, p.x) + 'px'; actEl.style.top = (p.y + p.h + 10) + 'px'; actEl.classList.add('on'); actEl.querySelector('.res').classList.remove('on'); $$('#act .ab b').forEach(b => b.classList.remove('on')); };
+const doAct = a => {
+  const own = !actText || actp.textContent.includes(actText.trim()), [t, sub] = ACT[a];
+  const r = actEl.querySelector('.res');
+  r.innerHTML = own || a === 'search' ? `${t}<small>${sub}</small>` : `“${actText.trim().slice(0, 80)}”<small>In the app this goes to your AI — Ollama or any OpenAI-compatible server</small>`;
+  r.classList.add('on'); $$('#act .ab b').forEach(b => b.classList.toggle('on', b.dataset.a === a));
+  if (a === 'search') toast('Opening Browser…');
+};
+const closeAct = () => { actEl.classList.remove('on'); actp.classList.remove('hl'); };
+$$('#act .ab b').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); doAct(b.dataset.a); }));
+$('#win .body').addEventListener('mouseup', () => setTimeout(() => {
+  const sel = getSelection(), t = sel ? sel.toString() : '';
+  if (t.trim().length > 2 && sel.anchorNode && $('#win').contains(sel.anchorNode)) { actText = t; showAct(sel.anchorNode.parentElement); }
+}, 0));
+const selectActText = () => { const r = document.createRange(); r.selectNodeContents(actp); const s = getSelection(); s.removeAllRanges(); s.addRange(r); actText = actp.textContent; };
+
+// ---------- Switcher markup ----------
+switcherEl.innerHTML = SW.map(([t, g, k], i) => `<div class="sw" data-i="${i}"><div class="th ${k}">${[0, 1, 2, 3].map(j => `<i style="top:${26 + j * 16}px;right:${10 + ((i * 17 + j * 23) % 50)}px"></i>`).join('')}</div>${ico(g, g === 'brand' ? 'brand' : '')}${t.split(' — ')[0]}</div>`).join('');
+$$('.sw', switcherEl).forEach(e => e.addEventListener('click', ev => { ev.stopPropagation(); swShow(+e.dataset.i); swDone(); }));
+
+const closeAll = except => { if (except !== 'lp') closeLP(); if (except !== 'pal') closePal(); if (except !== 'player') closePlayer(); setIsland(false); closeMenu(); closeAct(); switcherEl.classList.remove('on'); swi = -1; };
 
 // ---------- Desktop window: drag + close ----------
 const win = $('#win');
 let drag = null;
 $('#wintb').addEventListener('pointerdown', e => { if (e.target.id === 'winx') return; const [x, y] = toV(e); drag = { x, y, l: win.offsetLeft, t: win.offsetTop }; $('#wintb').setPointerCapture(e.pointerId); });
-$('#wintb').addEventListener('pointermove', e => { if (!drag) return; const [x, y] = toV(e); win.style.left = Math.max(-300, Math.min(1300, drag.l + x - drag.x)) + 'px'; win.style.top = Math.max(30, Math.min(780, drag.t + y - drag.y)) + 'px'; });
-$('#wintb').addEventListener('pointerup', () => drag = null);
+$('#wintb').addEventListener('pointermove', e => { if (!drag) return; const [x, y] = toV(e); win.style.left = Math.max(-300, Math.min(1300, drag.l + x - drag.x)) + 'px'; win.style.top = Math.max(30, Math.min(780, drag.t + y - drag.y)) + 'px'; drag.edge = x < 14 ? 'left' : x > 1426 ? 'right' : y < 40 ? 'max' : null; preview(drag.edge); });
+$('#wintb').addEventListener('pointerup', () => { if (drag && drag.edge) snapWin(drag.edge); preview(null); drag = null; });
 $('#winx').addEventListener('click', () => win.classList.add('closed'));
 
 // ---------- Actions shared by clicks, keys and the demo ----------
@@ -879,6 +1126,9 @@ const act = a => {
   if (a === 'palette') return pal.classList.contains('open') ? closePal() : openPal(userMode);
   if (a === 'player') return openPlayer();
   if (a === 'island') { closeAll(); setIsland(true); }
+  if (a === 'snap') { const order = ['left', 'right', 'max', 'restore'], cur = win.dataset.snap || 'restore'; snapWin(order[(order.indexOf(cur) + 1) % order.length]); }
+  if (a === 'switcher') { swShow(swi < 0 ? 1 : swi + 1); clearTimeout(act._sw); act._sw = setTimeout(swDone, 1300); }
+  if (a === 'widgets') { openLP(false); toast('Drag a widget to the other side'); }
 };
 screen.addEventListener('click', e => {
   const t = e.target.closest('[data-act]');
@@ -886,11 +1136,15 @@ screen.addEventListener('click', e => {
   const d = e.target.closest('.di'); if (d) { bounce(d.dataset.name); if (d.dataset.name !== 'Launcher') toast(`Opening ${d.dataset.name}…`); return; }
   if (e.target.closest('#island') && !island.classList.contains('open')) { setIsland(true); return; }
   if (pal.classList.contains('open') && !e.target.closest('#pal')) closePal();
+  if (!e.target.closest('#dmenu')) closeMenu();
+  if (actEl.classList.contains('on') && !e.target.closest('#act,#win .body p')) closeAct();
 });
+screen.addEventListener('contextmenu', e => { if (e.target.closest('#mdock')) { e.preventDefault(); const [x, y] = toV(e); presetMenu(x, y); } });
 $('#mb-search').addEventListener('click', e => { e.stopPropagation(); act('palette'); });
 
 // ---------- Pointer: one path for the real mouse and the demo cursor ----------
 const pointerAt = (x, y) => {
+  if (wdrag) { wMove(x, y); return; }
   dockMag(lp.classList.contains('open') || playerOpen ? null : x, y);
   if (!lp.classList.contains('open') && !playerOpen && !pal.classList.contains('open')) {
     if (islandHit(x, y)) setIsland(true); else if (island.classList.contains('open')) setIsland(false);
@@ -924,39 +1178,65 @@ const clearInput = (input) => { input.value = ''; input.dispatchEvent(new Event(
 
 const SCENES = {
   async island(id) {
-    await move(720, 16, 900, id); await wait(2800, id);
-    await move(860, 380, 800, id); await wait(500, id);
+    await move(720, 16, 900, id); await wait(1500, id);
+    for (const pg of ['clip', 'shelf', 'tools', 'home']) { const b = pos($(`#island .tabs b[data-pg="${pg}"]`)); await move(b.cx, b.cy, 450, id); await click(id); await wait(pg === 'home' ? 400 : 1300, id); }
+    await move(860, 380, 800, id); await wait(400, id);
+    showKeys(['🔉']); hud(.45); await wait(500, id); showKeys(['🔊']); hud(.7); await wait(1300, id);
   },
   async dock(id) {
     const r = pos(dock);
     await move(r.x + 20, 862, 900, id);
     await move(r.x + r.w - 40, 868, 2300, id);
-    const np = pos($('.dw.np')); await move(np.cx, np.cy + 4, 700, id); await wait(600, id);
-    await move(base[2], 862, 900, id); await wait(300, id); await click(id); await wait(900, id);
+    const np = pos($('.dw.np')); await move(np.cx, np.cy + 4, 700, id); await wait(400, id);
+    for (const k of ['tide', 'midnight', 'ocean', 'glass']) {
+      presetMenu(cx, cy); await wait(500, id);
+      const it = $$('#dmenu .mi')[PRESETS.findIndex(p => p[0] === k)], p = pos(it); await move(p.cx - 40, p.cy, 450, id); it.classList.add('hv'); await wait(200, id); await click(id); await wait(k === 'glass' ? 400 : 1100, id);
+      await move(np.cx, np.cy + 4, 350, id);
+    }
   },
   async launcher(id) {
     await move(base[0], 864, 900, id); await wait(250, id); await click(id); await wait(1300, id);
     const f = pos($('.sfield')); await move(f.cx, f.cy, 800, id); await click(id); await wait(300, id);
-    await type(lpq, 'note', id); await wait(1300, id); clearInput(lpq); await wait(700, id);
-    await move(1100, 720, 700, id); await wait(400, id); closeLP(); await wait(600, id);
+    await type(lpq, 'note', id); await wait(1100, id); clearInput(lpq); await wait(500, id);
+    const card = $('.lpw .c[data-w="weather"]'), c = pos(card), toRight = card.parentElement === lpL;
+    await move(c.cx, c.cy, 800, id); await wait(200, id); wStart(card, cx, cy);
+    await move(toRight ? 1210 : 210, 230, 1300, id); await wait(150, id); wEnd(); await wait(1500, id);
+    await move(1100, 760, 600, id); await wait(300, id); closeLP(); await wait(600, id);
   },
   async palette(id) {
-    await move(900, 520, 700, id); showKeys(['⌘', 'K']); await wait(300, id); openPal(false); await wait(1000, id);
-    for (const q of ['12*(3+4)', '10 km to mi', 'event lunch tomorrow 1pm', 'heart']) { await type(palq, q, id); await wait(1500, id); clearInput(palq); await wait(250, id); }
+    await move(900, 520, 700, id); showKeys(['⌘', 'K']); await wait(300, id); openPal(false); await wait(900, id);
+    for (const q of ['12*(3+4)', '10 km to mi', 'event lunch tomorrow 1pm', 'heart']) { await type(palq, q, id); await wait(1400, id); clearInput(palq); await wait(250, id); }
     showKeys(['esc']); closePal(); await wait(600, id);
   },
+  async snap(id) {
+    await move(330, 120, 700, id);
+    for (const [k, key] of [['left', '←'], ['right', '→'], ['max', '↑'], ['restore', '↓']]) { showKeys(['⌃', '⌥', key]); snapWin(k); await wait(k === 'restore' ? 900 : 1300, id); }
+  },
+  async switcher(id) {
+    await move(900, 560, 600, id);
+    showKeys(['⌥', '⇥']); swShow(1); await wait(700, id);
+    for (const i of [2, 3]) { showKeys(['⌥', '⇥']); swShow(i); await wait(700, id); }
+    swDone(); await wait(1000, id);
+  },
+  async act(id) {
+    const p = pos(actp); await move(p.x + 2, p.y + 8, 800, id); await move(p.x + p.w - 10, p.y + p.h - 4, 900, id);
+    selectActText(); actp.classList.add('hl'); showAct(); await wait(700, id);
+    const b = pos($('#act .ab b[data-a="translate"]')); await move(b.cx, b.cy, 600, id); await click(id); await wait(2300, id);
+    const b2 = pos($('#act .ab b[data-a="summarise"]')); await move(b2.cx, b2.cy, 400, id); await click(id); await wait(1800, id);
+    getSelection().removeAllRanges(); closeAct(); await wait(400, id);
+  },
   async player(id) {
-    const np = pos($('.dw.np')); await move(np.cx, np.cy, 1000, id); await wait(300, id); await click(id); await wait(6200, id);
+    const np = pos($('.dw.np')); await move(np.cx, np.cy, 1000, id); await wait(300, id); await click(id); await wait(6000, id);
     await move(1400 - 9, 63, 900, id); await wait(250, id); await click(id); await wait(700, id);
   }
 };
-const ORDER = ['island', 'dock', 'launcher', 'palette', 'player'];
+const ORDER = ['island', 'dock', 'launcher', 'palette', 'snap', 'switcher', 'act', 'player'];
 const status = (u) => {
   $('#status').classList.toggle('user', u);
   $('#stxt').textContent = u ? "You're in control. The demo picks up again when you stop." : 'Playing a live demo — move your mouse onto the Mac to take over.';
   $('#replay').hidden = !u;
 };
-const reset = () => { closeAll(); win.classList.remove('closed'); dockMag(null, 0); };
+const reset = () => { closeAll(); win.classList.remove('closed'); dockMag(null, 0); setPage('home'); setPreset('glass'); if (win.dataset.snap) snapWin('restore', true); resetWidgets(); island.classList.remove('hud'); };
 const direct = async (start = sceneIdx) => {
   const id = ++runId; userMode = false; status(false); cursor.classList.remove('hide'); sceneIdx = start;
   try {
@@ -977,13 +1257,18 @@ document.addEventListener('keydown', e => {
   if (!visible) return;
   const k = e.key.toLowerCase(), typing = document.activeElement && document.activeElement.tagName === 'INPUT';
   if ((e.metaKey || e.ctrlKey) && k === 'k') { e.preventDefault(); takeOver(); if (pal.classList.contains('open')) { palq.focus({ preventScroll: true }); return; } return openPal(true); }
-  if (k === 'escape') { if (lp.classList.contains('open') || pal.classList.contains('open') || playerOpen) { takeOver(); closeAll(); } return; }
+  if (k === 'escape') { if (lp.classList.contains('open') || pal.classList.contains('open') || playerOpen || actEl.classList.contains('on') || dmenu.classList.contains('on')) { takeOver(); closeAll(); } return; }
+  if (e.altKey && k === 'tab' && hovering) { e.preventDefault(); takeOver(); swShow(swi < 0 ? 1 : swi + (e.shiftKey ? -1 : 1)); return; }
+  if (e.ctrlKey && e.altKey && hovering && ['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k)) { e.preventDefault(); takeOver(); snapWin({ arrowleft: 'left', arrowright: 'right', arrowup: 'max', arrowdown: 'restore' }[k]); return; }
+  if (e.ctrlKey && e.altKey && k === 'a' && hovering) { e.preventDefault(); takeOver(); selectActText(); showAct(); return; }
   if (typing) { takeOver(); return; }
   if (!hovering || e.metaKey || e.ctrlKey || e.altKey) return;
   if (k === 'l') { takeOver(); act('launcher'); }
   else if (k === 'p') { takeOver(); act('player'); }
   else if (k === ' ' && playerOpen) { e.preventDefault(); takeOver(); setPlaying(!playing); }
+  else if ((k === 'arrowup' || k === 'arrowdown') && !playerOpen && !lp.classList.contains('open')) { e.preventDefault(); takeOver(); vol = Math.max(0, Math.min(1, vol + (k === 'arrowup' ? .1 : -.1))); hud(vol); }
 });
+document.addEventListener('keyup', e => { if (e.key === 'Alt' && swi >= 0) swDone(); });
 $('#replay').addEventListener('click', () => { clearTimeout(idleT); reset(); direct(0); });
 const playScene = name => {
   $('#demo').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });

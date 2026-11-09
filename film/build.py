@@ -16,101 +16,121 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SNAP = json.load(open(os.path.join(HERE, "snapshot.json")))
 
-# Beat grid of "Digital Clouds" (Mixkit), 129 BPM; the cut puts the drop on beat 6.
+# Beat grid of "Digital Clouds" (Mixkit), 129 BPM; the cut puts the drop on beat 6 and the second drop on beat 86.
 B, T0 = 0.46511, 0.2
 SRC_START = 26.971
-BEATS = 53
+BEATS = 104
 def b(n): return round(T0 + n * B, 3)
 TOTAL = b(BEATS)
 
 K0 = 0.75 if V else 1.2          # screen scale at zoom 1: fills the frame width (portrait) or height (landscape)
 
-# ---------- Camera: [time, focus x, focus y, zoom, tilt°, y offset px, ease] ----------
-if not V:
-    CAM = [
-        [0,      720, 450, .50, 26, 420, "out"],
-        [1.3,    720, 450, .50, 26, 300, "out"],
-        [b(5.5), 720, 450, .50, 26, 300, "inout"],
-        [b(6.6), 720, 450, 1.0, 0, 0, "expo"],
-        [b(7),   720, 450, 1.0, 0, 0, "inout"],
-        [b(8.4), 720, 175, 2.1, 0, 0, "inout"],
-        [b(12.8), 720, 175, 2.1, 0, 0, "inout"],
-        [b(14),  720, 450, 1.0, 0, 0, "inout"],
-        [b(14.4), 720, 450, 1.0, 0, 0, "inout"],
-        [b(15.3), 420, 770, 1.75, 0, 0, "inout"],
-        [b(18.4), 900, 770, 1.75, 0, 0, "inout"],
-        [b(19.2), 940, 770, 1.75, 0, 0, "inout"],
-        [b(20.5), 720, 450, 1.0, 0, 0, "inout"],
-        [b(21),  720, 450, 1.0, 0, 0, "inout"],
-        [b(27.5), 760, 430, 1.1, 0, 0, "inout"],
-        [b(28),  760, 430, 1.1, 0, 0, "inout"],
-        [b(29.2), 720, 330, 1.55, 0, 0, "inout"],
-        [b(35.4), 720, 330, 1.55, 0, 0, "inout"],
-        [b(36.5), 720, 450, 1.0, 0, 0, "inout"],
-        [b(37.2), 560, 430, 1.15, 0, 0, "inout"],
-        [b(44),  900, 410, 1.2, 0, 0, "inout"],
-        [b(45.6), 720, 450, .5, 16, 250, "expo"],
-        [TOTAL,  720, 450, .48, 16, 250, "out"],
-    ]
-else:
-    CAM = [
-        [0,      720, 450, .9, 24, 640, "out"],
-        [1.3,    720, 450, .9, 24, 520, "out"],
-        [b(5.5), 720, 450, .9, 24, 520, "inout"],
-        [b(6.6), 720, 450, 1.0, 0, 0, "expo"],
-        [b(7),   720, 450, 1.0, 0, 0, "inout"],
-        [b(8.4), 720, 140, 2.0, 0, 0, "inout"],
-        [b(12.8), 720, 140, 2.0, 0, 0, "inout"],
-        [b(14),  720, 450, 1.0, 0, 0, "inout"],
-        [b(14.4), 720, 450, 1.0, 0, 0, "inout"],
-        [b(15.3), 380, 770, 2.4, 0, 0, "inout"],
-        [b(18.4), 900, 770, 2.4, 0, 0, "inout"],
-        [b(19.2), 960, 770, 2.4, 0, 0, "inout"],
-        [b(20.5), 720, 450, 1.0, 0, 0, "inout"],
-        [b(21),  720, 450, 1.0, 0, 0, "inout"],
-        [b(23),  540, 380, 1.55, 0, 0, "inout"],
-        [b(27.5), 740, 360, 1.55, 0, 0, "inout"],
-        [b(28),  740, 360, 1.5, 0, 0, "inout"],
-        [b(29.2), 720, 330, 1.75, 0, 0, "inout"],
-        [b(35.4), 720, 330, 1.75, 0, 0, "inout"],
-        [b(36.5), 720, 450, 1.0, 0, 0, "inout"],
-        [b(37.2), 380, 400, 1.7, 0, 0, "inout"],
-        [b(44),  1080, 360, 1.7, 0, 0, "inout"],
-        [b(45.6), 720, 450, .82, 14, 470, "expo"],
-        [TOTAL,  720, 450, .8, 14, 470, "out"],
-    ]
+def C(t, x, y, zl, zp, e="inout", rl=0, rp=0, yl=0, yp=0):
+    """Camera keyframe for both cuts: focus point (screen px), zoom, tilt and y offset per orientation."""
+    return [t, x, y, zp if V else zl, rp if V else rl, yp if V else yl, e]
+def F(t, x, y, zl, zp, e="inout", xp=None, yp_=None):
+    return C(t, xp if (V and xp is not None) else x, yp_ if (V and yp_ is not None) else y, zl, zp, e)
 
-# ---------- Cursor (screen coordinates): [time, x, y, ease]; the Dock items are measured at runtime ----------
+# ---------- Camera ----------
+CAM = [
+    C(0, 720, 450, .50, .9, "out", 26, 24, 420, 640),
+    C(1.3, 720, 450, .50, .9, "out", 26, 24, 300, 520),
+    C(b(5.5), 720, 450, .50, .9, "inout", 26, 24, 300, 520),
+    C(b(6.6), 720, 450, 1, 1, "expo"),
+    C(b(7), 720, 450, 1, 1),
+    F(b(8.4), 720, 175, 2.1, 2.0, yp_=150),            # notch: Island pages, then the volume HUD
+    F(b(16.8), 720, 175, 2.1, 2.0, yp_=150),
+    C(b(17.6), 720, 450, 1, 1),
+    F(b(18.4), 420, 770, 1.75, 2.4),                    # Dock: magnify sweep
+    F(b(20.6), 900, 770, 1.75, 2.4),
+    F(b(21.4), 800, 720, 1.7, 2.1),                     # presets menu
+    F(b(25.9), 800, 720, 1.7, 2.1),
+    C(b(26.6), 720, 450, 1, 1),
+    F(b(27.4), 720, 450, 1, 1.55, xp=540, yp_=380),     # Launcher
+    F(b(30.4), 760, 430, 1.06, 1.55, xp=560, yp_=360),
+    F(b(32.6), 940, 360, 1.18, 1.5, xp=1060, yp_=330),  # widget dragged to the right column
+    F(b(37.3), 900, 380, 1.12, 1.5, xp=1040, yp_=340),
+    C(b(38), 720, 450, 1, 1),
+    C(b(39.2), 720, 330, 1.55, 1.75),                   # ⌘K
+    C(b(47.3), 720, 330, 1.55, 1.75),
+    C(b(48.2), 720, 450, 1, 1),                         # snapping, full desktop
+    C(b(53.2), 720, 450, 1, 1),
+    C(b(53.8), 720, 380, 1.3, 1.35),                    # switcher
+    C(b(55.9), 720, 380, 1.3, 1.35),
+    F(b(56.8), 340, 250, 2.2, 2.4, yp_=240),            # Act on this
+    F(b(62.8), 340, 250, 2.2, 2.4, yp_=240),
+    C(b(63.6), 720, 450, 1, 1),
+    F(b(64.4), 560, 430, 1.15, 1.7, xp=380, yp_=400),   # music
+    F(b(71.8), 900, 410, 1.2, 1.7, xp=1080, yp_=360),
+    F(b(73.2), 1180, 250, 1.9, 2.2, xp=1180, yp_=260),  # desktop widgets
+    F(b(77.2), 1150, 270, 1.95, 2.3, xp=1160, yp_=270),
+    C(b(78.2), 720, 450, .9, 1.0),                      # "and more"
+    C(b(85.8), 720, 450, .86, .96),
+    C(b(87.6), 720, 450, .5, .82, "expo", 16, 14, 250, 470),
+    C(TOTAL, 720, 450, .48, .8, "out", 16, 14, 250, 470),
+]
+
+# ---------- Cursor (screen px; names are measured from the page at runtime) ----------
 CURSOR = [
     [b(6.6), 1040, 640, "inout"], [b(6.9), 1040, 640, "inout"], [b(8), 720, 14, "inout"],
-    [b(12.6), 720, 14, "inout"], [b(13.4), 900, 520, "inout"],
-    [b(14.2), 900, 520, "inout"], [b(15.2), "D0+10", 858, "inout"], [b(15.4), "D0+10", 858, "inout"],
-    [b(18.4), "D8", 862, "inout"], [b(18.6), "D8", 862, "inout"], [b(19.2), "NP", 855, "inout"],
-    [b(19.6), "NP", 855, "inout"], [b(20.6), "D0", 860, "inout"],
-    [b(22), "D0", 860, "inout"], [b(22.9), 720, 74, "inout"], [b(27.4), 720, 74, "inout"], [b(28.2), 1000, 600, "inout"],
-    [b(35.8), 1000, 600, "inout"], [b(36.6), "NP", 855, "inout"],
+    [b(9.9), 720, 60, "inout"], [b(10.3), "TAB1", "TABY", "inout"], [b(12.1), "TAB1", "TABY", "inout"], [b(12.3), "TAB2", "TABY", "inout"],
+    [b(13.7), "TAB2", "TABY", "inout"], [b(13.9), "TAB3", "TABY", "inout"], [b(15.2), "TAB3", "TABY", "inout"], [b(15.9), 900, 420, "inout"],
+    [b(17.4), 900, 420, "inout"], [b(18.2), "D0+10", 858, "inout"], [b(18.4), "D0+10", 858, "inout"],
+    [b(20.6), "D8", 862, "inout"], [b(20.8), "D8", 862, "inout"], [b(21.1), "NP", 855, "inout"],
+    [b(21.4), "NP", 855, "inout"], [b(21.9), "MI1X", "MI1", "inout"], [b(22.4), "NP", 855, "inout"],
+    [b(22.7), "NP", 855, "inout"], [b(23.2), "MI2X", "MI2", "inout"], [b(23.7), "NP", 855, "inout"],
+    [b(24.0), "NP", 855, "inout"], [b(24.5), "MI3X", "MI3", "inout"], [b(24.9), "NP", 855, "inout"],
+    [b(25.2), "NP", 855, "inout"], [b(25.6), "MI0X", "MI0", "inout"], [b(26.2), "D0", 860, "inout"],
+    [b(27.5), "D0", 860, "inout"], [b(28), 720, 74, "inout"], [b(30.1), 720, 74, "inout"], [b(30.8), "WCX", "WCY", "inout"],
+    [b(31), "WCX", "WCY", "inout"], [b(32.5), 1210, 230, "inout"], [b(37.1), 1210, 230, "inout"], [b(37.8), 1000, 600, "inout"],
+    [b(48), 1000, 600, "inout"], [b(48.4), 330, 112, "inout"], [b(53.2), 330, 112, "inout"], [b(53.8), 900, 560, "inout"],
+    [b(56.1), 900, 560, "inout"], [b(56.6), "P0X", "P0Y", "inout"], [b(57.4), "P1X", "P1Y", "inout"],
+    [b(58.1), "TRX", "TRY", "inout"], [b(60.1), "TRX", "TRY", "inout"], [b(60.4), "SUX", "SUY", "inout"],
+    [b(62.4), "SUX", "SUY", "inout"], [b(63.2), "NP", 855, "inout"],
 ]
-CURSOR_ON = [b(6.6), b(37.4)]
-CLICKS = [b(20.7), b(23), b(36.7)]
-BOUNCES = [["Launcher", b(20.7)], ["Music", b(36.7)]]
+CURSOR_ON = [b(6.6), b(64.0)]
+CLICKS = [b(10.4), b(12.4), b(14), b(21.3), b(22), b(23.3), b(24.6), b(25.7), b(26.4), b(28.1), b(58.3), b(60.5), b(63.4)]
+BOUNCES = [["Launcher", b(26.4)], ["Music", b(63.4)], ["Terminal", b(55.7)]]
 
-ISLAND = [[b(8), 0, "out"], [b(8.7), 1, "back"], [b(12.8), 1, "inout"], [b(13.3), 0, "inout"]]
-DOCKMAG = [b(14.2), b(20.6)]
-LAUNCH = [[b(20.9), 0, "out"], [b(21.6), 1, "out"], [b(27.2), 1, "out"], [b(27.8), 0, "out"]]
-LP_TYPE = [[b(23.3), b(24.3), b(27.8), "note"]]
-PAL = [[b(28.2), 0, "out"], [b(28.7), 1, "back"], [b(35.5), 1, "out"], [b(35.9), 0, "out"]]
-PAL_TYPE = [[b(29.3), b(30.5), b(32.3), "12*(3+4)"], [b(32.5), b(33.9), b(35.9), "10 km to mi"]]
-KEYS = [[b(27.8), b(28.9), ["⌘", "K"]], [b(35.3), b(36.1), ["esc"]]]
-PLAYER = b(36.9)
-LYRICS = [b(38), b(40), b(42), b(44)]
+ISLAND = [[b(8), 0, "out"], [b(8.7), 1, "back"], [b(15.3), 1, "inout"], [b(15.8), 0, "inout"]]
+PAGES = [[0, "home"], [b(10.4), "clip"], [b(12.4), "shelf"], [b(14), "tools"]]
+HUD = [b(15.9), b(17.2), b(16.4)]                       # in, out, when the level steps up
+DOCKMAG = [b(17.4), b(21.0)]
+MENUS = [[b(21.3), b(22.05)], [b(22.6), b(23.35)], [b(23.9), b(24.65)], [b(25.1), b(25.75)]]
+PRESET = [[0, "glass"], [b(22), "tide"], [b(23.3), "midnight"], [b(24.6), "ocean"], [b(25.7), "glass"]]
+LAUNCH = [[b(26.6), 0, "out"], [b(27.3), 1, "out"], [b(37.4), 1, "out"], [b(38), 0, "out"]]
+LP_TYPE = [[b(28.3), b(29.3), b(30.2), "note"]]
+WDRAG = [b(31), b(32.5)]
+PAL = [[b(38.4), 0, "out"], [b(38.9), 1, "back"], [b(47.2), 1, "out"], [b(47.6), 0, "out"]]
+PAL_TYPE = [[b(39.4), b(40.6), b(42.4), "12*(3+4)"], [b(42.6), b(44), b(47.6), "10 km to mi"]]
+KEYS = [[b(15.8), b(16.9), ["F12"]], [b(38), b(39), ["⌘", "K"]], [b(46.9), b(47.7), ["esc"]],
+        [b(48.5), b(49.6), ["⌃", "⌥", "←"]], [b(50), b(51.1), ["⌃", "⌥", "→"]], [b(51.4), b(52.4), ["⌃", "⌥", "↑"]], [b(52.5), b(53.3), ["⌃", "⌥", "↓"]],
+        [b(53.4), b(55.6), ["⌥", "⇥"]]]
+WSNAP = [[0, "restore"], [b(48.6), "left"], [b(50.1), "right"], [b(51.5), "max"], [b(52.6), "restore"]]
+SWITCH = [[b(53.5), 1], [b(54.2), 2], [b(54.9), 3], [b(55.7), -1]]
+TOASTS = [[b(55.7), b(57.4), "Switched to Terminal — ~"]]
+ACT = [b(57.3), b(57.6), b(62.7)]                       # highlight, popover in, popover out
+ACT_RES = [[b(58.5), "translate"], [b(60.5), "summarise"]]
+PLAYER = [b(63.6), b(72.2)]
+LYRICS = [b(65), b(67), b(69), b(71)]
+MORE = [b(77.6), b(85.8)]
+MORE_LINES = ["Shelf + AirDrop", "Clipboard history", "Spaces for every setup", "Screen memory, off until you want it", "AI on your Mac", "No account. No tracking."]
 
 # ---------- Captions: [in, out, text, where] ----------
+def W2(l, p): return p if V else l
 CAPS = [
-    [b(8.7), b(12.7), "Hello, notch.", "bottom"],
-    [b(15.2), b(20.2), "Truly your Dock.", "bottom" if V else "top"],
-    [b(21.7), b(27.2), "All your apps. Plus your day.", "bottom" if not V else "top"],
-    [b(29.2), b(35.4), "Type it. It's done.", "bottom"],
-    [b(37.4), b(43.8), "Your song. The whole screen.", "top" if V else "bottom"],
+    [b(8.7), b(10.3), "Hello, notch.", "bottom"],
+    [b(10.6), b(15.3), W2("Clipboard, Shelf, Tools. One hover away.", "Clipboard. Shelf. Tools."), "bottom"],
+    [b(18.2), b(21), "Truly your Dock.", W2("top", "bottom")],
+    [b(21.4), b(25.9), "Presets in one click.", W2("top", "bottom")],
+    [b(27.4), b(30.4), "All your apps. Plus your day.", W2("bottom", "top")],
+    [b(30.8), b(37.2), "Put widgets where you want them.", W2("bottom", "top")],
+    [b(39.2), b(47.2), "Type it. It's done.", "bottom"],
+    [b(48.6), b(53.2), "Snap windows from the keyboard.", W2("bottom", "top")],
+    [b(53.6), b(56), "Switch windows, not just apps.", "bottom"],
+    [b(57.5), b(62.7), "Act on any text.", "bottom"],
+    [b(64.2), b(71.8), "Your song. The whole screen.", W2("bottom", "top")],
+    [b(73.5), b(77.2), "Desktop widgets.", "bottom"],
 ]
 
 words = ["Launcher.", "Dock.", "Notch.", "Music."]
@@ -132,13 +152,14 @@ import re
 css = SNAP["css"].replace("url(aio-icon-256.png)", "url(assets/aio-icon-256.png)")
 css = re.sub(r"(?<![-\w])(transition(-delay)?|animation)\s*:[^;}]*;?", "", css)   # the film drives every change itself
 
-sfx = [("impact", b(6), .32), ("swish", b(6.1), .22)]
+sfx = [("impact", b(6), .32), ("swish", b(6.1), .22), ("impact", b(86), .34), ("swish", b(86.1), .22)]
 for i in range(4): sfx.append(("click", b(i), .2))
 sfx.append(("impact", b(4), .26))
-for t in [b(7), b(14.4), b(28), b(36.5)]: sfx.append(("swish", t, .16))
-for t in CLICKS: sfx.append(("click", t, .32))
-sfx.append(("click", b(27.9), .26)); sfx.append(("click", b(28.1), .26))
-sfx.append(("drop", b(45.2), .3))
+for t in [b(7), b(17.5), b(38), b(48), b(53.4), b(56.2), b(63.6), b(72.4), b(77.6)]: sfx.append(("swish", t, .14))
+for t in CLICKS: sfx.append(("click", t, .3))
+for t in [b(27.9), b(28.1), b(48.5), b(50), b(51.4), b(52.5), b(53.4), b(54.2), b(54.9)]: sfx.append(("click", t, .22))
+for i in range(len(MORE_LINES)): sfx.append(("click", round(MORE[0] + .25 + i * B, 3), .16))
+sfx.append(("drop", b(87.1), .3))
 audio = f'<audio id="music" class="clip" src="assets/music.wav" data-start="0" data-duration="{TOTAL}" data-volume="0.8" data-fade-out="1.6" data-track-index="20"></audio>\n'
 for k, (n, t, v) in enumerate(sfx):
     d = {"click": 0.01, "impact": 0.18, "swish": 0.06, "drop": 0.11}[n]
@@ -156,12 +177,15 @@ else:
       <div class="ot" id="oname" style="top:180px;font-size:130px">AIO</div>
       <div class="ot sub" id="otag" style="top:330px;font-size:38px">All in one: Launcher · Dock · Notch · Music · ⌘K</div>
       <div class="ot cta" id="octa" style="top:410px;font-size:30px">Free for macOS · github.com/rayanjainn/aio</div>"""
+more_html = '<div id="more">' + "".join(f'<div class="ml" id="ml{i}">{t}</div>' for i, t in enumerate(MORE_LINES)) + '</div>'
 caps_html = "".join(f'<div class="cap" id="cap{i}" style="{"top:" + str(220 if V else 70) + "px" if w == "top" else "top:" + str(1600 if V else 920) + "px"}">{t}</div>' for i, (_, _, t, w) in enumerate(CAPS))
 
 DATA = dict(TOTAL=TOTAL, K0=K0, W=W, H=H, CAM=CAM, CURSOR=CURSOR, CURSOR_ON=CURSOR_ON, CLICKS=CLICKS, BOUNCES=BOUNCES,
             ISLAND=ISLAND, DOCKMAG=DOCKMAG, LAUNCH=LAUNCH, LP_TYPE=LP_TYPE, PAL=PAL, PAL_TYPE=PAL_TYPE, KEYS=KEYS,
             PLAYER=PLAYER, LYRICS=LYRICS, CAPS=[c[:2] for c in CAPS], ROWS=SNAP["rows"],
-            HOOK=[b(0), b(1), b(2), b(3), b(4)], HOOK_OUT=b(5.6), OUTRO=[b(45), b(45.6), b(46.4), b(47.2)], V=V)
+            PAGES=PAGES, HUD=HUD, MENUS=MENUS, PRESET=PRESET, WDRAG=WDRAG, SNAP=WSNAP, SWITCH=SWITCH, TOASTS=TOASTS,
+            ACT=ACT, ACT_RES=ACT_RES, MORE=MORE, MORE_N=len(MORE_LINES),
+            HOOK=[b(0), b(1), b(2), b(3), b(4)], HOOK_OUT=b(5.6), OUTRO=[b(87), b(87.6), b(88.4), b(89.2)], V=V)
 
 JS = r"""
 const D = __DATA__;
@@ -192,10 +216,40 @@ const pos = el => { let x = 0, y = 0, n = el; while (n && n !== screen) { x += n
 const dis = $$('#mdock .di');
 dis.forEach(d => d.style.width = d.style.height = '58px');
 const base = dis.map(d => pos(d).cx), dockR = pos($('#mdock .dbar')), npX = pos($('.dw.np')).cx;
-const cur = D.CURSOR.map(([t, x, y, e]) => {
-  const rx = typeof x === 'number' ? x : x === 'NP' ? npX : (() => { const m = x.match(/^D(\d+)([+-]\d+)?$/); return base[+m[1]] + (+m[2] || 0); })();
-  return [t, rx, y, e];
-});
+const NAMED = {};
+// Island tabs, measured with the Island open.
+island.style.width = '690px'; island.style.height = '238px';
+$$('#island .tabs b').forEach((tb, i) => { const p = pos(tb); NAMED['TAB' + i] = p.cx; NAMED.TABY = p.cy; });
+island.style.width = island.style.height = '';
+// Dock presets menu, placed the way the site places it (above the pointer).
+const PRESETS = [['glass', 'Glass', '#e5e5ea'], ['tide', 'Morning Tide', 'linear-gradient(135deg,#ffcc78,#f58c4c)'], ['midnight', 'Midnight Focus', 'linear-gradient(135deg,#3d3379,#0f0f29)'], ['ocean', 'Ocean Desk', 'linear-gradient(135deg,#409efa,#1a40ad)'], ['paper', 'Paper', '#fff']];
+const dmenu = $('#dmenu');
+const buildMenu = cur => { dmenu.innerHTML = '<div class="h">Dock presets</div>' + PRESETS.map(([k, n, sw]) => `<div class="mi"><span>${k === cur ? '✓' : ''}</span>${n}<i style="background:${sw}"></i></div>`).join(''); };
+buildMenu('glass');
+const mh = dmenu.offsetHeight; dmenu.style.left = Math.min(1440 - 230, npX) + 'px'; dmenu.style.top = (855 - mh - 8) + 'px';
+$$('#dmenu .mi').forEach((m, i) => { const p = pos(m); NAMED['MI' + i] = p.cy; NAMED['MI' + i + 'X'] = p.x + 60; });
+// Launcher widget: the weather card, before and after moving to the right column.
+const lpL = $('#lpwL'), lpR = $('#lpwR'), wcard = $('.lpw .c[data-w="weather"]'), gridEl = $('#apps'), lpEmpty = $('#lpempty');
+const lpLayout = () => { const hasL = lpL.children.length > 0, hasR = lpR.children.length > 0, l = hasL ? 420 : 64, r = hasR ? 420 : 56;
+  gridEl.style.left = lpEmpty.style.left = l + 'px'; gridEl.style.right = lpEmpty.style.right = r + 'px';
+  gridEl.style.gridTemplateColumns = `repeat(${Math.max(4, Math.floor((1440 - l - r) / 122))},1fr)`; };
+lpLayout();
+const wPosL = pos(wcard); lpR.appendChild(wcard); lpLayout(); const wPosR = pos(wcard); lpL.appendChild(wcard); lpLayout();
+NAMED.WCX = wPosL.cx; NAMED.WCY = wPosL.cy;
+// Act on this: the sentence, and the popover under it.
+const actp = $('#actp'), actEl = $('#act'), ap = pos(actp);
+NAMED.P0X = ap.x + 4; NAMED.P0Y = ap.y + 8; NAMED.P1X = ap.x + ap.w - 8; NAMED.P1Y = ap.y + ap.h - 5;
+actEl.style.left = Math.min(1440 - 400, ap.x) + 'px'; actEl.style.top = (ap.y + ap.h + 10) + 'px';
+const tr = pos($('#act .ab b[data-a="translate"]')), su = pos($('#act .ab b[data-a="summarise"]'));
+NAMED.TRX = tr.cx; NAMED.TRY = tr.cy; NAMED.SUX = su.cx; NAMED.SUY = su.cy;
+const RES = { translate: 'Selecciona esta frase y elige una acción: tradúcela, resúmela o corrígela.<small>Translated to Spanish · by your AI</small>', summarise: 'Pick an action for the selected text.<small>Summary · by your AI</small>' };
+// Window snapping rectangles.
+const winEl = $('#win'), natH = winEl.offsetHeight;
+const RECT = { restore: [96, 96, 470, natH], left: [8, 38, 708, 770], right: [724, 38, 708, 770], max: [8, 38, 1424, 770] };
+const resolve = v => typeof v === 'number' ? v : v in NAMED ? NAMED[v] : v === 'NP' ? npX : (() => { const m = v.match(/^D(\d+)([+-]\d+)?$/); return base[+m[1]] + (+m[2] || 0); })();
+const cur = D.CURSOR.map(([t, x, y, e]) => [t, resolve(x), resolve(y), e]);
+const at = (list, t) => { let v = list[0][1]; for (const [a, x] of list) if (t >= a) v = x; return v; };
+let lastPage = null, lastPreset = null, lastSw = null, lastRes = null, wIn = 'L';
 const lyr = $$('#lyr p'), pgs = $$('.pg'), plbar = $('#plbar');
 const palq = $('#palq'), rows = $('#rows'), lpq = $('#lpq'), apps = $$('#apps .app');
 const keys = $('#keys'), clk = cursor.querySelector('.clk');
@@ -230,9 +284,19 @@ function render(t) {
   island.style.width = (196 + 494 * o).toFixed(1) + 'px'; island.style.height = (32 + 190 * o).toFixed(1) + 'px';
   island.style.borderRadius = `0 0 ${(14 + 24 * Math.min(o, 1)).toFixed(1)}px ${(14 + 24 * Math.min(o, 1)).toFixed(1)}px`;
   island.style.boxShadow = o > .05 ? `0 30px 60px -20px rgba(0,0,0,${(.45 * Math.min(o, 1)).toFixed(2)})` : 'none';
-  const inn = island.querySelector('.in'), io = clamp((o - .45) / .55);
+  const page = at(D.PAGES, t);
+  if (page !== lastPage) { lastPage = page; $$('#island .page').forEach(p => p.classList.toggle('on', p.classList.contains('pg-' + page))); $$('#island .tabs b').forEach(tb => tb.classList.toggle('on', tb.dataset.pg === page)); }
+  const inn = island.querySelector('.page.on'), io = clamp((o - .45) / .55);
   inn.style.opacity = io.toFixed(3); inn.style.transform = `scale(${(.94 + .06 * io).toFixed(3)}) translateY(${(-8 * (1 - io)).toFixed(1)}px)`;
-  island.querySelector('.dots').style.opacity = io.toFixed(3);
+  island.querySelector('.tabs').style.opacity = io.toFixed(3);
+  // volume HUD: the notch widens into a level bar
+  const hu = win(t, D.HUD[0], D.HUD[1], .25);
+  if (hu > 0 && o < .02) {
+    const hp = E.out(hu); island.style.width = (196 + 224 * hp).toFixed(1) + 'px'; island.style.height = (32 + 12 * hp).toFixed(1) + 'px';
+    island.style.borderRadius = `0 0 ${(14 + 8 * hp).toFixed(1)}px ${(14 + 8 * hp).toFixed(1)}px`;
+  }
+  const hc = island.querySelector('.hudc'); hc.style.opacity = clamp((hu - .5) * 2).toFixed(3);
+  hc.querySelector('.hb i').style.width = (45 + 25 * E.out(clamp((t - D.HUD[2]) / .3))).toFixed(1) + '%';
 
   // dock magnification + bounce
   const magOn = t > D.DOCKMAG[0] && t < D.DOCKMAG[1];
@@ -254,6 +318,18 @@ function render(t) {
   $('#mdock').style.transform = `translateY(${(130 * l).toFixed(1)}%)`; $('#mdock').style.opacity = (1 - l).toFixed(3);
   const lq = typed(t, D.LP_TYPE);
   if (lq !== lastLp) { lastLp = lq; lpq.value = lq; apps.forEach(a => a.classList.toggle('gone', !!lq && !a.dataset.name.toLowerCase().includes(lq))); }
+  // widget drag: the weather card follows the pointer to the right column and settles there
+  const [g0, g1] = D.WDRAG, grabX = NAMED.WCX, grabY = NAMED.WCY;
+  const want = t >= g1 ? 'R' : 'L';
+  if (want !== wIn) { (want === 'R' ? lpR : lpL).appendChild(wcard); lpLayout(); wIn = want; }
+  lp.classList.toggle('dragging', t >= g0 && t < g1); lpR.classList.toggle('over', t >= g0 && t < g1 && cx > 720);
+  if (t >= g0 && t < g1) { const dx = cx - grabX, dy = cy - grabY; wcard.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(1.04) rotate(${clamp(dx / 80, -3, 3).toFixed(2)}deg)`; wcard.classList.add('drag'); }
+  else if (t >= g1) {
+    const [ex, ey] = kf(g1, cur), fromX = wPosL.x + (ex - grabX) - wPosR.x, fromY = wPosL.y + (ey - grabY) - wPosR.y, sp = E.back(clamp((t - g1) / .55));
+    wcard.style.transform = sp < 1 ? `translate(${(fromX * (1 - sp)).toFixed(1)}px,${(fromY * (1 - sp)).toFixed(1)}px) scale(${(1 + .04 * (1 - sp)).toFixed(3)})` : '';
+    wcard.classList.toggle('drag', sp < 1);
+  } else { wcard.style.transform = ''; wcard.classList.remove('drag'); }
+  gridEl.style.opacity = (1 - .75 * Math.sin(Math.PI * clamp((t - g1 + .15) / .5))).toFixed(3);
 
   // command bar
   const p = clamp(kf(t, D.PAL)[0], 0, 1.05);
@@ -265,7 +341,7 @@ function render(t) {
   keys.style.opacity = ko; keys.style.transform = 'translateX(-50%)';
 
   // music player
-  const pt = t - D.PLAYER, po = clamp(pt / .28);
+  const pt = t - D.PLAYER[0], po = clamp(pt / .28) * (1 - clamp((t - D.PLAYER[1]) / .4));
   player.style.opacity = po.toFixed(3);
   const s = E.out(clamp(pt / .9)), sv = E.out(clamp((pt - .35) / 1));
   const sl = player.querySelector('.sleeve'); sl.style.opacity = s.toFixed(3); sl.style.transform = `translateX(${(-60 * (1 - s)).toFixed(1)}px)`;
@@ -276,6 +352,37 @@ function render(t) {
   lyr.forEach((el, i) => { el.classList.toggle('on', i === li); el.classList.toggle('past', i < li);
     if (i === li) el.style.setProperty('--p', (clamp((t - D.LYRICS[li]) / ((D.LYRICS[li + 1] || D.LYRICS[li] + 2) - D.LYRICS[li] - .2)) * 100).toFixed(1) + '%'); });
   const pct = ((52 + t) % 214) / 214 * 100; pgs.forEach(e => e.style.width = pct + '%'); plbar.style.width = pct + '%';
+
+  // Dock presets: the menu opens at the Now Playing tile; each click swaps the widget colours
+  const mo = D.MENUS.reduce((m, [a, z2]) => Math.max(m, win(t, a, z2, .12)), 0);
+  const pr = at(D.PRESET, t);
+  if (pr !== lastPreset) { lastPreset = pr; const d = $('#mdock'); PRESETS.forEach(([k]) => d.classList.remove('p-' + k)); if (pr !== 'glass') d.classList.add('p-' + pr); buildMenu(pr); }
+  dmenu.style.opacity = mo.toFixed(3); dmenu.style.transform = `scale(${(.97 + .03 * mo).toFixed(3)})`;
+  $$('#dmenu .mi').forEach((m, i) => m.classList.toggle('hv', mo > .5 && Math.abs(cy - NAMED['MI' + i]) < 12));
+
+  // window snapping: each shortcut springs the window to its new frame
+  let sIdx = 0; D.SNAP.forEach(([a], i) => { if (t >= a) sIdx = i; });
+  const sTo = RECT[D.SNAP[sIdx][1]], sFrom = RECT[D.SNAP[Math.max(0, sIdx - 1)][1]], sp2 = E.back(clamp((t - D.SNAP[sIdx][0]) / .5));
+  const rr = sTo.map((v, i) => sFrom[i] + (v - sFrom[i]) * (sIdx ? sp2 : 1));
+  winEl.style.left = rr[0].toFixed(1) + 'px'; winEl.style.top = rr[1].toFixed(1) + 'px'; winEl.style.width = rr[2].toFixed(1) + 'px'; winEl.style.height = rr[3].toFixed(1) + 'px';
+
+  // window switcher
+  const swSel = at([[0, -1], ...D.SWITCH], t), so = swSel >= 0 ? 1 : 0;
+  const sw = $('#switcher'); sw.style.opacity = so; sw.style.transform = `translateX(-50%) scale(${so ? 1 : .96})`;
+  if (swSel !== lastSw) { lastSw = swSel; $$('#switcher .sw').forEach((e, j) => e.classList.toggle('sel', j === swSel)); }
+  let tt = null; for (const [a, z2, txt] of D.TOASTS) if (t >= a - .3 && t < z2 + .3) tt = [a, z2, txt];
+  const toastEl = $('#toast'); if (tt) { toastEl.textContent = tt[2]; } toastEl.style.opacity = tt ? win(t, tt[0], tt[1], .25).toFixed(3) : 0; toastEl.style.transform = 'translateX(-50%)';
+
+  // Act on this
+  actp.classList.toggle('hl', t >= D.ACT[0] && t < D.ACT[2] + .2);
+  const ao = win(t, D.ACT[1], D.ACT[2], .2); actEl.style.opacity = ao.toFixed(3); actEl.style.transform = `translateY(${(-6 * (1 - ao)).toFixed(1)}px) scale(${(.97 + .03 * ao).toFixed(3)})`;
+  const res = at([[0, null], ...D.ACT_RES], t);
+  if (res !== lastRes) { lastRes = res; const r = actEl.querySelector('.res'); if (res) { r.innerHTML = RES[res]; r.classList.add('on'); } else r.classList.remove('on'); $$('#act .ab b').forEach(bb => bb.classList.toggle('on', bb.dataset.a === res)); }
+
+  // "and more": one line per beat over a frosted desktop
+  const mov = win(t, D.MORE[0], D.MORE[1], .35); $('#more').style.opacity = mov.toFixed(3);
+  for (let i = 0; i < D.MORE_N; i++) { const el = $('#ml' + i), st = D.MORE[0] + .25 + i * 0.46511, pp = E.out(clamp((t - st) / .4));
+    el.style.opacity = pp.toFixed(3); el.style.transform = `translateY(${((1 - pp) * 24).toFixed(1)}px)`; el.style.filter = `blur(${((1 - pp) * 8).toFixed(1)}px)`; }
 
   // clock widgets: 9:41, the second hand moves with the film
   const sec = 12 + t, mins = 41 + sec / 60, hrs = 9 + mins / 60;
@@ -307,6 +414,9 @@ html, body {{ width:{W}px; height:{H}px; overflow:hidden; background:#f5f5f7; ma
 .ot {{ position:absolute; left:0; right:0; text-align:center; font-weight:800; letter-spacing:-.045em; color:#1d1d1f; line-height:1.05; }}
 .ot.sub {{ font-weight:600; letter-spacing:-.01em; color:#6e6e73; }}
 .ot.cta {{ left:50%; right:auto; width:max-content; margin-left:-{(430 if V else 440)}px; width:{860 if V else 880}px; padding:18px 0; border-radius:999px; background:#1d1d1f; color:#fff; font-weight:600; letter-spacing:-.01em; }}
+#more {{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:{26 if V else 14}px; z-index:55;
+  background:rgba(245,245,247,.55); backdrop-filter:blur(26px) saturate(1.4); -webkit-backdrop-filter:blur(26px) saturate(1.4); opacity:0; }}
+#more .ml {{ font-size:{72 if V else 64}px; font-weight:800; letter-spacing:-.04em; color:#1d1d1f; line-height:1.08; text-align:center; padding:0 40px; opacity:0; }}
 .cap {{ position:absolute; left:50%; white-space:nowrap; padding:{'22px 44px' if V else '18px 40px'}; border-radius:999px; background:rgba(255,255,255,.82);
   backdrop-filter:blur(24px) saturate(1.6); -webkit-backdrop-filter:blur(24px) saturate(1.6);
   box-shadow:0 0 0 1px rgba(0,0,0,.06), 0 20px 50px -18px rgba(0,0,0,.35); font-size:{58 if V else 54}px; font-weight:800; letter-spacing:-.035em; color:#1d1d1f; z-index:60; }}
@@ -325,6 +435,7 @@ index = f"""<!doctype html>
     <div id="root" data-composition-id="main" data-start="0" data-duration="{TOTAL}" data-width="{W}" data-height="{H}">
       <div id="cam" data-layout-ignore><div class="bezel"><div class="viewport">{screen_html}</div></div><div class="base"></div></div>
       {hook_html}
+      {more_html}
       {caps_html}
       {out_html}
       {audio}
