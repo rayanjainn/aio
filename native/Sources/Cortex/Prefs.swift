@@ -38,6 +38,8 @@ final class Prefs: ObservableObject {
     @Published var launcherIconSize = 72.0 { didSet { save() } }
     @Published var launcherShowTitles = true { didSet { save() } }
     @Published var launcherWidgets = true { didSet { save() } }
+    /// Where the Launcher widgets sit: two ordered columns; ids missing from both are hidden.
+    @Published var launcherWidgetLayout = LauncherWidgetLayout.standard { didSet { save() } }
     @Published var launcherHotCorner = "none" { didSet { save() } }
     @Published var launcherWallpaper = "" { didSet { save() } }
     @Published var launcherDim = 0.25 { didSet { save() } }
@@ -74,6 +76,7 @@ final class Prefs: ObservableObject {
         var islandHoverDelay: Double?, islandMusicFirst: Bool?, focusHideOthers: Bool?, batteryCoach: Bool?
         var dockProfileExternal: String?, dockProfileBuiltIn: String?, dockMenuBar: Bool?, shelfRules: String?, islandMeetingLead: Double?
         var launcherIconSize: Double?, launcherShowTitles: Bool?, launcherWidgets: Bool?, launcherHotCorner: String?, launcherWallpaper: String?, launcherDim: Double?, musicPlayerStyle: String?, dockGroupRunning: Bool?, musicPlayerLyrics: Bool?, dockWidgetTheme: String?, autoUpdate: Bool?
+        var launcherWidgetLayout: LauncherWidgetLayout?
     }
 
     private static var url: URL {
@@ -114,6 +117,7 @@ final class Prefs: ObservableObject {
             launcherIconSize = s.launcherIconSize ?? 72
             launcherShowTitles = s.launcherShowTitles ?? true
             launcherWidgets = s.launcherWidgets ?? true
+            launcherWidgetLayout = (s.launcherWidgetLayout ?? .standard).normalized()
             launcherHotCorner = s.launcherHotCorner ?? "none"
             launcherWallpaper = s.launcherWallpaper ?? ""
             launcherDim = s.launcherDim ?? 0.25
@@ -153,7 +157,8 @@ final class Prefs: ObservableObject {
                        dockProfileExternal: dockProfileExternal, dockProfileBuiltIn: dockProfileBuiltIn, dockMenuBar: dockMenuBar, shelfRules: shelfRules, islandMeetingLead: islandMeetingLead,
                        launcherIconSize: launcherIconSize, launcherShowTitles: launcherShowTitles, launcherWidgets: launcherWidgets,
                        launcherHotCorner: launcherHotCorner, launcherWallpaper: launcherWallpaper, launcherDim: launcherDim,
-                       musicPlayerStyle: musicPlayerStyle, dockGroupRunning: dockGroupRunning, musicPlayerLyrics: musicPlayerLyrics, dockWidgetTheme: dockWidgetTheme, autoUpdate: autoUpdate)
+                       musicPlayerStyle: musicPlayerStyle, dockGroupRunning: dockGroupRunning, musicPlayerLyrics: musicPlayerLyrics, dockWidgetTheme: dockWidgetTheme, autoUpdate: autoUpdate,
+                       launcherWidgetLayout: launcherWidgetLayout)
         let url = Self.url
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let data = try? JSONEncoder().encode(s) { try? data.write(to: url, options: .atomic) }

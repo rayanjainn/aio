@@ -311,3 +311,30 @@ final class PaletteCurationTests: XCTestCase {
         XCTAssertNil(PaletteModel.normalizedURL("notaurl"))
     }
 }
+
+final class LauncherWidgetLayoutTests: XCTestCase {
+    func testMoveBetweenColumns() {
+        let l = LauncherWidgetLayout.standard.moving("weather", toRight: true)
+        XCTAssertEqual(l.left, ["date", "music", "month"])
+        XCTAssertEqual(l.right, ["weather"])
+        let back = l.moving("weather", toRight: false, before: "date")
+        XCTAssertEqual(back.left, ["weather", "date", "music", "month"])
+        XCTAssertEqual(back.right, [])
+    }
+
+    func testReorderAndNudge() {
+        let l = LauncherWidgetLayout.standard.moving("month", toRight: false, before: "music")
+        XCTAssertEqual(l.left, ["date", "month", "music", "weather"])
+        XCTAssertEqual(l.nudging("date", by: -1), l)                    // already first
+        XCTAssertEqual(l.nudging("date", by: 1).left, ["month", "date", "music", "weather"])
+    }
+
+    func testHideShowAndNormalize() {
+        let h = LauncherWidgetLayout.standard.hiding("music")
+        XCTAssertEqual(h.hidden, ["music"])
+        XCTAssertEqual(h.moving("music", toRight: true).right, ["music"])
+        let messy = LauncherWidgetLayout(left: ["date", "date", "bogus"], right: ["date", "month"])
+        XCTAssertEqual(messy.normalized(), LauncherWidgetLayout(left: ["date"], right: ["month"]))
+        XCTAssertEqual(LauncherWidgetLayout.standard.moving("bogus", toRight: true), .standard)
+    }
+}

@@ -329,6 +329,59 @@ extension Notification.Name {
 
 // MARK: - Views
 
+/// The Launcher widgets' arrangement: an ordered left and right column. A widget in neither is hidden.
+struct LauncherWidgetLayout: Codable, Equatable, Sendable {
+    static let all = ["date", "music", "weather", "month"]
+    static let standard = LauncherWidgetLayout(left: all, right: [])
+    static func title(_ id: String) -> String {
+        ["date": "Date", "music": "Now Playing", "weather": "Weather", "month": "Calendar"][id] ?? id
+    }
+
+    var left: [String]
+    var right: [String]
+
+    var hidden: [String] { Self.all.filter { !left.contains($0) && !right.contains($0) } }
+
+    /// Drops unknown ids and duplicates (a widget lives in one place at most).
+    func normalized() -> LauncherWidgetLayout {
+        var seen = Set<String>()
+        let keep: (String) -> Bool = { Self.all.contains($0) && seen.insert($0).inserted }
+        let l = left.filter(keep), r = right.filter(keep)
+        return LauncherWidgetLayout(left: l, right: r)
+    }
+
+    /// Moves `id` into a column (`right` or not), before `before` when given, else to the end.
+    func moving(_ id: String, toRight: Bool, before: String? = nil) -> LauncherWidgetLayout {
+        guard Self.all.contains(id), id != before else { return self }
+        var l = left.filter { $0 != id }, r = right.filter { $0 != id }
+        func insert(into col: inout [String]) {
+            if let before, let i = col.firstIndex(of: before) { col.insert(id, at: i) } else { col.append(id) }
+        }
+        if toRight { insert(into: &r) } else { insert(into: &l) }
+        return LauncherWidgetLayout(left: l, right: r)
+    }
+
+    /// Moves `id` one place up (-1) or down (+1) within its column.
+    func nudging(_ id: String, by delta: Int) -> LauncherWidgetLayout {
+        var out = self
+        for keyPath in [\LauncherWidgetLayout.left, \LauncherWidgetLayout.right] {
+            var col = out[keyPath: keyPath]
+            guard let i = col.firstIndex(of: id) else { continue }
+            let j = i + delta
+            guard col.indices.contains(j) else { return self }
+            col.swapAt(i, j)
+            out[keyPath: keyPath] = col
+        }
+        return out
+    }
+
+    func hiding(_ id: String) -> LauncherWidgetLayout {
+        LauncherWidgetLayout(left: left.filter { $0 != id }, right: right.filter { $0 != id })
+    }
+
+    func column(of id: String) -> Bool? { left.contains(id) ? false : right.contains(id) ? true : nil }
+}
+
 struct LauncherView: View {
     @ObservedObject var store: LauncherStore
     @ObservedObject private var prefs = Prefs.shared
@@ -351,8 +404,9 @@ struct LauncherView: View {
             VStack(spacing: 22) {
                 search
                 HStack(alignment: .top, spacing: 28) {
-                    if prefs.launcherWidgets { sidebar.frame(width: 210) }
+                    if prefs.launcherWidgets { widgetColumn(right: false) }
                     grid
+                    if prefs.launcherWidgets { widgetColumn(right: true) }
                 }
             }
             .padding(.horizontal, 70).padding(.top, 70).padding(.bottom, 40)
@@ -448,30 +502,113 @@ struct LauncherView: View {
         .scrollIndicators(.never)
     }
 
-    private var sidebar: some View {
-        VStack(spacing: 14) {
-            TimelineView(.periodic(from: .now, by: 30)) { ctx in
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 5) {
-                        Text(ctx.date.formatted(.dateTime.weekday(.abbreviated))).foregroundStyle(.red)
-                        Text(ctx.date.formatted(.dateTime.month(.abbreviated)))
-                    }
-                    .font(.system(size: 17, weight: .semibold))
-                    Text(ctx.date.formatted(.dateTime.day()))
-                        .font(.system(size: 72, weight: .bold, design: .rounded)).monospacedDigit()
-                    Text(ctx.date.formatted(date: .omitted, time: .shortened))
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+    /// One column of widgets. Drag a widget onto another to put it there, or onto the other column;
+    /// right-click for the same moves without dragging. An empty column is a slim drop target.
+    @ViewBuilder private func widgetColumn(right: Bool) -> some View {
+        let ids = right ? prefs.launcherWidgetLayout.right : prefs.launcherWidgetLayout.left
+        if ids.isEmpty {
+            WidgetDropStrip(right: right) { id in move(id, toRight: right, before: nil) }
+        } else {
+            VStack(spacing: 14) {
+                ForEach(ids, id: \.self) { id in
+                    widget(id)
+                        .draggable(id)
+                        .dropDestination(for: String.self) { items, _ in
+                            guard let dragged = items.first else { return false }
+                            move(dragged, toRight: right, before: id)
+                            return true
+                        }
+                        .contextMenu { widgetMenu(id, right: right) }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(18)
-                .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.2)
+                Color.clear.frame(height: 60)
+                    .dropDestination(for: String.self) { items, _ in
+                        guard let dragged = items.first else { return false }
+                        move(dragged, toRight: right, before: nil)
+                        return true
+                    }
+                Spacer(minLength: 0)
             }
-            if let bridge { LauncherMusicCard(bridge: bridge) }
-            LauncherWeatherCard()
-            LauncherMonthCard()
-            Spacer(minLength: 0)
+            .frame(width: 210)
+            .foregroundStyle(.white)
+        }
+    }
+
+    private func move(_ id: String, toRight: Bool, before: String?) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+            prefs.launcherWidgetLayout = prefs.launcherWidgetLayout.moving(id, toRight: toRight, before: before)
+        }
+    }
+
+    @ViewBuilder private func widgetMenu(_ id: String, right: Bool) -> some View {
+        Button(right ? "Move to Left Column" : "Move to Right Column") { move(id, toRight: !right, before: nil) }
+        Button("Move Up") { withAnimation(.spring(response: 0.35)) { prefs.launcherWidgetLayout = prefs.launcherWidgetLayout.nudging(id, by: -1) } }
+        Button("Move Down") { withAnimation(.spring(response: 0.35)) { prefs.launcherWidgetLayout = prefs.launcherWidgetLayout.nudging(id, by: 1) } }
+        Divider()
+        Button("Hide \(LauncherWidgetLayout.title(id))") { withAnimation(.spring(response: 0.35)) { prefs.launcherWidgetLayout = prefs.launcherWidgetLayout.hiding(id) } }
+        if !prefs.launcherWidgetLayout.hidden.isEmpty {
+            Menu("Show") {
+                ForEach(prefs.launcherWidgetLayout.hidden, id: \.self) { h in
+                    Button(LauncherWidgetLayout.title(h)) { move(h, toRight: right, before: nil) }
+                }
+            }
+        }
+        Button("Reset Widgets") { withAnimation(.spring(response: 0.35)) { prefs.launcherWidgetLayout = .standard } }
+    }
+
+    @ViewBuilder private func widget(_ id: String) -> some View {
+        switch id {
+        case "date": LauncherDateCard()
+        case "music": if let bridge { LauncherMusicCard(bridge: bridge) }
+        case "weather": LauncherWeatherCard()
+        case "month": LauncherMonthCard()
+        default: EmptyView()
+        }
+    }
+}
+
+/// The date tile: weekday, month, a big day number and the time.
+struct LauncherDateCard: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { ctx in
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 5) {
+                    Text(ctx.date.formatted(.dateTime.weekday(.abbreviated))).foregroundStyle(.red)
+                    Text(ctx.date.formatted(.dateTime.month(.abbreviated)))
+                }
+                .font(.system(size: 17, weight: .semibold))
+                Text(ctx.date.formatted(.dateTime.day()))
+                    .font(.system(size: 72, weight: .bold, design: .rounded)).monospacedDigit()
+                Text(ctx.date.formatted(date: .omitted, time: .shortened))
+                    .font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(18)
+            .cortexGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous), darken: 0.2)
         }
         .foregroundStyle(.white)
+    }
+}
+
+/// An empty widget column: a thin strip that widens and lights up while a widget is dragged over it.
+struct WidgetDropStrip: View {
+    let right: Bool
+    let onDrop: (String) -> Void
+    @State private var targeted = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .strokeBorder(Color.white.opacity(targeted ? 0.55 : 0), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white.opacity(targeted ? 0.08 : 0)))
+            .overlay { if targeted { Text("Drop here").font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.8)) } }
+            .frame(width: targeted ? 210 : 28)
+            .frame(maxHeight: 420)
+            .contentShape(Rectangle())
+            .dropDestination(for: String.self) { items, _ in
+                guard let id = items.first else { return false }
+                onDrop(id)
+                return true
+            } isTargeted: { t in withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { targeted = t } }
+            .help(right ? "Drag a widget here to show it on the right" : "Drag a widget here to show it on the left")
     }
 }
 

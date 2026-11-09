@@ -786,7 +786,13 @@ struct LauncherPane: View {
                     Button("Group apps into folders by category") { (NSApp.delegate as? AppDelegate)?.launcherAutoGroup() }
                     Button("Remove all folders") { (NSApp.delegate as? AppDelegate)?.launcherReset() }
                 }
-                Toggle("Show date, music and weather on the left", isOn: $prefs.launcherWidgets)
+                Toggle("Show widgets (date, music, weather, calendar)", isOn: $prefs.launcherWidgets)
+                HStack {
+                    Text("Drag widgets between the left and right columns, or right-click one to move or hide it.").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("All on the left") { prefs.launcherWidgetLayout = .standard }
+                    Button("All on the right") { prefs.launcherWidgetLayout = LauncherWidgetLayout(left: [], right: LauncherWidgetLayout.all) }
+                }
                 LabeledContent("Background dimming") {
                     HStack {
                         Slider(value: $prefs.launcherDim, in: 0...0.7).frame(width: 220)
