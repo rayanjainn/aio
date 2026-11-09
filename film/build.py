@@ -1,9 +1,9 @@
-"""Builds the Cortex launch film as a Hyperframes composition, using the live Mac demo from the website.
+"""Builds the AIO launch film as a Hyperframes composition, using the live Mac demo from the website.
 
     node film/snapshot.js http://localhost:8765/ film/snapshot.json   # once, with marketing/ served on :8765
     python3 film/build.py landscape film/landscape
     python3 film/build.py portrait  film/portrait
-    (cd film/landscape && npx hyperframes render -q delivery -o ../cortex-film.mp4)
+    (cd film/landscape && npx hyperframes render -q delivery -o ../aio-film.mp4)
 
 Everything on screen is a pure function of time (render(t)), so every frame is deterministic.
 """
@@ -121,15 +121,15 @@ old = os.path.join(ROOT, "brag-output-2026-11-08-132658/composition/assets")
 shutil.copy(f"{old}/gsap.min.js", f"{OUT}/assets/gsap.min.js")
 for s in ["click", "impact", "swish", "drop"]:
     shutil.copy(f"{old}/sfx/{s}.ogg", f"{OUT}/assets/sfx/{s}.ogg")
-shutil.copy(os.path.join(ROOT, "marketing/cortex-icon-256.png"), f"{OUT}/assets/cortex-icon-256.png")
+shutil.copy(os.path.join(ROOT, "marketing/aio-icon-256.png"), f"{OUT}/assets/aio-icon-256.png")
 track = os.environ.get("FILM_TRACK", os.path.join(HERE, "digital-clouds.mp3"))
 if not os.path.exists(f"{OUT}/assets/music.wav"):
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(SRC_START), "-t", str(round(TOTAL + 1.5, 3)), "-i", track,
                     "-af", "afade=t=in:d=0.04,loudnorm=I=-14:TP=-1.2:LRA=9", "-ar", "48000", "-ac", "2", f"{OUT}/assets/music.wav"], check=True)
 
-screen_html = SNAP["screen"].replace('src="cortex-icon-256.png"', 'src="assets/cortex-icon-256.png"')
+screen_html = SNAP["screen"].replace('src="aio-icon-256.png"', 'src="assets/aio-icon-256.png"')
 import re
-css = SNAP["css"].replace("url(cortex-icon-256.png)", "url(assets/cortex-icon-256.png)")
+css = SNAP["css"].replace("url(aio-icon-256.png)", "url(assets/aio-icon-256.png)")
 css = re.sub(r"(?<![-\w])(transition(-delay)?|animation)\s*:[^;}]*;?", "", css)   # the film drives every change itself
 
 sfx = [("impact", b(6), .32), ("swish", b(6.1), .22)]
@@ -145,17 +145,17 @@ for k, (n, t, v) in enumerate(sfx):
     audio += f'      <audio id="sfx{k}" class="clip" src="assets/sfx/{n}.ogg" data-start="{t}" data-duration="{d}" data-volume="{v}" data-track-index="{21 + k}"></audio>\n'
 
 if V:
-    hook_html = "".join(f'<div class="hw" id="hw{i}" style="top:{250 + i * 150}px">{w}</div>' for i, w in enumerate(words)) + '<div class="hw one" id="hw4" style="top:900px">One app.</div>'
-    out_html = """<img id="oicon" src="assets/cortex-icon-256.png" style="top:300px;width:170px;height:170px;margin-left:-85px">
-      <div class="ot" id="oname" style="top:500px;font-size:150px">Cortex</div>
-      <div class="ot sub" id="otag" style="top:690px;font-size:46px">Launcher · Dock · Notch<br>Music · ⌘K</div>
-      <div class="ot cta" id="octa" style="top:860px;font-size:38px">Free for macOS · cortex.raycode.tech</div>"""
+    hook_html = "".join(f'<div class="hw" id="hw{i}" style="top:{250 + i * 150}px">{w}</div>' for i, w in enumerate(words)) + '<div class="hw one" id="hw4" style="top:900px">All in one.</div>'
+    out_html = """<img id="oicon" src="assets/aio-icon-256.png" style="top:300px;width:170px;height:170px;margin-left:-85px">
+      <div class="ot" id="oname" style="top:500px;font-size:170px">AIO</div>
+      <div class="ot sub" id="otag" style="top:700px;font-size:46px">All in one: Launcher · Dock<br>Notch · Music · ⌘K</div>
+      <div class="ot cta" id="octa" style="top:880px;font-size:34px">Free for macOS · github.com/rayanjainn/aio</div>"""
 else:
-    hook_html = '<div class="hline" style="top:150px">' + " ".join(f'<span class="hw2" id="hw{i}">{w}</span>' for i, w in enumerate(words)) + '</div><div class="hw one" id="hw4" style="top:285px">One app.</div>'
-    out_html = """<img id="oicon" src="assets/cortex-icon-256.png" style="top:70px;width:110px;height:110px;margin-left:-55px">
-      <div class="ot" id="oname" style="top:180px;font-size:120px">Cortex</div>
-      <div class="ot sub" id="otag" style="top:330px;font-size:38px">Launcher · Dock · Notch · Music · ⌘K</div>
-      <div class="ot cta" id="octa" style="top:410px;font-size:30px">Free for macOS · cortex.raycode.tech</div>"""
+    hook_html = '<div class="hline" style="top:150px">' + " ".join(f'<span class="hw2" id="hw{i}">{w}</span>' for i, w in enumerate(words)) + '</div><div class="hw one" id="hw4" style="top:285px">All in one.</div>'
+    out_html = """<img id="oicon" src="assets/aio-icon-256.png" style="top:70px;width:110px;height:110px;margin-left:-55px">
+      <div class="ot" id="oname" style="top:180px;font-size:130px">AIO</div>
+      <div class="ot sub" id="otag" style="top:330px;font-size:38px">All in one: Launcher · Dock · Notch · Music · ⌘K</div>
+      <div class="ot cta" id="octa" style="top:410px;font-size:30px">Free for macOS · github.com/rayanjainn/aio</div>"""
 caps_html = "".join(f'<div class="cap" id="cap{i}" style="{"top:" + str(220 if V else 70) + "px" if w == "top" else "top:" + str(1600 if V else 920) + "px"}">{t}</div>' for i, (_, _, t, w) in enumerate(CAPS))
 
 DATA = dict(TOTAL=TOTAL, K0=K0, W=W, H=H, CAM=CAM, CURSOR=CURSOR, CURSOR_ON=CURSOR_ON, CLICKS=CLICKS, BOUNCES=BOUNCES,

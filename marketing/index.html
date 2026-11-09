@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cortex — Launcher, Dock, Notch and Music for your Mac</title>
-<meta name="description" content="Cortex is a free Mac app: a full-screen launcher with widgets, a Dock with live widgets, an Island in the notch, a full-screen music player with synced lyrics, and a ⌘K command bar. Try it live in your browser.">
-<meta property="og:title" content="Cortex — Launcher, Dock, Notch and Music for your Mac">
+<title>AIO — All in one: Launcher, Dock, Notch and Music for your Mac</title>
+<meta name="description" content="AIO is a free Mac app: a full-screen launcher with widgets, a Dock with live widgets, an Island in the notch, a full-screen music player with synced lyrics, and a ⌘K command bar. Try it live in your browser.">
+<meta property="og:title" content="AIO — Launcher, Dock, Notch and Music for your Mac">
 <meta property="og:description" content="A launcher, a Dock, a notch and a music player — one free Mac app. Try it live in your browser.">
-<meta property="og:image" content="https://cortex.raycode.tech/cortex-launch.jpg">
+<meta property="og:image" content="https://cortex.raycode.tech/aio-launch.jpg">
 <meta name="theme-color" content="#f5f5f7">
 <meta name="color-scheme" content="light">
 <link rel="icon" href="favicon.png">
@@ -185,8 +185,8 @@ nav .links a{color:var(--ink2)}
 .ico{border-radius:23%;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(232,235,240,.92));box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 0 0 .5px rgba(0,0,0,.12),0 2px 5px rgba(0,0,0,.12),0 8px 16px -8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:#3a3a3c}
 .ico svg{width:56%;height:56%;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .ico.dark{background:linear-gradient(180deg,#3a3a3e,#1d1d1f);color:#f5f5f7}
-.ico.cortex{background:url(cortex-icon-256.png) center/cover}
-.ico.cortex svg{display:none}
+.ico.brand{background:url(aio-icon-256.png) center/cover}
+.ico.brand svg{display:none}
 /* launchpad */
 #lp{position:absolute;inset:0;z-index:20;background:rgba(240,242,246,.5);backdrop-filter:blur(36px) saturate(1.5);-webkit-backdrop-filter:blur(36px) saturate(1.5);opacity:0;pointer-events:none;transition:opacity .35s}
 #lp.open{opacity:1;pointer-events:auto}
@@ -357,19 +357,19 @@ footer a{color:var(--ink2)}
 </head>
 <body>
 <nav>
-  <a class="brand" href="#top"><img src="cortex-icon-256.png" alt="">Cortex</a>
+  <a class="brand" href="#top"><img src="aio-icon-256.png" alt="">AIO</a>
   <div class="links"><a href="#launcher">Launcher</a><a href="#dock">Dock</a><a href="#notch">Notch</a><a href="#music">Music</a><a href="#command">⌘K</a><a href="#privacy">Privacy</a></div>
-  <a class="btn primary small cta" href="https://github.com/rayanjainn/aio/releases/latest/download/Cortex.dmg" data-dl>Download</a>
+  <a class="btn primary small cta" href="https://github.com/rayanjainn/aio/releases/latest/download/AIO.dmg" data-dl>Download</a>
 </nav>
 
 <main id="top">
 <section class="hero">
   <div class="wrap">
-    <span class="eyebrow rv">Free for macOS</span>
-    <h1 class="rv d1">Launcher. Dock. Notch.<br><span>Music. One app.</span></h1>
-    <p class="lede rv d2">Cortex gives your Mac a full-screen launcher with widgets, a Dock with live tiles, an Island in the notch, a full-screen music player with synced lyrics, and a command bar for everything else.</p>
+    <span class="eyebrow rv">AIO · All in one · Free for macOS</span>
+    <h1 class="rv d1">Launcher. Dock. Notch.<br><span>Music. All in one.</span></h1>
+    <p class="lede rv d2">AIO gives your Mac a full-screen launcher with widgets, a Dock with live tiles, an Island in the notch, a full-screen music player with synced lyrics, and a command bar for everything else.</p>
     <div class="actions rv d3">
-      <a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/Cortex.dmg" data-dl>
+      <a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/AIO.dmg" data-dl>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Mac</a>
       <a class="btn ghost" href="#demo">Try it live ↓</a>
     </div>
@@ -379,7 +379,7 @@ footer a{color:var(--ink2)}
   <div class="demo" id="demo">
     <div class="mac" id="mac">
       <div class="bezel"><div class="viewport" id="viewport">
-        <div id="screen" aria-label="An interactive Mac desktop running Cortex">
+        <div id="screen" aria-label="An interactive Mac desktop running AIO">
           <div class="wall"><svg viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
             <path d="M0 640C260 560 420 700 720 640S1180 520 1440 600V900H0Z" fill="rgba(255,255,255,.35)"/>
             <path d="M0 720C300 660 520 780 820 720S1240 640 1440 690V900H0Z" fill="rgba(255,255,255,.3)"/>
@@ -387,7 +387,7 @@ footer a{color:var(--ink2)}
           </svg></div>
 
           <div class="menubar">
-            <img src="cortex-icon-256.png" alt=""><b>Cortex</b><span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span>
+            <img src="aio-icon-256.png" alt=""><b>AIO</b><span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span>
             <div class="r">
               <span class="mbtn" id="mb-search" title="Search (⌘K)"><svg viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2.2" stroke-linecap="round"><path d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.5 15.5 20 20"/></svg></span>
               <svg viewBox="0 0 24 24" fill="#1d1d1f"><path d="M12 18.5a1.6 1.6 0 1 0 0 .01zM6.6 14.3a7.6 7.6 0 0 1 10.8 0l-1.4 1.4a5.6 5.6 0 0 0-8 0zM3.4 11.1a12.2 12.2 0 0 1 17.2 0L19.2 12.5a10.2 10.2 0 0 0-14.4 0z"/></svg>
@@ -410,10 +410,10 @@ footer a{color:var(--ink2)}
           <div class="wg clk"><div class="aclock" id="aclock"><b style="left:50%;top:13%">12</b><b style="left:87%;top:50%">3</b><b style="left:50%;top:87%">6</b><b style="left:13%;top:50%">9</b><i class="h"></i><i class="mi"></i><i class="s"></i></div></div>
 
           <div class="win" id="win">
-            <div class="tb" id="wintb"><span class="tl" id="winx"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Welcome to Cortex</span></div>
+            <div class="tb" id="wintb"><span class="tl" id="winx"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Welcome to AIO</span></div>
             <div class="body">
               <h4>Go ahead, try it.</h4>
-              <p>This is Cortex running on a Mac — in your browser. Everything here works.</p>
+              <p>This is AIO running on a Mac — in your browser. Everything here works.</p>
               <div class="try" data-act="island"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round"><path d="M4 5h16M8 5v2.5a4 4 0 0 0 8 0V5"/></svg></span>Hover the notch<span class="k">top centre</span></div>
               <div class="try" data-act="palette"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round"><path d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.5 15.5 20 20"/></svg></span>Search, calculate, convert<span class="k">⌘K</span></div>
               <div class="try" data-act="launcher"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></span>Open the Launcher<span class="k">L</span></div>
@@ -471,7 +471,7 @@ footer a{color:var(--ink2)}
 <section id="launcher" class="alt">
   <div class="wrap">
     <div class="sh rv"><span class="eyebrow">Launcher</span><h2>All your apps.<br><span>Plus your day.</span></h2><p class="lede">A full-screen launcher with instant search, folders that sort themselves, and widgets beside your apps: the date, what's playing on a spinning record, the weather and your calendar.</p><button class="btn ghost livebtn" data-play="launcher">See it live ↑</button></div>
-    <div class="shot rv"><img src="shots/launcher.jpg" alt="The Cortex launcher: date, music, weather and calendar widgets beside every app, grouped into folders" loading="lazy"></div>
+    <div class="shot rv"><img src="shots/launcher.jpg" alt="The AIO launcher: date, music, weather and calendar widgets beside every app, grouped into folders" loading="lazy"></div>
     <div class="grid c3 mt">
       <div class="card rv"><h3>Grouped for you</h3><p>One click sorts every app into Developer Tools, Productivity, Music and more. Rename, regroup, or hide what you never open.</p></div>
       <div class="card rv d1"><h3>Your day at a glance</h3><p>Date, music with controls, weather and a month calendar with your next events — right next to your apps.</p></div>
@@ -483,7 +483,7 @@ footer a{color:var(--ink2)}
 <section id="dock">
   <div class="wrap">
     <div class="sh rv"><span class="eyebrow">Dock</span><h2>Truly your Dock.</h2><p class="lede">Widgets live right in the bar: Now Playing, an analog clock, the date, weather, battery, CPU and memory, your next meeting, GitHub, a focus timer. Window previews on hover, magnification, folders, badges and presets.</p><button class="btn ghost livebtn" data-play="dock">See it live ↑</button></div>
-    <div class="shot rv"><img src="shots/dock.jpg" alt="The Cortex Dock with system rings, a Now Playing widget, a date tile, a clock and weather" loading="lazy"></div>
+    <div class="shot rv"><img src="shots/dock.jpg" alt="The AIO Dock with system rings, a Now Playing widget, a date tile, a clock and weather" loading="lazy"></div>
     <div class="grid c4 mt">
       <div class="card rv"><h3>Presets</h3><p>Morning Tide, Midnight Focus, Ocean Desk, Developer — a whole new Dock in one click.</p></div>
       <div class="card rv d1"><h3>Window previews</h3><p>Hover an app to see its windows, even across Spaces. Click one to jump straight to it.</p></div>
@@ -495,7 +495,7 @@ footer a{color:var(--ink2)}
 
 <section id="notch" class="alt">
   <div class="wrap">
-    <div class="sh rv"><span class="eyebrow">Dynamic Notch</span><h2>Hello, notch.</h2><p class="lede">Hover the top of your screen and the Island opens: your song, the date, the weather and your timer side by side. No notch on your Mac? Cortex draws one.</p><button class="btn ghost livebtn" data-play="island">See it live ↑</button></div>
+    <div class="sh rv"><span class="eyebrow">Dynamic Notch</span><h2>Hello, notch.</h2><p class="lede">Hover the top of your screen and the Island opens: your song, the date, the weather and your timer side by side. No notch on your Mac? AIO draws one.</p><button class="btn ghost livebtn" data-play="island">See it live ↑</button></div>
     <div class="grid c3">
       <div class="shot rv"><img src="shots/island-player.jpg" alt="The Island's player page with artwork, the current lyric line, progress and controls" loading="lazy"></div>
       <div class="shot rv d1"><img src="shots/island-tools.jpg" alt="The Island's Tools page: focus timer, camera mirror, Keep Awake and favourite apps" loading="lazy"></div>
@@ -559,15 +559,15 @@ footer a{color:var(--ink2)}
 
 <section class="alt film">
   <div class="wrap rv">
-    <div class="sh"><span class="eyebrow">The film</span><h2>25 seconds of Cortex.</h2></div>
-    <video src="cortex-launch.mp4" poster="cortex-launch.jpg" controls playsinline preload="none" aria-label="Launch film: launcher, Dock, notch and music"></video>
+    <div class="sh"><span class="eyebrow">The film</span><h2>25 seconds of AIO.</h2></div>
+    <video src="aio-launch.mp4" poster="aio-launch.jpg" controls playsinline preload="none" aria-label="Launch film: launcher, Dock, notch and music"></video>
     <p class="cap">Music: “Digital Clouds” from Mixkit (Mixkit Stock Music Free License).</p>
   </div>
 </section>
 
 <section id="privacy">
   <div class="wrap">
-    <div class="sh rv"><span class="eyebrow">Privacy</span><h2>Yours, and only yours.</h2><p class="lede">Cortex runs on your Mac. No account, no analytics, no servers of ours.</p></div>
+    <div class="sh rv"><span class="eyebrow">Privacy</span><h2>Yours, and only yours.</h2><p class="lede">AIO runs on your Mac. No account, no analytics, no servers of ours.</p></div>
     <ul class="ticks">
       <li class="rv">Screen memory is off by default, pauses with <span class="kbd">⌘⇧P</span>, skips password fields and never records the apps you block.</li>
       <li class="rv">API keys and tokens stay in files only you can read, and are never included when you export settings.</li>
@@ -581,34 +581,34 @@ footer a{color:var(--ink2)}
   <div class="wrap">
     <h2 class="rv">Make your Mac yours.</h2>
     <p class="lede rv" style="margin:0 auto">Free. Updates install themselves.</p>
-    <div class="rv" style="margin-top:28px"><a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/Cortex.dmg" data-dl><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Mac</a></div>
+    <div class="rv" style="margin-top:28px"><a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/AIO.dmg" data-dl><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Mac</a></div>
     <div class="warn rv" id="safe">
       <div class="wi">!</div>
       <div>
         <b>macOS will warn you the first time — that's expected.</b>
-        <p>Cortex isn't notarized by Apple (that needs a paid developer account), so macOS says <i>“Apple could not verify Cortex is free of malware”</i> or that it <i>“is damaged and can't be opened”</i>. It's neither: the source is public and every release is signed with the same certificate. To open it once:</p>
+        <p>AIO isn't notarized by Apple (that needs a paid developer account), so macOS says <i>“Apple could not verify AIO is free of malware”</i> or that it <i>“is damaged and can't be opened”</i>. It's neither: the source is public and every release is signed with the same certificate. To open it once:</p>
         <ol>
-          <li>Open <b>Terminal</b>, run <code>xattr -cr /Applications/Cortex.app</code>, then open Cortex again.</li>
+          <li>Open <b>Terminal</b>, run <code>xattr -cr /Applications/AIO.app</code>, then open AIO again.</li>
           <li>Or open <b>System Settings → Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.</li>
         </ol>
         <p>You only do this once — updates keep their permissions.</p>
       </div>
     </div>
     <div class="steps">
-      <div class="rv"><h3><i>1</i>Download</h3><p>Open the <code>.dmg</code> and drag Cortex to Applications.</p></div>
+      <div class="rv"><h3><i>1</i>Download</h3><p>Open the <code>.dmg</code> and drag AIO to Applications.</p></div>
       <div class="rv d1"><h3><i>2</i>Open</h3><p>Allow it once, as above.</p></div>
       <div class="rv d2"><h3><i>3</i>Grant</h3><p>Settings → Privacy &amp; Permissions → <b>Grant everything</b>.</p></div>
     </div>
-    <details class="rv"><summary>Does it replace the macOS Dock?</summary><p>It hides the system Dock while Cortex runs and puts it back when you quit. You can turn the Cortex Dock off any time.</p></details>
+    <details class="rv"><summary>Does it replace the macOS Dock?</summary><p>It hides the system Dock while AIO runs and puts it back when you quit. You can turn the AIO Dock off any time.</p></details>
     <details class="rv"><summary>Which music apps work?</summary><p>Anything that shows up in macOS's Now Playing: Apple Music, Spotify, YouTube in a browser, VLC and more.</p></details>
-    <details class="rv"><summary>Is it open source?</summary><p>The source is public so anyone can read and audit it, but Cortex is not open source: it's © Rayan Jain, free to use, and not to be redistributed. See the <a href="https://github.com/rayanjainn/aio/blob/main/LICENSE">license</a>.</p></details>
+    <details class="rv"><summary>Is it open source?</summary><p>The source is public so anyone can read and audit it, but AIO is not open source: it's © Rayan Jain, free to use, and not to be redistributed. See the <a href="https://github.com/rayanjainn/aio/blob/main/LICENSE">license</a>.</p></details>
   </div>
 </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>© 2025–2026 Rayan Jain. Cortex is made by Rayan Jain · <a href="https://github.com/rayanjainn/aio/blob/main/LICENSE">License</a></span>
+    <span>© 2025–2026 Rayan Jain. AIO is made by Rayan Jain · <a href="https://github.com/rayanjainn/aio/blob/main/LICENSE">License</a></span>
     <span><a href="https://github.com/rayanjainn/aio">Source</a> · <a href="https://github.com/rayanjainn/aio/releases">Releases</a> · <a href="https://github.com/rayanjainn/aio/blob/main/USAGE.md">Guide</a></span>
   </div>
 </footer>
@@ -621,7 +621,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- Download buttons: go straight to the newest .dmg ----------
 fetch('https://api.github.com/repos/rayanjainn/aio/releases/latest').then(r => r.json()).then(rel => {
-  const a = (rel.assets || []).find(x => x.name === 'Cortex.dmg') || (rel.assets || []).find(x => x.name.endsWith('.dmg'));
+  const a = (rel.assets || []).find(x => x.name === 'AIO.dmg') || (rel.assets || []).find(x => x.name === 'AIO.dmg') || (rel.assets || []).find(x => x.name.endsWith('.dmg'));
   if (a) $$('[data-dl]').forEach(el => { el.href = a.browser_download_url; el.title = 'Download ' + rel.tag_name; });
 }).catch(() => {});
 
@@ -666,7 +666,7 @@ const G = {
   equal:'M5 9h14M5 15h14',
   arrows:'M4 8h13l-3-3M20 16H7l3 3',
   search:'M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.5 15.5 20 20',
-  cortex:''
+  brand:''
 };
 const ico = (g, cls = '') => `<div class="ico ${cls}"><svg viewBox="0 0 24 24"><path d="${G[g] || ''}"/></svg></div>`;
 
@@ -674,7 +674,7 @@ const APPS = [
   ['Browser','globe'],['Mail','mail'],['Notes','notes'],['Music','music'],['Calendar','calendar'],['Photos','photos'],['Messages','messages'],
   ['Maps','maps'],['Terminal','terminal'],['Code','code'],['Design','pen'],['Weather','weather'],['Clock','clock'],['Calculator','calc'],
   ['Camera','camera'],['Podcasts','mic'],['Books','books'],['News','news'],['Translate','translate'],['Reminders','reminders'],['Preview','eye'],
-  ['Contacts','person'],['Stocks','stocks'],['Voice Memos','voice'],['Home','home'],['System Settings','gear'],['Cortex','cortex']
+  ['Contacts','person'],['Stocks','stocks'],['Voice Memos','voice'],['Home','home'],['System Settings','gear'],['AIO','brand']
 ];
 
 // ---------- Elements & scaling ----------
@@ -708,9 +708,9 @@ const tick = () => {
 tick(); setInterval(tick, 1000);
 
 // ---------- Dock ----------
-const DOCK = [['Launcher','grid','launcher'],['Files','folder'],['Browser','globe'],['Mail','mail'],['Messages','messages'],['Notes','notes'],['Music','music','player'],['Terminal','terminal'],['Cortex','cortex','palette']];
+const DOCK = [['Launcher','grid','launcher'],['Files','folder'],['Browser','globe'],['Mail','mail'],['Messages','messages'],['Notes','notes'],['Music','music','player'],['Terminal','terminal'],['AIO','brand','palette']];
 const dock = $('#mdock .dbar');
-dock.innerHTML = DOCK.map(([n, g, act], i) => `<div class="di${i === 0 || n === 'Music' || n === 'Browser' ? ' on' : ''}" data-name="${n}" ${act ? `data-act="${act}"` : ''}>${ico(g, g === 'cortex' ? 'cortex' : '')}<span class="run"></span><span class="tip">${n}</span></div>`).join('')
+dock.innerHTML = DOCK.map(([n, g, act], i) => `<div class="di${i === 0 || n === 'Music' || n === 'Browser' ? ' on' : ''}" data-name="${n}" ${act ? `data-act="${act}"` : ''}>${ico(g, g === 'brand' ? 'brand' : '')}<span class="run"></span><span class="tip">${n}</span></div>`).join('')
   + `<div class="sep"></div>
   <div class="dw np" data-act="player"><div class="art"></div><div><b>Night Drive</b><small>The Example Band</small><div class="bar"><i class="pg"></i></div></div></div>
   <div class="dw sq" title="Clock"><div class="aclock" id="dclock" style="width:46px;height:46px"><i class="h" style="height:11px;width:3px;margin-left:-1.5px"></i><i class="mi" style="height:17px;width:2px;margin-left:-1px"></i></div></div>
@@ -757,7 +757,7 @@ const islandHit = (x, y) => {
 const apps = $('#apps');
 apps.innerHTML = `<div class="app fold" data-name="Developer"><div class="fold">${ico('terminal')}${ico('code')}${ico('pen')}${ico('globe')}</div>Developer</div>`
   + `<div class="app" data-name="Productivity"><div class="fold">${ico('notes')}${ico('calendar')}${ico('reminders')}${ico('mail')}</div>Productivity</div>`
-  + APPS.map(([n, g]) => `<div class="app" data-name="${n}">${ico(g, g === 'cortex' ? 'cortex' : '')}${n}</div>`).join('');
+  + APPS.map(([n, g]) => `<div class="app" data-name="${n}">${ico(g, g === 'brand' ? 'brand' : '')}${n}</div>`).join('');
 const lp = $('#lp'), lpq = $('#lpq');
 const filterApps = () => {
   const q = lpq.value.trim().toLowerCase(); let n = 0;
@@ -783,7 +783,7 @@ const fmt = n => Number.isInteger(n) ? n.toLocaleString() : (+n.toPrecision(10))
 const results = q => {
   const t = q.trim(), l = t.toLowerCase(); const out = [];
   if (!t) return { sec: 'Suggestions', rows: [
-    { g: 'grid', t: 'Open Launcher', s: 'Cortex', r: '⌃⌥L', act: 'launcher' },
+    { g: 'grid', t: 'Open Launcher', s: 'AIO', r: '⌃⌥L', act: 'launcher' },
     { g: 'music', t: 'Now Playing', s: 'Night Drive', r: '⌃⌥P', act: 'player' },
     { g: 'calc', t: 'Calculator', s: 'Type any sum, like 12*(3+4)' },
     { g: 'arrows', t: 'Convert', s: 'Try 10 km to mi or 100 usd to eur' },
@@ -814,7 +814,7 @@ const results = q => {
 let sel = 0, cur = [];
 const renderRows = () => {
   const r = results(palq.value); cur = r.rows; sel = Math.min(sel, cur.length - 1);
-  rowsEl.innerHTML = `<div class="sec">${r.sec}</div>` + cur.map((x, i) => `<div class="row${i === sel ? ' sel' : ''}" data-i="${i}">${x.em ? `<span class="em">${x.em}</span>` : ico(x.g, x.g === 'cortex' ? 'cortex' : '')}<span class="${x.big ? 'big' : ''}">${x.t}</span><small>${x.s || ''}</small><span class="r">${x.r || ''}</span></div>`).join('');
+  rowsEl.innerHTML = `<div class="sec">${r.sec}</div>` + cur.map((x, i) => `<div class="row${i === sel ? ' sel' : ''}" data-i="${i}">${x.em ? `<span class="em">${x.em}</span>` : ico(x.g, x.g === 'brand' ? 'brand' : '')}<span class="${x.big ? 'big' : ''}">${x.t}</span><small>${x.s || ''}</small><span class="r">${x.r || ''}</span></div>`).join('');
 };
 palq.addEventListener('input', () => { sel = 0; renderRows(); });
 const runRow = i => {
