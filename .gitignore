@@ -30,3 +30,4 @@ social/shots/
 record/out/
 record/config.local.sh
 record/edit/assets/*.mkv
+social/*.zip
