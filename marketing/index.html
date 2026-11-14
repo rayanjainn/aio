@@ -418,6 +418,13 @@ details summary{cursor:pointer;font-weight:600;font-size:16px;list-style:none;di
 details summary:after{content:"+";color:var(--t3);font-weight:400;font-size:20px;line-height:1;transition:transform .3s var(--spring)}
 details[open] summary:after{transform:rotate(45deg)}
 details p{color:var(--t2);font-size:15px;margin-top:10px}
+.stats{padding:56px 0 70px}
+.statgrid{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.stat{min-width:230px;flex:0 1 270px;background:#fff;border-radius:22px;padding:24px 28px;box-shadow:0 0 0 1px var(--line);text-align:center}
+.stat b{display:block;font-size:48px;line-height:1.05;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.stat span{display:block;margin-top:6px;font-size:15px;font-weight:600;color:var(--t2)}
+.stat small{display:block;margin-top:4px;font-size:12.5px;color:var(--t3)}
+.statnote{max-width:640px;margin:18px auto 0;text-align:center;font-size:12.5px;color:var(--t3);line-height:1.5}
 footer{padding:40px 0 60px;font-size:12.5px;color:var(--t3);border-top:1px solid var(--line);background:var(--bg2)}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 footer a{color:var(--ink2)}
@@ -685,7 +692,7 @@ footer a{color:var(--ink2)}
 
 <section id="privacy">
   <div class="wrap">
-    <div class="sh rv"><span class="eyebrow">Privacy</span><h2>Yours, and only yours.</h2><p class="lede">AIO runs on your Mac. No account, no analytics, no servers of ours.</p></div>
+    <div class="sh rv"><span class="eyebrow">Privacy</span><h2>Yours, and only yours.</h2><p class="lede">The AIO app runs on your Mac. No account, no analytics, no servers of ours. This website only counts visits, with no cookies.</p></div>
     <ul class="ticks">
       <li class="rv">Screen memory is off by default, pauses with <span class="kbd">⌘⇧P</span>, skips password fields and never records the apps you block.</li>
       <li class="rv">API keys and tokens stay in files only you can read, and are never included when you export settings.</li>
@@ -720,6 +727,15 @@ footer a{color:var(--ink2)}
     <details class="rv"><summary>Does it replace the macOS Dock?</summary><p>It hides the system Dock while AIO runs and puts it back when you quit. You can turn the AIO Dock off any time.</p></details>
     <details class="rv"><summary>Which music apps work?</summary><p>Anything that shows up in macOS's Now Playing: Apple Music, Spotify, YouTube in a browser, VLC and more.</p></details>
     <details class="rv"><summary>Is it open source?</summary><p>The source is public so anyone can read and audit it, but AIO is not open source: it's © Rayan Jain, free to use, and not to be redistributed. See the <a href="https://github.com/rayanjainn/aio/blob/main/LICENSE">license</a>.</p></details>
+  </div>
+</section>
+<section class="stats" aria-label="AIO in numbers">
+  <div class="wrap">
+    <div class="statgrid rv">
+      <div class="stat"><b id="st-visits">—</b><span>visits</span><small id="st-visits-note">&nbsp;</small></div>
+      <div class="stat"><b id="st-dl">—</b><span>downloads</span><small id="st-dl-note">&nbsp;</small></div>
+    </div>
+    <p class="statnote">Downloads are every Mac .dmg ever downloaded from <a href="https://github.com/rayanjainn/aio/releases">GitHub Releases</a>, updates included. Visits count one per browser per day, with no cookies and no personal data.</p>
   </div>
 </section>
 </main>
@@ -1291,6 +1307,65 @@ new IntersectionObserver(([e]) => {
   if (visible && !userMode) direct(sceneIdx); else if (!visible) { stopDemo(); if (userMode) { clearTimeout(idleT); userMode = false; } }
 }, { threshold: .35 }).observe(viewport);
 placeCursor();
+
+
+// ---------- Numbers: downloads from GitHub Releases, visits from a cookie-less counter ----------
+(() => {
+  const OWNER = 'rayanjainn', REPO = 'aio';
+  const COUNTER = { base: 'https://abacus.jasoncameron.dev', ns: 'aio.raycode.tech', key: 'visits' };
+  const GOATCOUNTER = '';          // optional: your GoatCounter code (the "xxx" of xxx.goatcounter.com); counts and shows visits through it instead
+  const fmt = n => Number(n).toLocaleString('en-US');
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  const show = (id, n, note) => {
+    const el = $('#' + id); if (!el) return;
+    if (typeof n !== 'number' || !isFinite(n)) { el.textContent = '—'; return; }
+    if (reduce) el.textContent = fmt(n);
+    else { const t0 = performance.now(), dur = 1100; const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(Math.round(n * e)); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+    if (note) { const nt = $('#' + id + '-note'); if (nt) nt.textContent = note; }
+  };
+  // The owner can keep their own visits out of the number: open the site once with ?owner=1 on each device (?owner=0 undoes it).
+  const q = new URLSearchParams(location.search);
+  if (q.get('owner') === '1') store.set('aio-owner', '1'); if (q.get('owner') === '0') store.set('aio-owner', '0');
+  const mine = store.get('aio-owner') === '1';
+  const local = /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(location.hostname) || location.protocol === 'file:';
+  const today = new Date().toISOString().slice(0, 10);
+  const countThisVisit = !mine && !local && !navigator.webdriver && store.get('aio-visit-day') !== today;
+
+  // downloads: every .dmg asset of every release (each download adds one to exactly one asset)
+  (async () => {
+    try {
+      let c = null; try { c = JSON.parse(store.get('aio-dl') || 'null'); } catch (e) {}
+      if (!c || Date.now() - c.t > 10 * 60 * 1000) {
+        const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/releases?per_page=100`, { headers: { Accept: 'application/vnd.github+json' } });
+        if (!r.ok) throw new Error(r.status);
+        const rels = await r.json(); let total = 0, latest = null;
+        for (const rel of rels) { if (rel.draft) continue; let n = 0; for (const a of rel.assets || []) if (/\.dmg$/i.test(a.name)) n += a.download_count || 0; total += n; if (!latest && !rel.prerelease) latest = { tag: rel.tag_name, n }; }
+        c = { t: Date.now(), total, latest }; store.set('aio-dl', JSON.stringify(c));
+      }
+      show('st-dl', c.total, c.latest ? `${fmt(c.latest.n)} on ${c.latest.tag}` : '');
+    } catch (e) { show('st-dl', NaN); const nt = $('#st-dl-note'); if (nt) nt.innerHTML = '<a href="https://github.com/rayanjainn/aio/releases">see GitHub Releases</a>'; }
+  })();
+
+  // visits
+  (async () => {
+    try {
+      let n;
+      if (GOATCOUNTER) {
+        if (countThisVisit) { const sc = document.createElement('script'); sc.async = true; sc.dataset.goatcounter = `https://${GOATCOUNTER}.goatcounter.com/count`; sc.src = '//gc.zgo.at/count.js'; document.head.appendChild(sc); store.set('aio-visit-day', today); }
+        const r = await fetch(`https://${GOATCOUNTER}.goatcounter.com/counter/TOTAL.json`); if (!r.ok) throw new Error(r.status);
+        n = parseInt(String((await r.json()).count).replace(/\D/g, ''), 10);
+      } else {
+        const r = await fetch(`${COUNTER.base}/${countThisVisit ? 'hit' : 'get'}/${COUNTER.ns}/${COUNTER.key}`); 
+        if (r.status === 404) n = 0; else if (!r.ok) throw new Error(r.status); else n = (await r.json()).value;
+        if (countThisVisit) store.set('aio-visit-day', today);
+      }
+      show('st-visits', n, mine ? 'your visits are not counted' : '');
+    } catch (e) { show('st-visits', NaN); }
+  })();
+})();
 
 // ---------- The Mac rises flat as you scroll to it ----------
 let st = 0;
