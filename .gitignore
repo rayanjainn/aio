@@ -25,3 +25,4 @@ film/render-*.log
 brag-output-*/composition*/assets/music.wav
 film/work-*/
 film/.*hf-transaction*/
+social/clips/
