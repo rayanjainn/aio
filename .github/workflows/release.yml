@@ -9,26 +9,38 @@ on:
         description: "Release tag to create, e.g. v0.3.0"
         required: true
   push:
-    tags: ["v*"]          # pushing a version tag releases it too
+    tags: ["v*"]                # pushing a version tag releases it
+    branches: [main]
+    paths: ["native/VERSION"]   # so does changing native/VERSION on main
 
 permissions:
   contents: write
-
-env:
-  VERSION: ${{ inputs.version || github.ref_name }}
 
 jobs:
   build:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - name: Version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="${{ inputs.version }}"
+          if [ -z "$V" ] && [ "${{ github.ref_type }}" = "tag" ]; then V="${{ github.ref_name }}"; fi
+          if [ -z "$V" ]; then V=$(tr -d '[:space:]' < native/VERSION); fi
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          if gh release view "$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then echo "$V is already released"; echo "SKIP=1" >> "$GITHUB_ENV"; fi
+          echo "Releasing $V"
       - uses: dtolnay/rust-toolchain@stable
+        if: env.SKIP != '1'
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
       - uses: swatinem/rust-cache@v2
+        if: env.SKIP != '1'
         with:
           workspaces: cortexd -> target
       - name: Import Developer ID certificate (only when the secrets exist)
+        if: env.SKIP != '1'
         env:
           CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
@@ -56,12 +68,14 @@ jobs:
           fi
           echo "Signing identity: $ID"
       - name: Build universal app + dmg
+        if: env.SKIP != '1'
         env:
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
           NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
         run: native/scripts/bundle.sh "${{ env.VERSION }}"
       - name: Publish release
+        if: env.SKIP != '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
