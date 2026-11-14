@@ -26,3 +26,7 @@ brag-output-*/composition*/assets/music.wav
 film/work-*/
 film/.*hf-transaction*/
 social/clips/
+social/shots/
+record/out/
+record/config.local.sh
+record/edit/assets/*.mkv

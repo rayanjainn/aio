@@ -9,7 +9,7 @@ const fs = require('fs');
   await p.clock.setFixedTime(new Date('2026-11-08T09:41:00'));
   await p.goto(url, { waitUntil: 'networkidle' });
   await p.waitForTimeout(400);
-  const queries = ['12*(3+4)', '10 km to mi', 'note'];
+  const queries = ['12*(3+4)', '10 km to mi', '100 usd to eur', 'event lunch tomorrow 1pm', 'heart', 'note'];
   const data = await p.evaluate(async (queries) => {
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
     const q = document.querySelector('#palq'), rows = {};

@@ -18,10 +18,13 @@ SNAP = json.load(open(os.path.join(HERE, "snapshot.json")))
 
 # Beat grid of "Digital Clouds" (Mixkit), 129 BPM; the cut puts the drop on beat 6 and the second drop on beat 86.
 B, T0 = 0.46511, 0.2
-SRC_START = 26.971
-BEATS = 104
-def b(n): return round(T0 + n * B, 3)
-TOTAL = b(BEATS)
+SH = 16                                  # beats of story intro before the old beat 0
+SRC_START = round(26.971 - SH * B, 3)   # the music's drop stays on the reveal
+BEATS = 100
+def b(n): return round(T0 + (n + SH) * B, 3)   # the feature timeline
+def r(n): return round(T0 + n * B, 3)          # the intro, from the first frame
+SRC_END = b(BEATS)          # end of the source timeline
+TOTAL = SRC_END             # the film is shorter or longer: set after the cut list below
 
 K0 = 0.75 if V else 1.2          # screen scale at zoom 1: fills the frame width (portrait) or height (landscape)
 
@@ -33,8 +36,8 @@ def F(t, x, y, zl, zp, e="inout", xp=None, yp_=None):
 
 # ---------- Camera ----------
 CAM = [
-    C(0, 720, 450, .50, .9, "out", 26, 24, 420, 640),
-    C(1.3, 720, 450, .50, .9, "out", 26, 24, 300, 520),
+    C(b(0), 720, 450, .50, .9, "out", 26, 24, 420, 640),
+    C(round(b(0) + 1.1, 3), 720, 450, .50, .9, "out", 26, 24, 300, 520),
     C(b(5.5), 720, 450, .50, .9, "inout", 26, 24, 300, 520),
     C(b(6.6), 720, 450, 1, 1, "expo"),
     C(b(7), 720, 450, 1, 1),
@@ -51,8 +54,6 @@ CAM = [
     F(b(32.6), 940, 360, 1.18, 1.5, xp=1060, yp_=330),  # widget dragged to the right column
     F(b(37.3), 900, 380, 1.12, 1.5, xp=1040, yp_=340),
     C(b(38), 720, 450, 1, 1),
-    C(b(39.2), 720, 330, 1.55, 1.75),                   # ⌘K
-    C(b(47.3), 720, 330, 1.55, 1.75),
     C(b(48.2), 720, 450, 1, 1),                         # snapping, full desktop
     C(b(53.2), 720, 450, 1, 1),
     C(b(53.8), 720, 380, 1.3, 1.35),                    # switcher
@@ -66,8 +67,8 @@ CAM = [
     F(b(77.2), 1150, 270, 1.95, 2.3, xp=1160, yp_=270),
     C(b(78.2), 720, 450, .9, 1.0),                      # "and more"
     C(b(85.8), 720, 450, .86, .96),
-    C(b(87.6), 720, 450, .5, .82, "expo", 16, 14, 250, 470),
-    C(TOTAL, 720, 450, .48, .8, "out", 16, 14, 250, 470),
+    C(b(87.6), 720, 450, .46, .82, "expo", 16, 14, 280, 470),
+    C(SRC_END, 720, 450, .46, .8, "out", 16, 14, 280, 470),
 ]
 
 # ---------- Cursor (screen px; names are measured from the page at runtime) ----------
@@ -101,9 +102,7 @@ PRESET = [[0, "glass"], [b(22), "tide"], [b(23.3), "midnight"], [b(24.6), "ocean
 LAUNCH = [[b(26.6), 0, "out"], [b(27.3), 1, "out"], [b(37.4), 1, "out"], [b(38), 0, "out"]]
 LP_TYPE = [[b(28.3), b(29.3), b(30.2), "note"]]
 WDRAG = [b(31), b(32.5)]
-PAL = [[b(38.4), 0, "out"], [b(38.9), 1, "back"], [b(47.2), 1, "out"], [b(47.6), 0, "out"]]
-PAL_TYPE = [[b(39.4), b(40.6), b(42.4), "12*(3+4)"], [b(42.6), b(44), b(47.6), "10 km to mi"]]
-KEYS = [[b(15.8), b(16.9), ["F12"]], [b(38), b(39), ["⌘", "K"]], [b(46.9), b(47.7), ["esc"]],
+KEYS = [[b(15.8), b(16.9), ["F12"]],
         [b(48.5), b(49.6), ["⌃", "⌥", "←"]], [b(50), b(51.1), ["⌃", "⌥", "→"]], [b(51.4), b(52.4), ["⌃", "⌥", "↑"]], [b(52.5), b(53.3), ["⌃", "⌥", "↓"]],
         [b(53.4), b(55.6), ["⌥", "⇥"]]]
 WSNAP = [[0, "restore"], [b(48.6), "left"], [b(50.1), "right"], [b(51.5), "max"], [b(52.6), "restore"]]
@@ -116,6 +115,35 @@ LYRICS = [b(65), b(67), b(69), b(71)]
 MORE = [b(77.6), b(85.8)]
 MORE_LINES = ["Shelf + AirDrop", "Clipboard history", "Spaces for every setup", "Screen memory, off until you want it", "AI on your Mac", "No account. No tracking."]
 
+
+# ---------- HERO: ⌘K. It lives in an unused stretch of the source timeline and is cut in right after the reveal ----------
+H0, HE = 106, 38
+def h(n): return b(H0 + n)
+CAM += [C(h(0), 720, 450, 1, 1), C(h(1.0), 720, 450, 1, 1), C(h(2.2), 720, 330, 1.55, 1.75),
+        C(h(36.4), 720, 330, 1.55, 1.75), C(h(37.6), 720, 450, 1, 1)]
+HQ = [["12*(3+4)", 3.0, 5.4, 9.0], ["10 km to mi", 9.2, 11.9, 15.4], ["100 usd to eur", 15.6, 18.9, 22.0],
+      ["event lunch tomorrow 1pm", 22.2, 27.2, 31.0], ["heart", 31.2, 33.4, 36.2]]
+HERO_PAL = [[h(1.0), 0, "out"], [h(1.6), 1, "back"], [h(36.6), 1, "out"], [h(37.2), 0, "out"]]
+HERO_TYPE = [[h(a), h(e), h(c), q] for q, a, e, c in HQ]
+HERO_KEYS = [[h(0.3), h(1.5), ["⌘", "K"]], [h(36.0), h(37.0), ["esc"]]]
+HERO_CAPS = [[h(1.6), h(8.8), "One bar for your whole Mac.", "bottom"], [h(9.2), h(15.2), "Convert anything.", "bottom"],
+             [h(15.6), h(21.8), "Live currency.", "bottom"], [h(22.2), h(30.8), "Schedule it by typing it.", "bottom"],
+             [h(31.2), h(36.2), "Emoji, clipboard, AI…", "bottom"]]
+HERO_SFX = [("swish", h(1.0), .2)] + [("click", h(a), .2) for _, a, _, _ in HQ]
+
+# cut list: film order -> source ranges. Cuts land on whole beats so the music stays on the grid.
+SEGS_SRC = [(0.0, b(7)), (h(0), h(HE)), (b(7), b(38)), (b(48), SRC_END)]
+SEGS, _f = [], 0.0
+for _s0, _s1 in SEGS_SRC:
+    SEGS.append([round(_f, 4), round(_s0, 4), round(_s1, 4)]); _f += _s1 - _s0
+TOTAL = round(_f, 3)
+def FT(ts):
+    for f0, s0, s1 in SEGS:
+        if s0 <= ts < s1: return round(f0 + ts - s0, 3)
+    return None
+PAL, PAL_TYPE = HERO_PAL, HERO_TYPE
+KEYS += HERO_KEYS
+
 # ---------- Captions: [in, out, text, where] ----------
 def W2(l, p): return p if V else l
 CAPS = [
@@ -125,15 +153,18 @@ CAPS = [
     [b(21.4), b(25.9), "Presets in one click.", W2("top", "bottom")],
     [b(27.4), b(30.4), "All your apps. Plus your day.", W2("bottom", "top")],
     [b(30.8), b(37.2), "Put widgets where you want them.", W2("bottom", "top")],
-    [b(39.2), b(47.2), "Type it. It's done.", "bottom"],
     [b(48.6), b(53.2), "Snap windows from the keyboard.", W2("bottom", "top")],
     [b(53.6), b(56), "Switch windows, not just apps.", "bottom"],
     [b(57.5), b(62.7), "Act on any text.", "bottom"],
     [b(64.2), b(71.8), "Your song. The whole screen.", W2("bottom", "top")],
     [b(73.5), b(77.2), "Desktop widgets.", "bottom"],
-]
+] + HERO_CAPS
 
-words = ["Launcher.", "Dock.", "Notch.", "Music."]
+# Story intro (from the first frame): the problem, then the question, then the answer.
+CARDS = [[r(-1.0), r(2.4), "Spotlight to search."], [r(2.5), r(4.9), "Launchpad to open."], [r(5.0), r(7.4), "A Dock to switch."],
+         [r(7.5), r(9.9), "A notch you ignore."], [r(10.2), r(15.7), "What if one bar<br>did it all?"]]
+CARD_T = [c[0] for c in CARDS]
+CAM_ON = round(b(0) - 0.15, 3)
 
 # ---------- Assets ----------
 os.makedirs(f"{OUT}/assets/sfx", exist_ok=True)
@@ -153,39 +184,50 @@ css = SNAP["css"].replace("url(aio-icon-256.png)", "url(assets/aio-icon-256.png)
 css = re.sub(r"(?<![-\w])(transition(-delay)?|animation)\s*:[^;}]*;?", "", css)   # the film drives every change itself
 
 sfx = [("impact", b(6), .32), ("swish", b(6.1), .22), ("impact", b(86), .34), ("swish", b(86.1), .22)]
-for i in range(4): sfx.append(("click", b(i), .2))
-sfx.append(("impact", b(4), .26))
+for t in CARD_T[:4]: sfx.append(("click", max(t, 0.05), .22))
+sfx.append(("swish", CARD_T[4], .18)); sfx.append(("impact", b(0), .34)); sfx.append(("click", b(1.5), .2)); sfx.append(("click", b(3), .2))
 for t in [b(7), b(17.5), b(38), b(48), b(53.4), b(56.2), b(63.6), b(72.4), b(77.6)]: sfx.append(("swish", t, .14))
 for t in CLICKS: sfx.append(("click", t, .3))
 for t in [b(27.9), b(28.1), b(48.5), b(50), b(51.4), b(52.5), b(53.4), b(54.2), b(54.9)]: sfx.append(("click", t, .22))
 for i in range(len(MORE_LINES)): sfx.append(("click", round(MORE[0] + .25 + i * B, 3), .16))
 sfx.append(("drop", b(87.1), .3))
+sfx += HERO_SFX
+sfx = [(n, FT(t), v) for (n, t, v) in sfx if FT(t) is not None]
+sfx.sort(key=lambda x: x[1])
 audio = f'<audio id="music" class="clip" src="assets/music.wav" data-start="0" data-duration="{TOTAL}" data-volume="0.8" data-fade-out="1.6" data-track-index="20"></audio>\n'
 for k, (n, t, v) in enumerate(sfx):
     d = {"click": 0.01, "impact": 0.18, "swish": 0.06, "drop": 0.11}[n]
     audio += f'      <audio id="sfx{k}" class="clip" src="assets/sfx/{n}.ogg" data-start="{t}" data-duration="{d}" data-volume="{v}" data-track-index="{21 + k}"></audio>\n'
 
+cards_html = "".join(f'<div class="cd" id="cd{i}">{t}</div>' for i, (_, _, t) in enumerate(CARDS))
 if V:
-    hook_html = "".join(f'<div class="hw" id="hw{i}" style="top:{250 + i * 150}px">{w}</div>' for i, w in enumerate(words)) + '<div class="hw one" id="hw4" style="top:900px">All in one.</div>'
-    out_html = """<img id="oicon" src="assets/aio-icon-256.png" style="top:300px;width:170px;height:170px;margin-left:-85px">
-      <div class="ot" id="oname" style="top:500px;font-size:170px">AIO</div>
-      <div class="ot sub" id="otag" style="top:700px;font-size:46px">All in one: Launcher · Dock<br>Notch · Music · ⌘K</div>
-      <div class="ot cta" id="octa" style="top:880px;font-size:34px">Free for macOS · github.com/rayanjainn/aio</div>"""
+    hook_html = ('<div class="hw" id="hw0" style="top:300px;font-size:300px">AIO.</div>'
+                 '<div class="hw" id="hw1" style="top:600px;font-size:124px;line-height:1">One bar.<br>Your whole Mac.</div>'
+                 '<div class="hw gray" id="hw2" style="top:880px;font-size:50px">⌘K · Launcher · Dock · Notch · Music</div>')
+    out_html = """<img id="oicon" src="assets/aio-icon-256.png" style="top:280px;width:170px;height:170px;margin-left:-85px">
+      <div class="ot" id="oname" style="top:470px;font-size:170px">AIO</div>
+      <div class="ot sub" id="otag" style="top:670px;font-size:46px">One bar for your whole Mac:<br>⌘K · Launcher · Dock · Notch · Music</div>
+      <div class="ot cta" id="octa" style="top:810px;font-size:58px">aio.raycode.tech</div>
+      <div class="ot sub" id="ofree" style="top:930px;font-size:38px">Free for macOS · Link in bio</div>"""
 else:
-    hook_html = '<div class="hline" style="top:150px">' + " ".join(f'<span class="hw2" id="hw{i}">{w}</span>' for i, w in enumerate(words)) + '</div><div class="hw one" id="hw4" style="top:285px">All in one.</div>'
-    out_html = """<img id="oicon" src="assets/aio-icon-256.png" style="top:70px;width:110px;height:110px;margin-left:-55px">
-      <div class="ot" id="oname" style="top:180px;font-size:130px">AIO</div>
-      <div class="ot sub" id="otag" style="top:330px;font-size:38px">All in one: Launcher · Dock · Notch · Music · ⌘K</div>
-      <div class="ot cta" id="octa" style="top:410px;font-size:30px">Free for macOS · github.com/rayanjainn/aio</div>"""
+    hook_html = ('<div class="hw" id="hw0" style="top:40px;font-size:190px">AIO.</div>'
+                 '<div class="hw" id="hw1" style="top:235px;font-size:92px">One bar. Your whole Mac.</div>'
+                 '<div class="hw gray" id="hw2" style="top:348px;font-size:40px">⌘K · Launcher · Dock · Notch · Music</div>')
+    out_html = """<img id="oicon" src="assets/aio-icon-256.png" style="top:40px;width:100px;height:100px;margin-left:-50px">
+      <div class="ot" id="oname" style="top:150px;font-size:120px">AIO</div>
+      <div class="ot sub" id="otag" style="top:290px;font-size:34px">One bar for your whole Mac: ⌘K · Launcher · Dock · Notch · Music</div>
+      <div class="ot cta" id="octa" style="top:350px;font-size:52px">aio.raycode.tech</div>
+      <div class="ot sub" id="ofree" style="top:462px;font-size:28px">Free for macOS · Link in the description</div>"""
 more_html = '<div id="more">' + "".join(f'<div class="ml" id="ml{i}">{t}</div>' for i, t in enumerate(MORE_LINES)) + '</div>'
 caps_html = "".join(f'<div class="cap" id="cap{i}" style="{"top:" + str(220 if V else 70) + "px" if w == "top" else "top:" + str(1600 if V else 920) + "px"}">{t}</div>' for i, (_, _, t, w) in enumerate(CAPS))
 
 DATA = dict(TOTAL=TOTAL, K0=K0, W=W, H=H, CAM=CAM, CURSOR=CURSOR, CURSOR_ON=CURSOR_ON, CLICKS=CLICKS, BOUNCES=BOUNCES,
             ISLAND=ISLAND, DOCKMAG=DOCKMAG, LAUNCH=LAUNCH, LP_TYPE=LP_TYPE, PAL=PAL, PAL_TYPE=PAL_TYPE, KEYS=KEYS,
             PLAYER=PLAYER, LYRICS=LYRICS, CAPS=[c[:2] for c in CAPS], ROWS=SNAP["rows"],
-            PAGES=PAGES, HUD=HUD, MENUS=MENUS, PRESET=PRESET, WDRAG=WDRAG, SNAP=WSNAP, SWITCH=SWITCH, TOASTS=TOASTS,
+            SEGS=SEGS, SRC_END=SRC_END, PAGES=PAGES, HUD=HUD, MENUS=MENUS, PRESET=PRESET, WDRAG=WDRAG, SNAP=WSNAP, SWITCH=SWITCH, TOASTS=TOASTS,
             ACT=ACT, ACT_RES=ACT_RES, MORE=MORE, MORE_N=len(MORE_LINES),
-            HOOK=[b(0), b(1), b(2), b(3), b(4)], HOOK_OUT=b(5.6), OUTRO=[b(87), b(87.6), b(88.4), b(89.2)], V=V)
+            CARDS=[c[:2] for c in CARDS], CAM_ON=CAM_ON,
+            HOOK=[b(0), b(1.5), b(3)], HOOK_OUT=b(4.9), OUTRO=[b(87), b(87.6), b(88.4), b(89.2), b(90.2)], V=V)
 
 JS = r"""
 const D = __DATA__;
@@ -256,19 +298,24 @@ const keys = $('#keys'), clk = cursor.querySelector('.clk');
 let lastRows = null, lastLp = null, lastKeys = null;
 $('#lyr').style.transition = 'none';
 
-function render(t) {
+const SRC = tf => { for (const [f0, s0, s1] of D.SEGS) if (tf < f0 + (s1 - s0)) return s0 + (tf - f0); return D.SEGS[D.SEGS.length - 1][2] - 0.001; };
+function render(tf) {
+  const t = SRC(tf);
   // camera
   const [px, py, z, rx, yo] = kf(t, D.CAM), k = D.K0 * z;
   const tx = -(px - 720) * k, ty = -(py - 450) * k + yo;
   cam.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px)` + (rx > .01 ? ` perspective(2600px) rotateX(${rx.toFixed(3)}deg)` : '') + ` scale(${k.toFixed(4)})`;
-  cam.style.opacity = clamp(t / .5);
+  cam.style.opacity = clamp((t - D.CAM_ON) / .5);
 
   // hook + outro text
-  D.HOOK.forEach((h, i) => { const el = $('#hw' + i), p = E.out(clamp((t - h) / .35)), o = 1 - clamp((t - D.HOOK_OUT) / .35);
-    el.style.opacity = (p * o).toFixed(3); el.style.transform = `translateY(${((1 - p) * 30 - (1 - o) * 50).toFixed(1)}px)`; el.style.filter = `blur(${((1 - p) * 10).toFixed(1)}px)`;
-    if (i < 4) el.style.color = t > D.HOOK[4] ? '#c7c7cc' : '#1d1d1f'; });
-  ['#oicon', '#oname', '#otag', '#octa'].forEach((s, i) => { const el = $(s), p = (i === 0 ? E.back : E.out)(clamp((t - D.OUTRO[i]) / .5));
-    el.style.opacity = clamp((t - D.OUTRO[i]) / .3).toFixed(3); el.style.transform = `translateY(${((1 - p) * 40).toFixed(1)}px) scale(${(.9 + .1 * p).toFixed(3)})`; });
+  // story intro cards
+  D.CARDS.forEach(([a0, z0], i) => { const el = $('#cd' + i), o = win(t, a0, z0, .28), p = E.out(clamp((t - a0) / .38));
+    el.style.opacity = o.toFixed(3); el.style.transform = `translateY(${((1 - p) * 34).toFixed(1)}px) scale(${(.96 + .04 * p).toFixed(3)})`; el.style.filter = `blur(${((1 - p) * 12).toFixed(1)}px)`; });
+  // "AIO." slam, then the line under it
+  D.HOOK.forEach((h, i) => { const el = $('#hw' + i), p = (i === 0 ? E.back : E.out)(clamp((t - h) / .4)), o = 1 - clamp((t - D.HOOK_OUT) / .35);
+    el.style.opacity = (clamp((t - h) / .15) * o).toFixed(3); el.style.transform = `translateY(${((1 - p) * 30 - (1 - o) * 50).toFixed(1)}px) scale(${(i === 0 ? 1.18 - .18 * p : 1).toFixed(3)})`; el.style.filter = `blur(${((1 - p) * 10).toFixed(1)}px)`; });
+  ['#oicon', '#oname', '#otag', '#octa', '#ofree'].forEach((s, i) => { const el = $(s), p = (i === 0 ? E.back : E.out)(clamp((t - D.OUTRO[i]) / .5));
+    el.style.opacity = (clamp((t - D.OUTRO[i]) / .3) * (t < D.SRC_END ? 1 : 0)).toFixed(3); el.style.transform = `translateY(${((1 - p) * 40).toFixed(1)}px) scale(${(.9 + .1 * p).toFixed(3)})`; });
   D.CAPS.forEach(([a, z2], i) => { const el = $('#cap' + i), o = win(t, a, z2, .3), p = E.back(clamp((t - a) / .45));
     el.style.opacity = o.toFixed(3); el.style.transform = `translateX(-50%) translateY(${((1 - p) * 26).toFixed(1)}px) scale(${(.94 + .06 * p).toFixed(3)})`; });
 
@@ -409,7 +456,8 @@ html, body {{ width:{W}px; height:{H}px; overflow:hidden; background:#f5f5f7; ma
 .hline {{ position:absolute; left:0; right:0; text-align:center; font-size:96px; font-weight:800; letter-spacing:-.045em; color:#1d1d1f; }}
 .hw2 {{ display:inline-block; }}
 .hw {{ position:absolute; left:0; right:0; text-align:center; font-size:{136 if V else 120}px; font-weight:800; letter-spacing:-.045em; color:#1d1d1f; line-height:1; }}
-.hw.one {{ color:#1d1d1f; }}
+.hw.gray {{ color:#6e6e73; font-weight:600; letter-spacing:-.01em; }}
+.cd {{ position:absolute; left:0; right:0; top:{int(H*0.38)}px; text-align:center; font-size:{128 if V else 112}px; font-weight:800; letter-spacing:-.045em; color:#1d1d1f; line-height:1.04; padding:0 50px; opacity:0; }}
 #oicon {{ position:absolute; left:50%; border-radius:24%; box-shadow:0 20px 40px -12px rgba(0,0,0,.3); }}
 .ot {{ position:absolute; left:0; right:0; text-align:center; font-weight:800; letter-spacing:-.045em; color:#1d1d1f; line-height:1.05; }}
 .ot.sub {{ font-weight:600; letter-spacing:-.01em; color:#6e6e73; }}
@@ -434,6 +482,7 @@ index = f"""<!doctype html>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="{TOTAL}" data-width="{W}" data-height="{H}">
       <div id="cam" data-layout-ignore><div class="bezel"><div class="viewport">{screen_html}</div></div><div class="base"></div></div>
+      {cards_html}
       {hook_html}
       {more_html}
       {caps_html}

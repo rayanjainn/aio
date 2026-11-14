@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AIO — All in one: Launcher, Dock, Notch and Music for your Mac</title>
-<meta name="description" content="AIO is a free Mac app: a full-screen launcher with widgets, a Dock with live widgets, an Island in the notch, a full-screen music player with synced lyrics, and a ⌘K command bar. Try it live in your browser.">
-<meta property="og:title" content="AIO — Launcher, Dock, Notch and Music for your Mac">
-<meta property="og:description" content="A launcher, a Dock, a notch and a music player — one free Mac app. Try it live in your browser.">
+<title>AIO — ⌘K for your whole Mac: Launcher, Dock, Notch and Music</title>
+<meta name="description" content="AIO is a free Mac app. Press ⌘K for maths, conversions, quick-add events, emoji and every app, plus a Launcher with movable widgets, a Dock with live widgets, a notch Island and a full-screen music player. Try it live in your browser.">
+<meta property="og:title" content="AIO — ⌘K for your whole Mac">
+<meta property="og:description" content="One bar for your whole Mac, plus a Launcher, a Dock, a notch and a music player. Free. Try it live in your browser.">
 <meta property="og:image" content="https://aio.raycode.tech/aio-launch.jpg">
 <meta name="theme-color" content="#f5f5f7">
 <meta name="color-scheme" content="light">
@@ -447,16 +447,16 @@ footer a{color:var(--ink2)}
 <body>
 <nav>
   <a class="brand" href="#top"><img src="aio-icon-256.png" alt="">AIO</a>
-  <div class="links"><a href="#launcher">Launcher</a><a href="#dock">Dock</a><a href="#notch">Notch</a><a href="#music">Music</a><a href="#command">⌘K</a><a href="#privacy">Privacy</a></div>
+  <div class="links"><a href="#command">⌘K</a><a href="#launcher">Launcher</a><a href="#dock">Dock</a><a href="#notch">Notch</a><a href="#music">Music</a><a href="#privacy">Privacy</a></div>
   <a class="btn primary small cta" href="https://github.com/rayanjainn/aio/releases/latest/download/AIO.dmg" data-dl>Download</a>
 </nav>
 
 <main id="top">
 <section class="hero">
   <div class="wrap">
-    <span class="eyebrow rv">AIO · All in one · Free for macOS</span>
-    <h1 class="rv d1">Launcher. Dock. Notch.<br><span>Music. All in one.</span></h1>
-    <p class="lede rv d2">AIO gives your Mac a full-screen launcher with widgets, a Dock with live tiles, an Island in the notch, a full-screen music player with synced lyrics, and a command bar for everything else.</p>
+    <span class="eyebrow rv">AIO · Free for macOS</span>
+    <h1 class="rv d1">One bar for<br><span>your whole Mac.</span></h1>
+    <p class="lede rv d2">Press <span class="kbd">⌘K</span> to calculate, convert, add to your calendar, find any app or file, and run anything. AIO also gives you a Launcher with widgets you can move, a Dock with live widgets, an Island in the notch and a full-screen music player.</p>
     <div class="actions rv d3">
       <a class="btn primary" href="https://github.com/rayanjainn/aio/releases/latest/download/AIO.dmg" data-dl>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Mac</a>
@@ -581,7 +581,28 @@ footer a{color:var(--ink2)}
       <div class="base"></div>
     </div>
     <div class="status" id="status"><span class="dot"></span><span id="stxt">Playing a live demo — move your mouse onto the Mac to take over.</span><button id="replay" hidden>Replay demo</button></div>
-    <div class="hints"><button data-play="island">Notch</button><button data-play="dock">Dock</button><button data-play="launcher">Launcher</button><button data-play="palette">⌘K</button><button data-play="snap">Snapping</button><button data-play="switcher">⌥⇥ Switcher</button><button data-play="act">Act on this</button><button data-play="player">Music</button></div>
+    <div class="hints"><button data-play="palette">⌘K</button><button data-play="launcher">Launcher</button><button data-play="dock">Dock</button><button data-play="island">Notch</button><button data-play="snap">Snapping</button><button data-play="switcher">⌥⇥ Switcher</button><button data-play="act">Act on this</button><button data-play="player">Music</button></div>
+  </div>
+</section>
+
+<section id="command">
+  <div class="wrap">
+    <div class="sh rv"><span class="eyebrow">⌘K</span><h2>Type it.<br><span>It's done.</span></h2><p class="lede">Your running apps on top, then apps, files, the front app's menus, maths, units, currency, emoji, clipboard history, snippets, browser tabs and AI — in one bar. Click a command to try it above.</p></div>
+    <div class="grid c3">
+      <div class="shot rv"><img src="shots/palette-home.jpg" alt="The ⌘K bar with running apps on top and recent items" loading="lazy"></div>
+      <div class="shot rv d1"><img src="shots/palette-convert.jpg" alt="⌘K converting 10 km to miles" loading="lazy"></div>
+      <div class="shot rv d2"><img src="shots/palette-emoji.jpg" alt="⌘K emoji search" loading="lazy"></div>
+    </div>
+    <div class="cmds">
+      <div class="cmd rv" data-q="12*(3+4)"><code>12*(3+4)</code><span>Calculator</span></div>
+      <div class="cmd rv" data-q="10 km to mi"><code>10 km to mi</code><span>Units</span></div>
+      <div class="cmd rv" data-q="100 usd to eur"><code>100 usd to eur</code><span>Currency</span></div>
+      <div class="cmd rv" data-q="event lunch tomorrow 1pm"><code>event lunch tomorrow 1pm</code><span>Adds to Calendar</span></div>
+      <div class="cmd rv" data-q="remind call mom at 6pm"><code>remind call mom at 6pm</code><span>Adds a Reminder</span></div>
+      <div class="cmd rv" data-q="heart"><code>heart</code><span>Emoji</span></div>
+      <div class="cmd rv" data-q="mus"><code>mus</code><span>Apps</span></div>
+      <div class="cmd rv" data-q="ai summarise this"><code>ai summarise this</code><span>AI on your clipboard</span></div>
+    </div>
   </div>
 </section>
 
@@ -639,26 +660,6 @@ footer a{color:var(--ink2)}
   </div>
 </section>
 
-<section id="command" class="alt">
-  <div class="wrap">
-    <div class="sh rv"><span class="eyebrow">⌘K</span><h2>Type it.<br><span>It's done.</span></h2><p class="lede">Your running apps on top, then apps, files, the front app's menus, maths, units, currency, emoji, clipboard history, snippets, browser tabs and AI — in one bar. Click a command to try it above.</p></div>
-    <div class="grid c3">
-      <div class="shot rv"><img src="shots/palette-home.jpg" alt="The ⌘K bar with running apps on top and recent items" loading="lazy"></div>
-      <div class="shot rv d1"><img src="shots/palette-convert.jpg" alt="⌘K converting 10 km to miles" loading="lazy"></div>
-      <div class="shot rv d2"><img src="shots/palette-emoji.jpg" alt="⌘K emoji search" loading="lazy"></div>
-    </div>
-    <div class="cmds">
-      <div class="cmd rv" data-q="12*(3+4)"><code>12*(3+4)</code><span>Calculator</span></div>
-      <div class="cmd rv" data-q="10 km to mi"><code>10 km to mi</code><span>Units</span></div>
-      <div class="cmd rv" data-q="100 usd to eur"><code>100 usd to eur</code><span>Currency</span></div>
-      <div class="cmd rv" data-q="event lunch tomorrow 1pm"><code>event lunch tomorrow 1pm</code><span>Adds to Calendar</span></div>
-      <div class="cmd rv" data-q="remind call mom at 6pm"><code>remind call mom at 6pm</code><span>Adds a Reminder</span></div>
-      <div class="cmd rv" data-q="heart"><code>heart</code><span>Emoji</span></div>
-      <div class="cmd rv" data-q="mus"><code>mus</code><span>Apps</span></div>
-      <div class="cmd rv" data-q="ai summarise this"><code>ai summarise this</code><span>AI on your clipboard</span></div>
-    </div>
-  </div>
-</section>
 
 <section>
   <div class="wrap">
@@ -1230,7 +1231,7 @@ const SCENES = {
     await move(1400 - 9, 63, 900, id); await wait(250, id); await click(id); await wait(700, id);
   }
 };
-const ORDER = ['island', 'dock', 'launcher', 'palette', 'snap', 'switcher', 'act', 'player'];
+const ORDER = ['palette', 'snap', 'switcher', 'act', 'island', 'dock', 'launcher', 'player'];
 const status = (u) => {
   $('#status').classList.toggle('user', u);
   $('#stxt').textContent = u ? "You're in control. The demo picks up again when you stop." : 'Playing a live demo — move your mouse onto the Mac to take over.';
