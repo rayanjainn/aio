@@ -49,8 +49,7 @@ first frame; captions on everything (most people watch muted); the URL is on scr
 
 ## 3. Create the accounts — exact steps
 
-Do both on the same day, use **the same handle** on both. Suggested handle: **`aio.mac`** on Instagram (letters, numbers, periods and
-underscores are allowed) and **`@aiomac`** on YouTube. On YouTube `@aio`, `@getaio` and `@aioapp` are taken [Likely]; `@aiomac` and
+Do both on the same day, use **the same handle** on both. Handles in use: **`aio.mac`** on Instagram and **`@aiomac`** on YouTube. On YouTube `@aio`, `@getaio` and `@aioapp` are taken [Likely]; `@aiomac` and
 `@aio.mac` looked free when checked. Instagram can't be checked without logging in: try `aio.mac`, then `aiomac`, `getaio.app`,
 `useaio.mac`. If you get a different handle, tell me and I'll update every card.
 
@@ -81,7 +80,7 @@ underscores are allowed) and **`@aiomac`** on YouTube. On YouTube `@aio`, `@geta
 
 ### 3.2 YouTube (computer; Shorts later from the phone or the same Studio)
 1. Go to **youtube.com**, sign in with the brand Google account (create one if needed: it needs a phone number for verification).
-2. Click your profile picture → **Create a channel**. **Name:** `AIO — All in one for Mac`. **Handle:** `aiomac` (the page tells
+2. Click your profile picture → **Create a channel**. **Name:** `AIO` (or `AIO — ⌘K for Mac`, which is easier to find in search). **Handle:** `aiomac` (the page tells
    you if it's taken). Upload `avatar-1080.png`. **Create channel.**
 3. Open **YouTube Studio** (studio.youtube.com) → **Customization**:
    * **Branding:** picture = avatar; **banner image** = `youtube-banner-2560x1440.png`; **video watermark** = the AIO icon.

@@ -184,6 +184,21 @@ const page = (w, h, body, bg = true) => `<html><head><style>${CSS}body{width:${w
     for (let i = 0; i < list.length; i++) await render(list[i](list.length, i), path.join(POSTS, name, String(i + 1).padStart(2, '0') + '.png'), 1080, 1350);
     console.log(name, list.length, 'slides');
   }
+
+  // ---------------- YouTube: banner (safe area 1546x423 in the middle) and thumbnails ----------------
+  await render(page(2560, 1440, `
+    <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:56px">
+      <img src="${icon}" width="260" height="260" style="border-radius:22%;box-shadow:0 30px 60px -22px rgba(0,0,0,.45)">
+      <div><div class="h" style="font-size:92px;white-space:nowrap">One bar for your whole Mac.</div>
+        <div class="sub" style="font-size:46px;margin-top:22px;white-space:nowrap"><span class="kbd" style="font-size:44px;padding:4px 22px;margin-right:14px">⌘K</span>Launcher · Dock · Notch · Music</div></div>
+    </div>`), path.join(ROOT, 'social/youtube-banner-2560x1440.png'), 2560, 1440);
+  const thumb = (file, shot, c, l1, l2) => render(page(1280, 720, `
+    <div style="position:absolute;left:60px;top:150px;width:560px"><div class="h" style="font-size:100px">${l1}<br><span style="color:#0071e3">${l2}</span></div>
+      <div style="margin-top:34px"><span class="kbd" style="font-size:64px;padding:8px 34px">⌘ K</span></div></div>
+    <div style="position:absolute;left:640px;top:150px">${crop(shot, 600, ...c)}</div>
+    <img src="${icon}" width="96" height="96" style="position:absolute;left:60px;top:46px;border-radius:22%;box-shadow:0 10px 24px -8px rgba(0,0,0,.35)">`), file, 1280, 720);
+  await thumb(path.join(ROOT, 'social/thumbnail-1280x720.png'), 'cmdk-calc', [.5, .2, 1.9], 'One bar<br>for your', 'whole Mac.');
+  await thumb(path.join(ROOT, 'social/thumbnail-b-1280x720.png'), 'cmdk-event', [.5, .2, 1.9], 'Type it.', 'It\'s done.');
   console.log('reels', REELS.length, 'captions', made.size);
   await b.close();
 })();
