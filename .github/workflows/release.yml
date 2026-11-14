@@ -8,9 +8,14 @@ on:
       version:
         description: "Release tag to create, e.g. v0.3.0"
         required: true
+  push:
+    tags: ["v*"]          # pushing a version tag releases it too
 
 permissions:
   contents: write
+
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
 
 jobs:
   build:
@@ -55,13 +60,13 @@ jobs:
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
           NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
-        run: native/scripts/bundle.sh "${{ inputs.version }}"
+        run: native/scripts/bundle.sh "${{ env.VERSION }}"
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp native/build/AIO.dmg "native/build/AIO-${{ inputs.version }}.dmg"
+          cp native/build/AIO.dmg "native/build/AIO-${{ env.VERSION }}.dmg"
           # Also attach a fixed-name copy, so releases/latest/download/AIO.dmg always downloads the newest build.
-          gh release create "${{ inputs.version }}" "native/build/AIO-${{ inputs.version }}.dmg" "native/build/AIO.dmg" \
-            --target "$GITHUB_SHA" --title "AIO ${{ inputs.version }}" --latest \
+          gh release create "${{ env.VERSION }}" "native/build/AIO-${{ env.VERSION }}.dmg" "native/build/AIO.dmg" \
+            --target "$GITHUB_SHA" --title "AIO ${{ env.VERSION }}" --latest \
             --notes "AIO is the new name of Cortex: same app, same settings and permissions — updates rename it for you. Download the .dmg and drag AIO to Applications. AIO is not notarized by Apple (that needs a paid developer account), so the first time macOS says it “could not verify AIO is free of malware” or that it is “damaged”. It is safe to open: run  xattr -cr /Applications/AIO.app  once in Terminal, or open System Settings → Privacy & Security and click Open Anyway. macOS 14 or later; Liquid Glass needs macOS 26."
